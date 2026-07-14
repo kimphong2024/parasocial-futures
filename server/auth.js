@@ -23,7 +23,7 @@ export function loginHandler(req, res) {
 const PUBLIC = (p) =>
   p === "/" || p === "/transparency" || p === "/favicon.svg" || p === "/login" || p === "/api/login" ||
   p === "/api/public/stats" || p === "/js/home.js" ||
-  p.startsWith("/css/") || p.startsWith("/img/");
+  p.startsWith("/css/") || p.startsWith("/img/") || p.startsWith("/models/");
 
 export function authMiddleware(req, res, next) {
   if (authed(req) || PUBLIC(req.path)) return next();

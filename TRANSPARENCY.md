@@ -213,6 +213,8 @@ All site imagery is generated with **Leonardo Phoenix 1.0** via `scripts/gen-ima
 
 Rendering rule for all imagery: pure-black photo backgrounds dissolve into the page's olive void via `mix-blend-mode: lighten` over an explicit backdrop, plus an elliptical mask vignette — so subjects float in the page rather than sit printed on it. Full prompt text lives in `scripts/gen-images.sh` in the repository.
 
+**The 3D hero (`/models/hero.glb`).** The landing page's hero is a 3D Janus head — a moss-human face and a porcelain synthetic face sharing one head — that turns from organic to synthetic as the visitor scrolls. Pipeline (`scripts/gen-3d.sh`): four turnaround views of the same character were generated with Leonardo Phoenix at a fixed seed (front split, left profile, right profile, rear three-quarter; saved in `server/public/img/rodin-refs/`), then passed as multi-view references to **Rodin v2** through the Leonardo API (`model: "rodin-v2"`, Quad mesh, medium quality, PBR materials, GLB output). The model renders in the browser via Google's `<model-viewer>` component with user controls disabled — the page's scroll position owns the camera. If the model or its viewer fails to load, or the visitor prefers reduced motion, the original 2D hero image is shown instead.
+
 ## 10. Design decisions
 
 - **Design system**: "Heartful Futures / Earthy Foresight" (Lexend; olive `#4E5A2B`, brown `#AC7222`, mustard `#E1B83B` on warm surfaces), extended with a dark observation register: olive-black void `#101408`, Fragment Mono instrument annotations, reticle-cornered data callouts — the visual language of alethia.earth's specimen-observation hero, adapted rather than copied.
