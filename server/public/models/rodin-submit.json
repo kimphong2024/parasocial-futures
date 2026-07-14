@@ -1,1 +1,1 @@
-[{"extensions":{"code":"HttpException","details":"An error occurred processing your request."},"locations":[{"column":73,"line":1}],"message":"Insufficient tokens","path":["generate"]}]
+{"generate":{"apiCreditCost":null,"generationId":"1f17f787-2ff8-6ef0-a1a2-455f612fa318","cost":{"amount":"0.598","unit":"DOLLARS"}}}
