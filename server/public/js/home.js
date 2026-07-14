@@ -19,7 +19,7 @@ const easeInCubic = (x) => x * x * x;
 const easeInOutCubic = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
 
 // --- 3D Janus head: crossfades in over the still image once the GLB loads.
-// The scroll then turns the head (moss face → porcelain face) and the dive
+// The scroll then turns the head (human face → porcelain face) and the dive
 // pushes the camera into the glowing seam. Any failure leaves the image hero.
 const heroModel = document.getElementById("heroModel");
 let modelOn = false;
@@ -68,9 +68,10 @@ function update() {
     stage.style.setProperty("--glow", (0.9 * easeInCubic(clamp01((p - 0.80) / 0.20)) * (1 - clamp01((p - 0.96) / 0.04))).toFixed(4));
     stage.style.setProperty("--exit", (1 - clamp01((p - 0.93) / 0.06)).toFixed(4));
 
-    // 3D head: turn moss→porcelain across the reveal + hold, then dive into the seam
+    // 3D head: the visitor meets the human profile, the head turns through the
+    // half-and-half frontal, and settles on the porcelain face for the dive.
     if (modelOn) {
-      const theta = 215 - 190 * easeInOutCubic(clamp01(p / 0.66));
+      const theta = 95 - 145 * easeInOutCubic(clamp01(p / 0.66));
       const radius = 105 - 63 * easeInCubic(clamp01((p - 0.7) / 0.3));
       heroModel.cameraOrbit = `${theta.toFixed(1)}deg 80deg ${radius.toFixed(1)}%`;
     }

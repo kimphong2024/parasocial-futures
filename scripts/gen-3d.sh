@@ -15,10 +15,10 @@ mkdir -p "$OUT" "$MODELS"
 
 KEY=$(grep '^LEONARDO_API_KEY=' "$DIR/.env" | cut -d= -f2- | tr -d '"'"'"' \r\n')
 MODEL="de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3"   # Leonardo Phoenix 1.0
-SEED=20411
-NEG="text, words, letters, watermark, logo, signature, illustration, cartoon, painting, bright background, daylight, sky, blue, purple, two heads, two separate objects, body, shoulders, neck stump, pedestal, stand, base, table, fine filigree, wire, static noise"
+SEED=20477
+NEG="text, words, letters, watermark, logo, signature, illustration, cartoon, painting, bright background, daylight, sky, blue, purple, two heads, two separate objects, body, shoulders, neck stump, pedestal, stand, base, table, hair, wig, moss, plants, leaves"
 
-BASE="a single sculpted head floating in darkness, one face split vertically down the middle: the left half covered in thick soft clumps of green moss over dark stone, sculptural and chunky; the right half a smooth flawless white porcelain synthetic surface with a thin glowing golden seam where the halves meet; a complete floating head with a smoothly rounded finished underside, no neck, no pedestal, museum turntable photograph, pure black background, soft studio specimen lighting, clean sculptural forms"
+BASE="a single two-faced Janus head floating in complete darkness: the front is a realistic human face with lifelike skin, natural pores and subtle imperfections, calm neutral expression, completely hairless shaven head; the back of the same head is a second face, a smooth flawless white porcelain synthetic android face with thin glowing golden seam lines; the two faces look in opposite directions on one shared head, a thin golden seam runs around the crown where the two halves meet; a complete floating head with a smoothly finished rounded underside, no neck, no pedestal, museum turntable photograph, pure black background, soft studio specimen lighting"
 
 log() { echo "[$(date +%H:%M:%S)] $*"; }
 
@@ -65,10 +65,10 @@ PY
 
 if [ "${1:-refs}" = "refs" ]; then
   : > "$OUT/image-ids.txt"
-  gen_view "janus-front"  "front view facing the camera, the golden seam running vertically down the centre of the face, moss half on the left, porcelain half on the right"
-  gen_view "janus-left"   "left profile view showing the thick mossy half of the head in full profile"
-  gen_view "janus-right"  "right profile view showing the smooth porcelain half of the head in full profile"
-  gen_view "janus-back"   "rear view of the head, moss half on one side and porcelain half on the other meeting at the golden seam down the back"
+  gen_view "janus-front"  "front view facing the camera, showing the realistic human face straight on, the golden crown seam just visible at the top of the head"
+  gen_view "janus-back"   "rear view showing the white porcelain synthetic android face straight on, looking the opposite way"
+  gen_view "janus-left"   "left profile view showing both faces edge on, the human face profile looking left and the porcelain synthetic face profile looking right"
+  gen_view "janus-right"  "right profile view showing both faces edge on, the human face profile looking right and the porcelain synthetic face profile looking left"
   log "REFS DONE — ids in $OUT/image-ids.txt"
   exit 0
 fi
