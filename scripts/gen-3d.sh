@@ -15,10 +15,10 @@ mkdir -p "$OUT" "$MODELS"
 
 KEY=$(grep '^LEONARDO_API_KEY=' "$DIR/.env" | cut -d= -f2- | tr -d '"'"'"' \r\n')
 MODEL="de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3"   # Leonardo Phoenix 1.0
-SEED=20400
-NEG="text, words, letters, watermark, logo, signature, illustration, cartoon, painting, bright background, daylight, sky, blue, purple, two heads, two separate objects, body, shoulders below the neck"
+SEED=20411
+NEG="text, words, letters, watermark, logo, signature, illustration, cartoon, painting, bright background, daylight, sky, blue, purple, two heads, two separate objects, body, shoulders, neck stump, pedestal, stand, base, table, fine filigree, wire, static noise"
 
-BASE="a single sculpted Janus head with two faces on one continuous head: one side a human face formed of dark moss, lichen and tiny ferns; the opposite side a smooth flawless white porcelain synthetic face with faint glowing golden seams along it; the two faces meet at a clean vertical seam, one head, museum turntable photograph, pure black background, chiaroscuro specimen lighting, hyper detailed"
+BASE="a single sculpted head floating in darkness, one face split vertically down the middle: the left half covered in thick soft clumps of green moss over dark stone, sculptural and chunky; the right half a smooth flawless white porcelain synthetic surface with a thin glowing golden seam where the halves meet; a complete floating head with a smoothly rounded finished underside, no neck, no pedestal, museum turntable photograph, pure black background, soft studio specimen lighting, clean sculptural forms"
 
 log() { echo "[$(date +%H:%M:%S)] $*"; }
 
@@ -65,10 +65,10 @@ PY
 
 if [ "${1:-refs}" = "refs" ]; then
   : > "$OUT/image-ids.txt"
-  gen_view "janus-front"  "front view facing the camera, the vertical seam between the two faces visible down the middle of the head"
-  gen_view "janus-left"   "left profile view, showing the mossy human face side in full profile"
-  gen_view "janus-right"  "right profile view, showing the white porcelain synthetic face side in full profile"
-  gen_view "janus-back"   "rear three-quarter view showing the back of the head where moss transitions into porcelain"
+  gen_view "janus-front"  "front view facing the camera, the golden seam running vertically down the centre of the face, moss half on the left, porcelain half on the right"
+  gen_view "janus-left"   "left profile view showing the thick mossy half of the head in full profile"
+  gen_view "janus-right"  "right profile view showing the smooth porcelain half of the head in full profile"
+  gen_view "janus-back"   "rear view of the head, moss half on one side and porcelain half on the other meeting at the golden seam down the back"
   log "REFS DONE — ids in $OUT/image-ids.txt"
   exit 0
 fi
