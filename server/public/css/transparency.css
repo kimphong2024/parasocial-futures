@@ -1,0 +1,164 @@
+/* ============================================================
+   Transparency — the disclosure document as a designed page.
+   Dark observation register; a real numbered document, so the
+   section numbers carry information (order of disclosure).
+   ============================================================ */
+
+.tdoc-head {
+  max-width: calc(1240px + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: clamp(48px, 9vh, 110px) var(--gutter) clamp(28px, 5vh, 56px);
+}
+.tdoc-head .subtitle { max-width: 62ch; }
+.tdoc-meta {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  margin-top: 26px;
+}
+.tdoc-meta .reticle .v { font-size: 13px; }
+
+.tdoc-layout {
+  max-width: calc(1240px + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: 0 var(--gutter) clamp(80px, 12vh, 140px);
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: clamp(32px, 5vw, 72px);
+  align-items: start;
+}
+@media (max-width: 940px) {
+  .tdoc-layout { grid-template-columns: 1fr; }
+  .tdoc-toc { display: none; }
+}
+
+/* ---------- table of contents ---------- */
+.tdoc-toc {
+  position: sticky; top: 32px;
+  display: flex; flex-direction: column; gap: 2px;
+  border-left: 1px solid var(--borderLight);
+}
+.tdoc-toc a {
+  font-family: var(--font-mono);
+  font-size: 10.5px; letter-spacing: 0.5px; text-transform: uppercase;
+  color: var(--textDim);
+  padding: 6px 0 6px 14px;
+  margin-left: -1px;
+  border-left: 1px solid transparent;
+  text-decoration: none;
+  transition: color 180ms ease, border-color 180ms ease;
+}
+.tdoc-toc a:hover { color: var(--charcoal); border-left-color: var(--olive); text-decoration: none; }
+
+/* ---------- sections ---------- */
+.tdoc-body { min-width: 0; }
+.tdoc-body section { margin-bottom: clamp(48px, 8vh, 88px); scroll-margin-top: 28px; }
+.tsec-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 18px; }
+.tsec-head .num {
+  font-family: var(--font-mono);
+  font-size: 12px; letter-spacing: 2px;
+  color: var(--goldenBrown);
+}
+.tsec-head h2 { font-size: clamp(20px, 2.4vw, 30px); letter-spacing: -0.5px; }
+.tdoc-body p { max-width: 72ch; font-size: 14px; line-height: 1.85; margin-bottom: 14px; }
+.tdoc-body ul, .tdoc-body ol { max-width: 72ch; margin: 0 0 14px 20px; }
+.tdoc-body li { font-size: 14px; line-height: 1.8; color: var(--textMid); font-weight: 300; margin-bottom: 6px; }
+.tdoc-body li strong, .tdoc-body p strong { color: var(--charcoal); font-weight: 600; }
+.tdoc-body code {
+  font-family: var(--font-mono); font-size: 12px;
+  background: #10160A; border: 1px solid var(--borderLight);
+  border-radius: var(--r-sm); padding: 1px 6px;
+  color: var(--olive);
+}
+.tdoc-body table.data { margin: 8px 0 18px; }
+.tdoc-body table.data td { font-size: 13px; }
+.tdoc-body table.data td:first-child { color: var(--charcoal); white-space: nowrap; }
+
+/* the binding rule, set like the gate statement */
+.tdoc-rule {
+  max-width: 26ch;
+  margin: 28px 0;
+  font-size: clamp(1.5rem, 2.6vw, 2.2rem);
+  font-weight: 800; line-height: 1.15; letter-spacing: -0.02em;
+  color: var(--charcoal);
+  text-wrap: balance;
+}
+
+/* module map — mono diagram */
+.tdoc-tree {
+  font-family: var(--font-mono);
+  font-size: 12px; line-height: 1.75;
+  color: var(--textMid);
+  background: #10160A;
+  border: 1px solid var(--borderLight);
+  border-radius: var(--r-box);
+  padding: 18px 22px;
+  overflow-x: auto;
+  margin: 8px 0 18px;
+  white-space: pre;
+}
+.tdoc-tree b { color: var(--olive); font-weight: 400; }
+
+/* pipeline — a real sequence, numbered on purpose */
+.tstep { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; margin-bottom: 18px; max-width: 76ch; }
+.tstep .n {
+  font-family: var(--font-mono); font-size: 15px;
+  color: var(--goldenBrown);
+  border: 1px solid var(--borderLight); border-radius: var(--r-sm);
+  width: 36px; height: 36px; display: grid; place-items: center;
+}
+.tstep h4 { font-size: 14.5px; margin-bottom: 4px; }
+.tstep p { font-size: 13.5px; margin-bottom: 0; }
+
+/* prompt specimens */
+.tprompt {
+  position: relative;
+  background: #10160A;
+  border: 1px solid var(--void-line, rgba(245,246,240,0.16));
+  padding: 20px 24px;
+  margin: 20px 0 26px;
+}
+.tprompt::before, .tprompt::after,
+.tprompt .ret::before, .tprompt .ret::after {
+  content: ""; position: absolute; width: 9px; height: 9px;
+  border-color: #E1B83B; border-style: solid; border-width: 0;
+}
+.tprompt::before { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
+.tprompt::after { top: -1px; right: -1px; border-top-width: 2px; border-right-width: 2px; }
+.tprompt .ret::before { bottom: -1px; left: -1px; border-bottom-width: 2px; border-left-width: 2px; }
+.tprompt .ret::after { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
+.tprompt-role {
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.tprompt-role .chip { font-size: 10px; }
+.tprompt-role .caption { font-size: 11px; }
+.tprompt pre {
+  font-family: var(--font-mono);
+  font-size: 12px; line-height: 1.8;
+  color: var(--textMid);
+  white-space: pre-wrap;
+  max-width: none;
+}
+.tprompt .inj { color: var(--goldenBrown); font-style: italic; }
+
+/* imagery provenance grid */
+.tgallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+  margin: 18px 0;
+}
+.tgallery figure { background: var(--void); }
+.tgallery img {
+  width: 100%; aspect-ratio: 3 / 2; object-fit: cover;
+  mix-blend-mode: lighten;
+  -webkit-mask-image: radial-gradient(ellipse 68% 66% at 50% 50%, #000 36%, transparent 78%);
+  mask-image: radial-gradient(ellipse 68% 66% at 50% 50%, #000 36%, transparent 78%);
+}
+.tgallery figcaption { font-size: 12px; line-height: 1.6; color: var(--textDim); }
+.tgallery figcaption b { display: block; font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--textMid); margin-bottom: 3px; }
+
+.tdoc-close {
+  border-top: 1px solid var(--borderLight);
+  padding-top: 22px;
+  display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+}

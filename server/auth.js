@@ -21,7 +21,7 @@ export function loginHandler(req, res) {
 }
 
 const PUBLIC = (p) =>
-  p === "/" || p === "/favicon.svg" || p === "/login" || p === "/api/login" ||
+  p === "/" || p === "/transparency" || p === "/favicon.svg" || p === "/login" || p === "/api/login" ||
   p === "/api/public/stats" || p === "/js/home.js" ||
   p.startsWith("/css/") || p.startsWith("/img/");
 
