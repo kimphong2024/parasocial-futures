@@ -1,0 +1,261 @@
+// Futures of Parasocial AI — Node/Express API + static frontend.
+// Signal library + live scanning + CLA scenarios + Monte Carlo + RAG chat.
+import express from "express";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import * as d from "./db.js";
+import { loginHandler, authMiddleware } from "./auth.js";
+import { seedIfEmpty } from "../scripts/seed.js";
+import { loadIndex, ensureEmbeddings, ensureScenarioEmbeddings, similarTo, topSignals, indexedCount } from "./vectors.js";
+import { embedQuery, voyageEnabled } from "./voyage.js";
+import { llmEnabled } from "./ai.js";
+import { runScan, scanRunning } from "./scan.js";
+import { startScheduler } from "./scheduler.js";
+import { ARCHETYPES, draftScenario, embedScenario } from "./scenarios.js";
+import { simulate, previewDistribution, makeSampler } from "./montecarlo.js";
+import { chatHandler } from "./chat.js";
+import { perplexityEnabled } from "./perplexity.js";
+import { firecrawlEnabled } from "./firecrawl.js";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const PORT = process.env.PORT || 8080;
+
+const app = express();
+app.use(express.json({ limit: "2mb" }));
+
+app.post("/api/login", loginHandler);
+app.get("/login", (_req, res) => res.sendFile(join(HERE, "public", "login.html")));
+app.get("/", (_req, res) => res.sendFile(join(HERE, "public", "home.html")));
+
+// Public counts for the home page annotations — numbers only, no content.
+app.get("/api/public/stats", (_req, res) => {
+  const last = d.lastScanRun.get();
+  res.json({
+    signals: d.countByStatus.get("approved").n,
+    clusters: d.facets("approved").cluster.length,
+    scenarios: d.publishedScenarios.all().length,
+    lastScan: last?.finished_at?.slice(0, 10) || null,
+  });
+});
+
+app.use(authMiddleware);
+
+// ---------- meta ----------
+app.get("/api/health", (_req, res) => {
+  const last = d.lastScanRun.get();
+  res.json({
+    ok: true,
+    signals: d.countSignals.get().n,
+    approved: d.countByStatus.get("approved").n,
+    pending: d.countByStatus.get("pending").n,
+    scenarios: d.publishedScenarios.all().length,
+    drafts: d.draftScenarios.all().length,
+    embedded: indexedCount(),
+    lastScan: last ? { id: last.id, status: last.status, finished_at: last.finished_at, new_pending: last.new_pending } : null,
+    scanRunning: scanRunning(),
+    integrations: { llm: llmEnabled(), voyage: voyageEnabled(), perplexity: perplexityEnabled(), firecrawl: firecrawlEnabled() },
+  });
+});
+
+// ---------- signals ----------
+app.get("/api/signals", (req, res) => {
+  const page = Math.max(1, +req.query.page || 1);
+  const limit = Math.min(200, +req.query.limit || 60);
+  const { total, rows } = d.querySignals({
+    q: (req.query.q || "").trim(), cluster: req.query.cluster || "", type: req.query.type || "",
+    urgency: req.query.urgency || "", horizon: req.query.horizon || "", status: req.query.status || "approved",
+    provenance: req.query.provenance || "", sort: req.query.sort || "newest", page, limit,
+  });
+  res.json({ total, page, limit, signals: rows });
+});
+
+app.get("/api/signals/facets", (req, res) => res.json(d.facets(req.query.status || "approved")));
+
+app.get("/api/search", async (req, res) => {
+  const q = (req.query.q || "").trim();
+  if (!q) return res.json({ signals: [] });
+  if (!voyageEnabled()) return res.status(503).json({ error: "semantic search unavailable (VOYAGE_API_KEY unset)" });
+  try {
+    const qv = await embedQuery(q);
+    const approved = new Set(d.db.prepare("SELECT id FROM signals WHERE status = 'approved'").all().map((r) => r.id));
+    const hits = topSignals(qv, Math.min(60, +req.query.limit || 30), (id) => approved.has(id));
+    res.json({ signals: hits.map((h) => ({ ...d.getSignal.get(h.id), score: Math.round(h.score * 1000) / 1000 })) });
+  } catch (e) {
+    console.error(e);
+    res.status(503).json({ error: "search failed" });
+  }
+});
+
+app.get("/api/signals/:id", (req, res) => {
+  const s = d.getSignal.get(+req.params.id);
+  if (!s) return res.status(404).json({ error: "not found" });
+  const similar = similarTo(s.id, 5).map((h) => ({ ...d.getSignal.get(h.id), score: Math.round(h.score * 1000) / 1000 }));
+  res.json({ ...s, similar });
+});
+
+// ---------- review queue (human-in-the-loop gate) ----------
+app.get("/api/review/queue", (_req, res) => {
+  const pending = d.pendingSignals.all().map((s) => {
+    let nearest = null;
+    try { nearest = JSON.parse(s.raw_json || "{}").nearest || null; } catch {}
+    const near = nearest ? { ...d.getSignal.get(nearest.id), score: Math.round(nearest.score * 1000) / 1000 } : null;
+    return { ...s, nearest: near };
+  });
+  res.json({ signals: pending, scenario_drafts: d.draftScenarios.all() });
+});
+
+app.post("/api/review/signals/:id/approve", (req, res) => {
+  const s = d.getSignal.get(+req.params.id);
+  if (!s) return res.status(404).json({ error: "not found" });
+  d.setSignalStatus.run("approved", d.now(), s.id);
+  res.json({ ok: true });
+});
+
+app.post("/api/review/signals/:id/reject", (req, res) => {
+  const s = d.getSignal.get(+req.params.id);
+  if (!s) return res.status(404).json({ error: "not found" });
+  d.setSignalStatus.run("rejected", d.now(), s.id);
+  res.json({ ok: true });
+});
+
+app.patch("/api/review/signals/:id", (req, res) => {
+  const ok = d.updateRow("signals", +req.params.id, req.body || {}, ["title", "summary", "cluster", "signal_type", "urgency", "horizon", "topic_tags", "source", "date"]);
+  res.json({ ok });
+});
+
+// ---------- scanning ----------
+app.post("/api/scan/run", (_req, res) => {
+  if (scanRunning()) return res.status(409).json({ error: "scan already running" });
+  const p = runScan("manual"); // async — fire and report
+  p.then((r) => console.log("[scan] manual run finished:", r?.status ?? r?.reason)).catch((e) => console.error("[scan] manual run crashed:", e));
+  res.json({ ok: true, started: true });
+});
+app.get("/api/scan/runs", (_req, res) => res.json({ runs: d.listScanRuns.all() }));
+app.get("/api/scan/runs/:id", (req, res) => {
+  const r = d.getScanRun.get(+req.params.id);
+  if (!r) return res.status(404).json({ error: "not found" });
+  res.json(r);
+});
+
+// ---------- scan sources ----------
+app.get("/api/sources", (_req, res) => res.json({ sources: d.listSources.all() }));
+app.post("/api/sources", (req, res) => {
+  const { name, url, kind = "scrape", crawl_limit = 5, notes = "" } = req.body || {};
+  if (!name || !/^https?:\/\//.test(url || "")) return res.status(400).json({ error: "name and valid url required" });
+  const info = d.insertSource.run(name, url, kind === "crawl" ? "crawl" : "scrape", Math.min(20, +crawl_limit || 5), 1, notes, d.now());
+  res.json({ ok: true, id: Number(info.lastInsertRowid) });
+});
+app.patch("/api/sources/:id", (req, res) => {
+  const patch = { ...req.body };
+  if ("enabled" in patch) patch.enabled = patch.enabled ? 1 : 0;
+  const ok = d.updateRow("scan_sources", +req.params.id, patch, ["name", "url", "kind", "crawl_limit", "enabled", "notes"]);
+  res.json({ ok });
+});
+app.delete("/api/sources/:id", (req, res) => { d.deleteSource.run(+req.params.id); res.json({ ok: true }); });
+
+// ---------- scenarios ----------
+app.get("/api/scenarios", (req, res) => {
+  let rows = d.listScenarios.all();
+  if (req.query.status) rows = rows.filter((r) => r.status === req.query.status);
+  res.json({ scenarios: rows, archetypes: ARCHETYPES });
+});
+app.get("/api/scenarios/:id", (req, res) => {
+  const sc = d.getScenario.get(+req.params.id);
+  if (!sc) return res.status(404).json({ error: "not found" });
+  const cited = JSON.parse(sc.signal_ids || "[]").map((id) => d.getSignal.get(id)).filter(Boolean);
+  res.json({ ...sc, cited });
+});
+app.post("/api/scenarios/draft", async (req, res) => {
+  if (!llmEnabled()) return res.status(503).json({ error: "ANTHROPIC_API_KEY unset" });
+  try {
+    const sc = await draftScenario({ archetype: req.body?.archetype, focus: req.body?.focus || "" });
+    res.json(sc);
+  } catch (e) {
+    console.error("[scenarios] draft failed:", e);
+    res.status(500).json({ error: e.message });
+  }
+});
+app.patch("/api/scenarios/:id", (req, res) => {
+  const patch = { ...req.body, updated_at: d.now() };
+  if (patch.driver_conditions && typeof patch.driver_conditions !== "string") patch.driver_conditions = JSON.stringify(patch.driver_conditions);
+  if (patch.signal_ids && typeof patch.signal_ids !== "string") patch.signal_ids = JSON.stringify(patch.signal_ids);
+  const ok = d.updateRow("scenarios", +req.params.id, patch, ["title", "summary", "litany", "systemic", "worldview", "myth", "narrative", "signal_ids", "driver_conditions", "updated_at"]);
+  res.json({ ok });
+});
+app.post("/api/scenarios/:id/publish", async (req, res) => {
+  const sc = d.getScenario.get(+req.params.id);
+  if (!sc) return res.status(404).json({ error: "not found" });
+  d.updateRow("scenarios", sc.id, { status: "published", published_at: d.now(), updated_at: d.now() }, ["status", "published_at", "updated_at"]);
+  try { await embedScenario(d.getScenario.get(sc.id)); } catch (e) { console.warn("[scenarios] embed failed:", e.message); }
+  res.json({ ok: true });
+});
+app.post("/api/scenarios/:id/archive", (req, res) => {
+  const ok = d.updateRow("scenarios", +req.params.id, { status: "archived", updated_at: d.now() }, ["status", "updated_at"]);
+  res.json({ ok });
+});
+
+// ---------- drivers + simulation ----------
+app.get("/api/drivers", (_req, res) => res.json({ drivers: d.listDrivers.all() }));
+app.patch("/api/drivers/:id", (req, res) => {
+  const patch = { ...req.body, updated_at: d.now() };
+  if (patch.params_json) {
+    let p;
+    try { p = typeof patch.params_json === "string" ? JSON.parse(patch.params_json) : patch.params_json; }
+    catch { return res.status(400).json({ error: "invalid params_json" }); }
+    const dist = patch.dist_type || d.getDriver.get(+req.params.id)?.dist_type || "pert";
+    if (["pert", "triangular"].includes(dist) && !(p.min <= p.mode && p.mode <= p.max)) return res.status(400).json({ error: "require min <= mode <= max" });
+    if (dist === "uniform" && !(p.min <= p.max)) return res.status(400).json({ error: "require min <= max" });
+    try { makeSampler(dist, p); } catch (e) { return res.status(400).json({ error: e.message }); }
+    patch.params_json = JSON.stringify(p);
+  }
+  if ("enabled" in patch) patch.enabled = patch.enabled ? 1 : 0;
+  const ok = d.updateRow("drivers", +req.params.id, patch, ["name", "description", "unit", "dist_type", "params_json", "rationale", "enabled", "updated_at"]);
+  res.json({ ok });
+});
+app.get("/api/drivers/:id/preview", (req, res) => {
+  const dr = d.getDriver.get(+req.params.id);
+  if (!dr) return res.status(404).json({ error: "not found" });
+  const dist = req.query.dist_type || dr.dist_type;
+  const params = req.query.params ? req.query.params : dr.params_json;
+  try { res.json({ histogram: previewDistribution(dist, params) }); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+app.post("/api/simulation/run", (req, res) => {
+  const drivers = d.enabledDrivers.all();
+  const scenarios = d.publishedScenarios.all().map((sc) => ({ id: sc.id, slug: sc.slug, title: sc.title, archetype: sc.archetype, conditions: JSON.parse(sc.driver_conditions || "[]") }));
+  if (!scenarios.length) return res.status(400).json({ error: "no published scenarios to simulate — publish scenarios first" });
+  const n = Math.min(100000, Math.max(1000, +req.body?.n || 10000));
+  const seed = Number.isFinite(+req.body?.seed) ? +req.body.seed : Math.floor(Math.random() * 1e9);
+  const results = simulate({ drivers, scenarios, n, seed });
+  const info = d.insertSimRun.run(d.now(), n, seed, JSON.stringify(drivers), JSON.stringify(scenarios), JSON.stringify(results), results.duration_ms);
+  res.json({ run_id: Number(info.lastInsertRowid), ...results });
+});
+app.get("/api/simulation/runs", (_req, res) => res.json({ runs: d.listSimRuns.all() }));
+app.get("/api/simulation/latest", (_req, res) => {
+  const r = d.lastSimRun.get();
+  if (!r) return res.json({ latest: null });
+  res.json({ latest: { run_id: r.id, created_at: r.created_at, ...JSON.parse(r.results_json) } });
+});
+app.get("/api/simulation/runs/:id", (req, res) => {
+  const r = d.getSimRun.get(+req.params.id);
+  if (!r) return res.status(404).json({ error: "not found" });
+  res.json({ run_id: r.id, created_at: r.created_at, ...JSON.parse(r.results_json) });
+});
+
+// ---------- chat ----------
+app.post("/api/chat", chatHandler);
+
+// ---------- static frontend ----------
+app.use(express.static(join(HERE, "public")));
+app.get("/signals", (_req, res) => res.sendFile(join(HERE, "public", "index.html")));
+["review", "scenarios", "scenario", "simulation", "chat", "sources"].forEach((p) =>
+  app.get("/" + p, (_req, res) => res.sendFile(join(HERE, "public", p + ".html"))));
+
+// ---------- boot ----------
+seedIfEmpty();
+loadIndex();
+ensureEmbeddings().then(() => ensureScenarioEmbeddings()).catch((e) => console.warn("[boot] embeddings incomplete:", e.message));
+startScheduler();
+
+app.listen(PORT, () => console.log(`[server] Futures of Parasocial AI on :${PORT}`));

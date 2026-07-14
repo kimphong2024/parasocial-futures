@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signals — Futures of Parasocial AI</title>
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/app-dark.css">
+</head>
+<body>
+  <main class="container">
+    <div class="page-head">
+      <figure class="page-motif" aria-hidden="true"><img src="/img/motif-signals.jpg" alt="" onerror="this.parentElement.remove()"></figure>
+      <span class="label">Scanning Dashboard</span>
+      <h2>Signal Library</h2>
+      <p class="subtitle">Human-reviewed horizon scan of parasocial AI and the futures of social relations. Seeded with the capstone corpus; refreshed nightly by directed and undirected scanning, pending review.</p>
+      <div class="divider"></div>
+    </div>
+
+    <div class="stats-row" id="stats"></div>
+
+    <div class="filter-bar">
+      <input type="search" id="q" placeholder="Search signals…">
+      <label class="toggle"><input type="checkbox" id="semantic"> semantic</label>
+      <select id="type"><option value="">All types</option></select>
+      <select id="urgency"><option value="">All urgencies</option></select>
+      <select id="horizon"><option value="">All horizons</option></select>
+      <select id="provenance"><option value="">All provenance</option></select>
+      <select id="sort">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="urgency">By urgency</option>
+        <option value="title">By title</option>
+      </select>
+    </div>
+    <div class="pill-strip" id="clusters"></div>
+
+    <div class="signal-grid" id="grid"></div>
+    <div class="pagination" id="pager"></div>
+  </main>
+
+  <div class="drawer-backdrop" id="backdrop"></div>
+  <aside class="drawer" id="drawer"></aside>
+
+  <script type="module" src="/js/dashboard.js"></script>
+</body>
+</html>

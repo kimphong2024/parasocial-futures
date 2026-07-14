@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simulation — Futures of Parasocial AI</title>
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/app-dark.css">
+</head>
+<body>
+  <main class="container">
+    <div class="page-head">
+      <figure class="page-motif" aria-hidden="true"><img src="/img/motif-simulation.jpg" alt="" onerror="this.parentElement.remove()"></figure>
+      <span class="label">Monte Carlo · 2040 Driver Space</span>
+      <h2>Scenario Simulation</h2>
+      <p class="subtitle">Seven key uncertainties, each an editable probability judgment. The engine samples thousands of futures and reports how often each published scenario's conditions hold — and which drivers move the odds.</p>
+      <div class="divider mt-4"></div>
+    </div>
+
+    <div class="sim-layout">
+      <section>
+        <div class="flex-between mb-4">
+          <h3 style="font-size:18px">Drivers</h3>
+        </div>
+        <div id="drivers"></div>
+      </section>
+
+      <section>
+        <div class="card chart-block">
+          <div class="flex-between">
+            <h4>Run</h4>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <label class="caption">samples <input type="number" id="n" value="10000" min="1000" max="100000" step="1000" style="width:90px;padding:6px 8px"></label>
+              <label class="caption">seed <input type="number" id="seed" placeholder="random" style="width:90px;padding:6px 8px"></label>
+              <button class="btn" id="run">Run simulation</button>
+            </div>
+          </div>
+          <div id="runErr"></div>
+        </div>
+        <div id="results"></div>
+        <div class="card chart-block" id="historyBlock" style="display:none">
+          <h4>Run history</h4>
+          <div id="history"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script type="module" src="/js/simulation.js"></script>
+</body>
+</html>

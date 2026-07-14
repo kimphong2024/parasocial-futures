@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scan Sources — Futures of Parasocial AI</title>
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/app-dark.css">
+</head>
+<body>
+  <main class="container">
+    <div class="page-head">
+      <figure class="page-motif" aria-hidden="true"><img src="/img/motif-sources.jpg" alt="" onerror="this.parentElement.remove()"></figure>
+      <span class="label">Directed Scanning</span>
+      <h2>Scan Sources</h2>
+      <p class="subtitle">Sites Firecrawl visits on every scan. Perplexity handles the undirected sweep; these are the places worth watching deliberately.</p>
+      <div class="divider mt-4"></div>
+    </div>
+
+    <div class="stats-row" id="integrations"></div>
+
+    <div class="card chart-block">
+      <h4>Add a source</h4>
+      <div class="filter-bar mt-4">
+        <input type="text" id="newName" placeholder="Name" style="flex:0 1 200px">
+        <input type="url" id="newUrl" placeholder="https://…" style="flex:1 1 280px">
+        <select id="newKind"><option value="scrape">scrape (one page)</option><option value="crawl">crawl (section)</option></select>
+        <input type="number" id="newLimit" value="5" min="1" max="20" title="crawl page limit" style="width:70px">
+        <button class="btn" id="add">Add</button>
+      </div>
+      <div id="addErr"></div>
+    </div>
+
+    <div class="card chart-block">
+      <h4>Configured sources</h4>
+      <div id="list" class="mt-4"></div>
+    </div>
+  </main>
+  <script type="module" src="/js/sources.js"></script>
+</body>
+</html>

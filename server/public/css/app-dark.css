@@ -1,0 +1,154 @@
+/* ============================================================
+   App dark theme — the home page's observation aesthetic carried
+   into the working platform. Loaded ONLY by app pages (+ login);
+   the home page keeps its own dark→light act structure.
+
+   Strategy: remap the style.css tokens onto a void-based surface
+   system. Variable names keep their semantic roles (warmWhite =
+   card surface, charcoal = primary ink), values go dark.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Fragment+Mono:wght@400&display=swap');
+
+:root {
+  /* ink */
+  --charcoal: #EDEFE4;
+  --textMid: #B9BFAD;
+  --textDim: #8A927B;
+
+  /* accents, lifted for dark surfaces */
+  --olive: #B4C57A;
+  --oliveDark: #9CAD62;
+  --brown: #C99655;
+  --goldenBrown: #D9A050;
+
+  /* surfaces */
+  --warmWhite: #181F0D;   /* card / panel surface */
+  --cream: #131909;       /* secondary surface */
+  --oliveLight: #232B12;
+  --brownLight: #2A2312;
+  --mustardLight: #2E2810;
+  --border: #2E3520;
+  --borderLight: #232917;
+
+  /* status */
+  --urgentRed: #E06552;
+  --redLight: #331512;
+  --watchBlue: #6FA3B5;
+
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-card-hover: 0 6px 20px rgba(0, 0, 0, 0.5);
+
+  /* charts — dark-validated (dataviz six checks, surface #181F0D) */
+  --chart-ink: #EDEFE4;
+  --chart-mid: #B9BFAD;
+  --chart-dim: #8A927B;
+  --chart-grid: #262D16;
+  --chart-series: #7E9440;
+  --arch-growth: #C08430;
+  --arch-collapse: #C44536;
+  --arch-discipline: #3D9ED4;
+  --arch-transformation: #7E9440;
+
+  --void: #101408;
+  --font-mono: 'Fragment Mono', ui-monospace, monospace;
+  --gutter: clamp(24px, 6vw, 96px);   /* same page gutter as the home page */
+}
+
+html, body { background: var(--void); }
+
+/* buttons carry the bright accent, so their text flips dark */
+.btn { color: #101408; }
+.btn:disabled { background: #3A4126; color: var(--textDim); }
+.btn-secondary { color: var(--charcoal); background: transparent; }
+.btn-secondary:hover { background: var(--oliveLight); }
+.btn-danger { color: var(--urgentRed); background: transparent; }
+
+/* form fields sit slightly below the card surface */
+input, select, textarea { background: #10160A; }
+input:focus, select:focus, textarea:focus { border-color: var(--olive); }
+::placeholder { color: var(--textDim); opacity: 1; }
+
+/* header/nav on the void — shares the page gutter and the content column */
+.site-header { background: rgba(16, 20, 8, 0.92); border-bottom-color: var(--borderLight); padding: 20px var(--gutter); }
+/* container and header resolve to the SAME content column:
+   min(1240px, viewport - 2*gutter), centered */
+.container { max-width: calc(1240px + 2 * var(--gutter)); padding-inline: var(--gutter); }
+.nav-badge { border-color: rgba(225, 184, 59, 0.35); }
+
+/* native form controls take the house accent, never browser blue */
+input[type="checkbox"], input[type="radio"] { accent-color: #7E9440; }
+
+/* drawer over dark */
+.drawer-backdrop { background: rgba(0, 0, 0, 0.55); }
+
+/* urgency dots need the lifted hues */
+.urgency-critical { background: var(--urgentRed); }
+.urgency-high { background: var(--goldenBrown); }
+.urgency-medium { background: var(--watchBlue); }
+.urgency-low { background: #3A4126; }
+
+/* archetype rails on dark cards use the validated dark steps */
+.archetype-cell.growth, .future-panel.growth { border-top-color: var(--arch-growth); }
+.archetype-cell.collapse, .future-panel.collapse { border-top-color: var(--arch-collapse); }
+.archetype-cell.discipline, .future-panel.discipline { border-top-color: var(--arch-discipline); }
+.archetype-cell.transformation, .future-panel.transformation { border-top-color: var(--arch-transformation); }
+
+/* status chips */
+.status-draft { border-color: rgba(225, 184, 59, 0.35); }
+
+/* mono meta inherits the instrument register */
+.page-head .label { font-family: var(--font-mono); letter-spacing: 2px; }
+
+/* ---------- instrument primitives (shared with the home page) ---------- */
+.mono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.reticle {
+  position: relative;
+  border: 1px solid rgba(245, 246, 240, 0.16);
+  padding: 14px 18px;
+  color: var(--textMid);
+}
+.reticle::before, .reticle::after,
+.reticle .ret::before, .reticle .ret::after {
+  content: "";
+  position: absolute;
+  width: 9px; height: 9px;
+  border-color: #E1B83B;
+  border-style: solid;
+  border-width: 0;
+}
+.reticle::before { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
+.reticle::after { top: -1px; right: -1px; border-top-width: 2px; border-right-width: 2px; }
+.reticle .ret::before { bottom: -1px; left: -1px; border-bottom-width: 2px; border-left-width: 2px; }
+.reticle .ret::after { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
+.reticle .k { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--textDim); display: block; }
+.reticle .v { font-family: var(--font-mono); font-size: 22px; color: var(--charcoal); line-height: 1.3; display: block; margin-top: 4px; }
+
+/* ---------- page motif — blended specimen image in the page head ---------- */
+.page-head { position: relative; }
+.page-head .subtitle { max-width: 56ch; }
+.page-motif {
+  position: absolute;
+  right: 0; top: 0;
+  width: min(32vw, 440px);
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--void);
+  z-index: 0;
+}
+.page-motif img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  mix-blend-mode: lighten;    /* black photo bg dissolves into the void */
+  /* tight elliptical vignette — the specimen floats free of any frame edge */
+  -webkit-mask-image: radial-gradient(ellipse 56% 54% at 55% 50%, #000 22%, transparent 68%);
+  mask-image: radial-gradient(ellipse 56% 54% at 55% 50%, #000 22%, transparent 68%);
+}
+.page-head > *:not(.page-motif) { position: relative; z-index: 1; }
+@media (max-width: 980px) { .page-motif { display: none; } }

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Review — Futures of Parasocial AI</title>
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/app-dark.css">
+</head>
+<body>
+  <main class="container">
+    <div class="page-head flex-between">
+      <figure class="page-motif" style="right:200px" aria-hidden="true"><img src="/img/motif-review.jpg" alt="" onerror="this.parentElement.remove()"></figure>
+      <div>
+        <span class="label">Human in the Loop</span>
+        <h2>Review Queue</h2>
+        <p class="subtitle">Nothing enters the library or the scenario set without a human decision. Scan hits and scenario drafts wait here.</p>
+        <div class="divider mt-4"></div>
+      </div>
+      <button class="btn" id="runScan">Run scan now</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="signals">Signal hits <span id="nSignals"></span></button>
+      <button class="tab" data-tab="drafts">Scenario drafts <span id="nDrafts"></span></button>
+      <button class="tab" data-tab="runs">Scan history</button>
+    </div>
+
+    <section id="tab-signals"></section>
+    <section id="tab-drafts" style="display:none"></section>
+    <section id="tab-runs" style="display:none"></section>
+  </main>
+  <script type="module" src="/js/review.js"></script>
+</body>
+</html>

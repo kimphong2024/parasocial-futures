@@ -1,0 +1,173 @@
+/* ============================================================
+   Scenarios — four depth chambers. Each archetype is a pinned
+   act: its myth-image reveals out of darkness, the write-up
+   reports in around it, then the scroll dives through the light
+   into the next chamber. Same grammar as the home hero.
+   ============================================================ */
+
+.scen-head {
+  padding: clamp(40px, 8vh, 90px) var(--gutter, clamp(24px, 6vw, 96px)) clamp(20px, 4vh, 40px);
+  max-width: calc(1240px + 2 * var(--gutter, 96px));
+  margin: 0 auto;
+}
+.scen-head .subtitle { max-width: 56ch; }
+.scroll-hint {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 18px;
+  color: var(--textDim);
+  font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+}
+.scroll-hint .tick { width: 34px; height: 1px; background: var(--textDim); }
+
+/* ---------- chamber ---------- */
+.chamber { height: 300vh; position: relative; }
+.chamber-stage {
+  position: sticky; top: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--void, #101408);
+  display: grid;
+  place-items: center;
+}
+.chamber-figure {
+  width: min(70vmin, 660px);
+  height: min(70vmin, 660px);
+}
+.chamber-figure img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  display: block;
+  mix-blend-mode: lighten;                 /* black photo bg dissolves into the void */
+  /* feather any residual frame edge so the subject reads as a floating cutout */
+  -webkit-mask-image: radial-gradient(ellipse 74% 74% at 50% 50%, #000 52%, transparent 80%);
+  mask-image: radial-gradient(ellipse 74% 74% at 50% 50%, #000 52%, transparent 80%);
+  filter: brightness(var(--reveal, 0.06));
+  transform: scale(var(--scale, 1.08));
+  transform-origin: 50% 50%;
+  opacity: var(--exit, 1);
+  will-change: filter, transform, opacity;
+}
+.chamber-glow {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(225, 184, 59, 0.5), rgba(211, 150, 62, 0.16) 36%, rgba(16, 20, 8, 0) 64%);
+  opacity: var(--glow, 0);
+  pointer-events: none;
+}
+
+/* the one legitimate numbered sequence: a real descent order */
+.chamber-index {
+  position: absolute;
+  top: 26px; left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: 3px;
+  color: var(--textDim);
+  opacity: var(--ui, 1);
+}
+
+.chamber-titleblock {
+  position: absolute;
+  left: var(--gutter, clamp(24px, 6vw, 96px));
+  bottom: clamp(48px, 9vh, 96px);
+  max-width: 46ch;
+  z-index: 2;
+  opacity: calc(var(--rise, 0) * var(--ui, 1));
+  transform: translateY(calc((1 - var(--rise, 0)) * 18px));
+}
+.chamber-arch {
+  font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--textDim);
+}
+.chamber-title {
+  margin-top: 10px;
+  font-size: clamp(1.9rem, 4.2vw, 3.6rem);
+  font-weight: 800;
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  color: var(--charcoal);
+  text-wrap: balance;
+}
+.chamber-summary {
+  margin-top: 14px;
+  max-width: 44ch;
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: var(--textMid);
+}
+.chamber-actions { display: flex; gap: 12px; align-items: center; margin-top: 20px; }
+
+.chamber-myth {
+  position: absolute;
+  right: var(--gutter, clamp(24px, 6vw, 96px));
+  bottom: clamp(48px, 9vh, 96px);
+  max-width: 30ch;
+  z-index: 2;
+  font-size: 13px; font-style: italic; line-height: 1.7;
+  color: var(--textMid);
+  background: var(--brownLight);
+  border-radius: var(--r-box);
+  padding: 14px 18px;
+  opacity: calc(var(--myth, 0) * var(--ui, 1));
+  transform: translateY(calc((1 - var(--myth, 0)) * 12px));
+}
+.chamber-myth .mono-src {
+  display: block; margin-top: 8px;
+  font-family: var(--font-mono); font-style: normal;
+  font-size: 9.5px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--brown);
+}
+
+.chamber-annos {
+  position: absolute;
+  right: var(--gutter, clamp(24px, 6vw, 96px));
+  top: clamp(70px, 13vh, 130px);
+  display: flex; flex-direction: column; gap: 12px;
+  z-index: 2;
+}
+.chamber-annos .reticle { opacity: calc(var(--o, 0) * var(--ui, 1)); transform: translateY(calc((1 - var(--o, 0)) * 8px)); }
+.chamber-annos .v { font-size: 14px; }
+
+/* empty archetype — the chamber invites a draft */
+.chamber-empty .chamber-figure { display: grid; place-items: center; }
+.chamber-empty .empty-orb {
+  width: 42%; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle at 42% 40%, rgba(225,184,59,0.30), rgba(35,43,18,0.9) 55%, transparent 72%);
+  filter: brightness(var(--reveal, 0.06));
+  transform: scale(var(--scale, 1.08));
+}
+
+/* draft strip after the chambers */
+.draft-strip {
+  max-width: 1240px;
+  /* centered at full width, never closer to the edge than the page gutter */
+  margin-block: clamp(48px, 8vh, 90px);
+  margin-inline: max(var(--gutter, 24px), calc((100% - 1240px) / 2));
+  padding: clamp(24px, 4vh, 40px) clamp(24px, 4vw, 48px);
+}
+.draft-strip .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+.draft-strip input { flex: 1 1 320px; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 900px) {
+  .chamber-annos { display: none; }
+  .chamber-myth { display: none; }
+  .chamber-stage { place-items: start center; }
+  .chamber-figure { width: min(64vmin, 420px); height: min(64vmin, 420px); margin-top: 9vh; }
+  .chamber-titleblock {
+    max-width: calc(100vw - 2 * var(--gutter, 24px));
+    bottom: 24px;
+    padding-top: 40px;
+    background: linear-gradient(transparent, rgba(16, 20, 8, 0.82) 28%);
+  }
+}
+
+/* ---------- reduced motion: static stacked sections ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .chamber { height: auto; }
+  .chamber-stage { position: static; height: auto; min-height: 92vh; padding: 60px 0 40px; }
+  .chamber-figure img, .chamber-empty .empty-orb { filter: none; transform: none; opacity: 1; }
+  .chamber-titleblock, .chamber-myth, .chamber-annos .reticle, .chamber-index { opacity: 1; transform: none; }
+  .chamber-glow { display: none; }
+}

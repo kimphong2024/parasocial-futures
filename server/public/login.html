@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in — Futures of Parasocial AI</title>
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/app-dark.css">
+</head>
+<body>
+  <div class="triad-bar"></div>
+  <div class="login-wrap">
+    <div class="card login-card">
+      <span class="label">Foresight Capstone · 2040</span>
+      <h3 class="mt-2">Futures of Parasocial AI</h3>
+      <p class="mt-2">A human-reviewed scanning, scenario and decision-support platform.</p>
+      <form id="f">
+        <input type="password" id="pw" placeholder="Password" autofocus autocomplete="current-password">
+        <button class="btn" type="submit">Enter</button>
+        <div id="err" class="error-note" style="display:none">Wrong password.</div>
+      </form>
+    </div>
+  </div>
+  <script>
+    document.getElementById("f").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const r = await fetch("/api/login", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ password: document.getElementById("pw").value }),
+      });
+      if (r.ok) location.href = "/signals";
+      else document.getElementById("err").style.display = "block";
+    });
+  </script>
+</body>
+</html>

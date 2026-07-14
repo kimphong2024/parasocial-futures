@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Decision Support — Futures of Parasocial AI</title>
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/app-dark.css">
+</head>
+<body>
+  <main class="container">
+    <div class="page-head">
+      <figure class="page-motif" aria-hidden="true"><img src="/img/motif-chat.jpg" alt="" onerror="this.parentElement.remove()"></figure>
+      <span class="label">Decision Support</span>
+      <h2>Ask the Evidence</h2>
+      <p class="subtitle">Grounded in the approved signal library and the published scenario set. Answers cite their sources; where the scan is thin, it says so.</p>
+      <div class="divider mt-4"></div>
+    </div>
+
+    <div class="chat-layout">
+      <section>
+        <div class="chat-thread" id="thread"></div>
+        <div id="chatErr"></div>
+        <form class="chat-form" id="form">
+          <input type="text" id="input" placeholder="Ask about a policy or product decision on parasocial AI…" autocomplete="off">
+          <button class="btn" type="submit" id="send">Send</button>
+        </form>
+      </section>
+      <aside>
+        <div class="card sources-panel mb-4">
+          <span class="label">Starting points</span>
+          <div class="starters mt-4">
+            <button class="starter">As a regulator, what should I address first about AI companions and minors?</button>
+            <button class="starter">We build a companion app. Which guardrails are robust across all four 2040 scenarios?</button>
+            <button class="starter">What leading indicators would tell us the Collapse scenario is materialising?</button>
+            <button class="starter">Where is the evidence thinnest in this scan — what should we scan for next?</button>
+          </div>
+        </div>
+        <div class="card sources-panel" id="sourcesPanel" style="display:none">
+          <span class="label">Retrieved evidence</span>
+          <ul id="sourcesList" class="mt-2"></ul>
+        </div>
+      </aside>
+    </div>
+  </main>
+  <div class="drawer-backdrop" id="backdrop"></div>
+  <aside class="drawer" id="drawer"></aside>
+  <script type="module" src="/js/chat.js"></script>
+</body>
+</html>
