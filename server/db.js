@@ -131,11 +131,26 @@ CREATE TABLE IF NOT EXISTS chat_log (
   question TEXT NOT NULL,
   cited_ids TEXT NOT NULL DEFAULT '[]'
 );
+
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS scan_themes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  key TEXT UNIQUE NOT NULL,
+  query TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL
+);
 `);
 
 // Guarded migrations for DBs created before a column existed (Railway volume
 // persists across deploys, so CREATE TABLE IF NOT EXISTS never re-runs).
 try { db.exec("ALTER TABLE scan_runs ADD COLUMN rejected_relevance INTEGER NOT NULL DEFAULT 0"); } catch { /* already migrated */ }
+try { db.exec("ALTER TABLE scan_runs ADD COLUMN detail_json TEXT NOT NULL DEFAULT '{}'"); } catch { /* already migrated */ }
 
 export const now = () => new Date().toISOString();
 
@@ -188,8 +203,20 @@ export const getSource = db.prepare("SELECT * FROM scan_sources WHERE id = ?");
 export const deleteSource = db.prepare("DELETE FROM scan_sources WHERE id = ?");
 export const touchSource = db.prepare("UPDATE scan_sources SET last_run_at = ?, last_status = ? WHERE id = ?");
 
+export const insertTheme = db.prepare("INSERT INTO scan_themes (key, query, enabled, created_at) VALUES (?,?,?,?)");
+export const listThemes = db.prepare("SELECT * FROM scan_themes ORDER BY id");
+export const enabledThemes = db.prepare("SELECT * FROM scan_themes WHERE enabled = 1 ORDER BY id");
+export const deleteTheme = db.prepare("DELETE FROM scan_themes WHERE id = ?");
+export const countThemes = db.prepare("SELECT COUNT(*) AS n FROM scan_themes");
+
+// ---- settings (key-value; env vars remain the fallback defaults) ----
+const settingGet = db.prepare("SELECT value FROM settings WHERE key = ?");
+const settingPut = db.prepare("INSERT INTO settings (key, value, updated_at) VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at");
+export const getSetting = (key, fallback = null) => settingGet.get(key)?.value ?? fallback;
+export const setSetting = (key, value) => settingPut.run(key, String(value), now());
+
 export const insertScanRun = db.prepare("INSERT INTO scan_runs (started_at, trigger) VALUES (?,?)");
-export const finishScanRun = db.prepare("UPDATE scan_runs SET finished_at = ?, status = ?, perplexity_candidates = ?, firecrawl_candidates = ?, new_pending = ?, dup_url = ?, dup_embedding = ?, rejected_relevance = ?, errors_json = ? WHERE id = ?");
+export const finishScanRun = db.prepare("UPDATE scan_runs SET finished_at = ?, status = ?, perplexity_candidates = ?, firecrawl_candidates = ?, new_pending = ?, dup_url = ?, dup_embedding = ?, rejected_relevance = ?, errors_json = ?, detail_json = ? WHERE id = ?");
 export const listScanRuns = db.prepare("SELECT * FROM scan_runs ORDER BY id DESC LIMIT 30");
 export const getScanRun = db.prepare("SELECT * FROM scan_runs WHERE id = ?");
 export const lastScanRun = db.prepare("SELECT * FROM scan_runs ORDER BY id DESC LIMIT 1");

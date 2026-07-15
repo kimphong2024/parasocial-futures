@@ -9,8 +9,8 @@ import { seedIfEmpty } from "../scripts/seed.js";
 import { loadIndex, ensureEmbeddings, ensureScenarioEmbeddings, similarTo, topSignals, indexedCount } from "./vectors.js";
 import { embedQuery, voyageEnabled } from "./voyage.js";
 import { llmEnabled } from "./ai.js";
-import { runScan, scanRunning } from "./scan.js";
-import { startScheduler } from "./scheduler.js";
+import { runScan, scanRunning, scanStep, scanSettings, DEFAULT_GATE } from "./scan.js";
+import { startScheduler, scheduleInfo } from "./scheduler.js";
 import { ARCHETYPES, draftScenario, embedScenario } from "./scenarios.js";
 import { simulate, previewDistribution, makeSampler } from "./montecarlo.js";
 import { chatHandler } from "./chat.js";
@@ -54,6 +54,8 @@ app.get("/api/health", (_req, res) => {
     embedded: indexedCount(),
     lastScan: last ? { id: last.id, status: last.status, finished_at: last.finished_at, new_pending: last.new_pending } : null,
     scanRunning: scanRunning(),
+    scanStep: scanStep(),
+    schedule: scheduleInfo(),
     integrations: { llm: llmEnabled(), voyage: voyageEnabled(), perplexity: perplexityEnabled(), firecrawl: firecrawlEnabled() },
   });
 });
@@ -153,6 +155,46 @@ app.patch("/api/sources/:id", (req, res) => {
   res.json({ ok });
 });
 app.delete("/api/sources/:id", (req, res) => { d.deleteSource.run(+req.params.id); res.json({ ok: true }); });
+
+// ---------- sweep themes (the Perplexity leg's user-editable query set) ----------
+app.get("/api/themes", (_req, res) => res.json({ themes: d.listThemes.all() }));
+app.post("/api/themes", (req, res) => {
+  const { key, query } = req.body || {};
+  if (!/^[a-z0-9_]{2,40}$/.test(key || "")) return res.status(400).json({ error: "key must be snake_case (a-z, 0-9, _)" });
+  if (!(query || "").trim()) return res.status(400).json({ error: "query text required" });
+  try {
+    const info = d.insertTheme.run(key, query.trim(), 1, d.now());
+    res.json({ ok: true, id: Number(info.lastInsertRowid) });
+  } catch (e) {
+    res.status(400).json({ error: /UNIQUE/.test(e.message) ? "a theme with that key already exists" : e.message });
+  }
+});
+app.patch("/api/themes/:id", (req, res) => {
+  const patch = { ...req.body };
+  if ("enabled" in patch) patch.enabled = patch.enabled ? 1 : 0;
+  if ("query" in patch && !(patch.query || "").trim()) return res.status(400).json({ error: "query text required" });
+  const ok = d.updateRow("scan_themes", +req.params.id, patch, ["key", "query", "enabled"]);
+  res.json({ ok });
+});
+app.delete("/api/themes/:id", (req, res) => { d.deleteTheme.run(+req.params.id); res.json({ ok: true }); });
+
+// ---------- scan settings (knobs + relevance gate; defaults from env/code) ----------
+app.get("/api/scan/settings", (_req, res) =>
+  res.json({ ...scanSettings(), gate_default: DEFAULT_GATE, schedule: scheduleInfo() }));
+app.put("/api/scan/settings", (req, res) => {
+  const b = req.body || {};
+  if ("recency" in b && !["day", "week", "month"].includes(b.recency))
+    return res.status(400).json({ error: "recency must be day, week or month" });
+  if ("follow_limit" in b && !(Number.isInteger(+b.follow_limit) && +b.follow_limit >= 0 && +b.follow_limit <= 5))
+    return res.status(400).json({ error: "follow_limit must be an integer 0-5" });
+  if ("dedup_threshold" in b && !(+b.dedup_threshold >= 0.80 && +b.dedup_threshold <= 0.99))
+    return res.status(400).json({ error: "dedup_threshold must be between 0.80 and 0.99" });
+  if ("relevance_gate" in b && !(b.relevance_gate || "").trim())
+    return res.status(400).json({ error: "relevance gate text cannot be empty" });
+  for (const k of ["recency", "follow_limit", "dedup_threshold", "relevance_gate"])
+    if (k in b) d.setSetting(k, k === "relevance_gate" ? b[k].trim() : b[k]);
+  res.json({ ok: true, ...scanSettings() });
+});
 
 // ---------- scenarios ----------
 app.get("/api/scenarios", (req, res) => {

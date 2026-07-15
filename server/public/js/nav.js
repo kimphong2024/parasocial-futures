@@ -7,7 +7,7 @@ const LINKS = [
   ["/scenarios", "Scenarios"],
   ["/simulation", "Simulation"],
   ["/chat", "Chat"],
-  ["/sources", "Sources"],
+  ["/sources", "Scanning"],
 ];
 
 export async function renderNav(active) {

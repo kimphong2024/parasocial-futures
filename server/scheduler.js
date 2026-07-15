@@ -6,6 +6,14 @@ import { runScan } from "./scan.js";
 const REFRESH_HOUR = parseInt(process.env.REFRESH_HOUR || "22", 10);
 const REFRESH_TZ = process.env.REFRESH_TZ || "UTC";
 
+let nextRun = null; // ISO timestamp of the next scheduled scan, null when cron is off
+export const scheduleInfo = () => ({
+  enabled: process.env.ENABLE_CRON === "1",
+  hour: REFRESH_HOUR,
+  tz: REFRESH_TZ,
+  next_run_at: nextRun,
+});
+
 // Current hour/minute in the configured timezone (handles DST via Intl).
 function nowParts() {
   const fmt = new Intl.DateTimeFormat("en-US", {
@@ -27,6 +35,7 @@ function msUntilNextRun() {
 
 function scheduleNext() {
   const ms = msUntilNextRun();
+  nextRun = new Date(Date.now() + ms).toISOString();
   console.log(`[scheduler] next scan in ${(ms / 3600000).toFixed(1)}h (${REFRESH_HOUR}:00 ${REFRESH_TZ})`);
   setTimeout(async () => {
     try {

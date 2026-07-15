@@ -98,6 +98,8 @@
         <div class="tstep"><span class="n">3</span><div><h4>Claude classification + relevance gate</h4><p>One batched call normalizes both legs into the existing 33-cluster taxonomy and strictly rejects generic AI news with no human-relationship angle. Unclassifiable candidates are dropped, never inserted — and the reject count is recorded per run and shown in the run history, so a low new-pending number is self-explaining.</p></div></div>
         <div class="tstep"><span class="n">4</span><div><h4>Deduplication</h4><p>Normalized-URL matching, then embedding cosine against the full index at threshold 0.90. The nearest existing signal and its score are stored and shown in the review queue — the threshold judgment stays visible to the human.</p></div></div>
         <div class="tstep"><span class="n">5</span><div><h4>Insert as pending</h4><p>Survivors land with provenance (<code>scan:perplexity</code> / <code>scan:firecrawl</code>), their raw machine payload, and an embedding so the next run dedups against them too.</p></div></div>
+        <p class="tdoc-rule">The pipeline is user-steerable — and every run records what it ran with.</p>
+        <p>The sweep themes, the source list, the scan knobs (search window, follow-through limit, duplicate threshold) and the relevance-gate text itself are all editable on the app's Scanning page. In exchange, every run permanently records its per-theme and per-source yield, the full list of candidates the gate rejected, the settings used, and the verbatim gate text — flagged whenever it differs from the shipped default documented below.</p>
       </section>
 
       <section id="hitl">
@@ -165,12 +167,12 @@
         <p>Its twelve themed queries name the exclusion each time — companions, governance, research, grief tech, market, discourse, AI clones of real people, youth &amp; family, therapy bots, elder care, workplace &amp; school norms, and virtual-being fandom (e.g. "…Exclude generic AI product or model news with no relationship angle."). Full text in the repository.</p>
 
         <div class="tprompt"><span class="ret"></span>
-          <div class="tprompt-role"><span class="chip">Claude · claude-opus-4-8</span><span class="caption">Firecrawl page extraction · forced tool emit_signals · low effort</span></div>
+          <div class="tprompt-role"><span class="chip">Claude · claude-opus-4-8</span><span class="caption">Firecrawl page extraction · forced tool emit_signals · medium effort</span></div>
           <pre>You are a horizon-scanning analyst for a foresight project on parasocial AI — AI companions, artificial intimacy, human-AI relationships, grief tech, AI romance fraud, sycophancy as a relationship dynamic, and how AI reshapes social structures like friendship, romance, family and community. Extract ONLY items where the human-relationship or social-fabric angle is explicit. Strictly ignore generic AI/tech coverage: model releases, benchmarks, chips, enterprise tooling, coding assistants, robotics without a social-companionship role, and AI policy that is not about relationships or companionship. Ignore navigation, ads, and off-topic items. Most pages on general tech sites will yield ZERO relevant signals — returning an empty list is the normal outcome, not a failure.</pre>
         </div>
 
         <div class="tprompt"><span class="ret"></span>
-          <div class="tprompt-role"><span class="chip">Claude · claude-opus-4-8</span><span class="caption">classification + relevance gate · forced tool classify_signals · low effort</span></div>
+          <div class="tprompt-role"><span class="chip">Claude · claude-opus-4-8</span><span class="caption">classification + relevance gate · forced tool classify_signals · medium effort</span></div>
           <pre>You classify horizon-scan hits for a foresight project on parasocial AI and the future of social relations.
 
 RELEVANCE GATE (apply first, strictly): a candidate is relevant ONLY if its core subject is AI's effect on human relationships or social structures — companionship, intimacy, attachment, loneliness, friendship, romance, family, grief, community, or the norms and rules around AI relationships. Mark relevant=false for generic AI news: model releases, benchmarks, chips, funding without an intimacy product, enterprise or coding tools, robotics without a companionship role, and AI policy not about relationships. When the relationship angle is only a passing mention, mark relevant=false. Expect to reject a large share of candidates.
@@ -179,6 +181,7 @@ For survivors: assign one of the existing clusters below (prefer reusing them; o
 
 Existing clusters:
 <span class="inj">(the current 33-cluster list, injected from the database at call time)</span></pre>
+          <p class="caption mt-2">The RELEVANCE GATE paragraph shown is the shipped default. The reviewer may edit it on the Scanning page; every run permanently records the exact gate text it used, and runs with a modified gate are flagged in the run history.</p>
         </div>
 
         <div class="tprompt"><span class="ret"></span>

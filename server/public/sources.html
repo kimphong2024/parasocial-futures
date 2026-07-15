@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Scan Sources — Futures of Parasocial AI</title>
+  <title>Scanning — Futures of Parasocial AI</title>
   <link rel="icon" href="/favicon.svg">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/app-dark.css">
@@ -12,13 +12,51 @@
   <main class="container">
     <div class="page-head">
       <figure class="page-motif" aria-hidden="true"><img src="/img/motif-sources.jpg" alt="" onerror="this.parentElement.remove()"></figure>
-      <span class="label">Directed Scanning</span>
-      <h2>Scan Sources</h2>
-      <p class="subtitle">Sites Firecrawl visits on every scan. Perplexity handles the undirected sweep; these are the places worth watching deliberately.</p>
+      <span class="label">Scanning Controls</span>
+      <h2>Scanning</h2>
+      <p class="subtitle">Everything the nightly scan does is visible and editable here: the sweep themes Perplexity asks, the sources Firecrawl watches, and the knobs and relevance gate that decide what reaches your review queue.</p>
       <div class="divider mt-4"></div>
     </div>
 
     <div class="stats-row" id="integrations"></div>
+    <p class="caption" id="scheduleLine"></p>
+
+    <div class="card chart-block">
+      <h4>Scan settings</h4>
+      <p class="caption mt-2">Applied to the next run — every run records the exact settings and gate text it used.</p>
+      <div class="filter-bar mt-4">
+        <label class="caption">Search window
+          <select id="setRecency"><option value="day">last day</option><option value="week">last week</option><option value="month">last month</option></select>
+        </label>
+        <label class="caption">Article follow-through / source
+          <input type="number" id="setFollow" min="0" max="5" style="width:70px">
+        </label>
+        <label class="caption">Duplicate threshold (cosine)
+          <input type="number" id="setDedup" min="0.80" max="0.99" step="0.01" style="width:90px">
+        </label>
+      </div>
+      <label class="caption mt-4" style="display:block">Relevance gate <span class="tag tag-mustard" id="gateModified" style="display:none">modified from default</span>
+        <textarea id="setGate" rows="6" style="width:100%;margin-top:6px"></textarea>
+      </label>
+      <p class="caption mt-2">The default gate is documented on the <a href="/transparency#prompts">transparency page</a>; every run records the gate text it used.</p>
+      <div class="filter-bar mt-4">
+        <button class="btn" id="saveSettings">Save settings</button>
+        <button class="btn btn-secondary" id="resetGate">Reset gate to default</button>
+        <span id="settingsMsg" class="caption"></span>
+      </div>
+    </div>
+
+    <div class="card chart-block">
+      <h4>Sweep themes — what Perplexity is asked every night</h4>
+      <p class="caption mt-2">Each enabled theme is one query. Edit the text, switch themes off, or add your own angles.</p>
+      <div id="themeList" class="mt-4"></div>
+      <div class="filter-bar mt-4">
+        <input type="text" id="newThemeKey" placeholder="key_snake_case" style="flex:0 1 180px">
+        <input type="text" id="newThemeQuery" placeholder="What to ask, incl. an explicit exclusion…" style="flex:1 1 320px">
+        <button class="btn" id="addTheme">Add theme</button>
+      </div>
+      <div id="themeErr"></div>
+    </div>
 
     <div class="card chart-block">
       <h4>Add a source</h4>

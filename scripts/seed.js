@@ -5,7 +5,8 @@
 import { readFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { db, now, insertSignal, countSignals, countDrivers, insertDriver, insertSource, listSources, insertScenario } from "../server/db.js";
+import { db, now, insertSignal, countSignals, countDrivers, insertDriver, insertSource, listSources, insertScenario, insertTheme, countThemes } from "../server/db.js";
+import { DEFAULT_THEMES } from "../server/perplexity.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CSV_PATH = join(HERE, "..", "server", "seed", "ai_relationships_signal_scan_combined.csv");
@@ -118,14 +119,22 @@ function seedScenarios() {
   return rows.length;
 }
 
+function seedThemes() {
+  if (countThemes.get().n > 0) return 0;
+  const ts = now();
+  DEFAULT_THEMES.forEach((t) => insertTheme.run(t.key, t.query, 1, ts));
+  return DEFAULT_THEMES.length;
+}
+
 export function seedIfEmpty() {
   const signals = seedSignals();
   const drivers = seedDrivers();
   const sources = seedSources();
   const scenarios = seedScenarios();
-  if (signals || drivers || sources || scenarios)
-    console.log(`[seed] seeded ${signals} signals, ${drivers} drivers, ${sources} sources, ${scenarios} scenarios`);
-  return { signals, drivers, sources, scenarios };
+  const themes = seedThemes();
+  if (signals || drivers || sources || scenarios || themes)
+    console.log(`[seed] seeded ${signals} signals, ${drivers} drivers, ${sources} sources, ${scenarios} scenarios, ${themes} themes`);
+  return { signals, drivers, sources, scenarios, themes };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

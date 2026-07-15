@@ -57,15 +57,38 @@ function draftCard(sc) {
 
 function runRow(r) {
   const errs = JSON.parse(r.errors_json || "[]");
-  return `<tr>
-    <td>#${r.id}</td><td>${esc(r.trigger)}</td>
-    <td>${esc(r.status)}${errs.length ? ` <span class="tag tag-red" title="${esc(errs.map((e) => `${e.step}${e.source ? ":" + e.source : ""} — ${e.message}`).join("\n"))}">${errs.length} errors</span>` : ""}</td>
+  return `<tr data-run="${r.id}" style="cursor:pointer" title="Click for the full breakdown">
+    <td>▸ #${r.id}</td><td>${esc(r.trigger)}</td>
+    <td>${esc(r.status)}${errs.length ? ` <span class="tag tag-red">${errs.length} errors</span>` : ""}</td>
     <td>${r.perplexity_candidates + r.firecrawl_candidates}</td>
     <td>${r.new_pending}</td>
     <td>${r.dup_url + r.dup_embedding}</td>
     <td>${r.rejected_relevance ?? 0}</td>
     <td>${fmtDate(r.finished_at || r.started_at)}</td>
   </tr>`;
+}
+
+// Expandable per-run breakdown: what each theme and source yielded, what the
+// gate rejected, and the exact settings + gate text the run actually used.
+function runDetail(r) {
+  const d = JSON.parse(r.detail_json || "{}");
+  const errs = JSON.parse(r.errors_json || "[]");
+  const val = (v) => (v === "error" ? -1 : Number(v) || 0);
+  const chips = (obj, tag) => Object.entries(obj || {})
+    .sort((a, b) => val(b[1]) - val(a[1]))
+    .map(([k, v]) => `<span class="tag ${v === "error" ? "tag-red" : val(v) > 0 ? tag : "tag-dim"}">${esc(k)} · ${esc(String(v))}</span>`)
+    .join(" ") || `<span class="caption">no data recorded</span>`;
+  const rejected = (d.rejected || []).map((x) =>
+    `<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a>${x.source ? ` <span class="caption">— ${esc(x.source)}</span>` : ""}</li>`).join("");
+  const s = d.settings;
+  return `<tr class="run-detail"><td colspan="8" style="padding:16px 22px">
+    ${s ? `<p class="caption">Ran with: ${esc(s.recency)} window · follow-through ${s.follow_limit}/source · duplicate threshold ${s.dedup_threshold}${d.gate_modified ? ` · <span class="tag tag-mustard">modified gate</span>` : ""}</p>` : `<p class="caption">This run predates per-run detail recording.</p>`}
+    ${d.themes ? `<p class="caption mt-2"><strong>Sweep themes</strong> (candidates found)</p><p class="mt-2">${chips(d.themes, "tag-olive")}</p>` : ""}
+    ${d.sources ? `<p class="caption mt-2"><strong>Sources</strong> (signals extracted)</p><p class="mt-2">${chips(d.sources, "tag-blue")}</p>` : ""}
+    ${rejected ? `<details class="mt-2"><summary class="caption">Rejected as off-topic by the relevance gate (${d.rejected.length}) — audit the gate's judgment</summary><ul class="mt-2">${rejected}</ul></details>` : ""}
+    ${d.gate ? `<details class="mt-2"><summary class="caption">Relevance gate text this run used${d.gate_modified ? " (modified from default)" : " (default)"}</summary><p class="caption mt-2" style="white-space:pre-wrap">${esc(d.gate)}</p></details>` : ""}
+    ${errs.length ? `<p class="caption mt-2"><strong>Errors</strong></p><ul class="mt-2">${errs.map((e) => `<li class="caption">${esc(e.step)}${e.source ? ":" + esc(e.source) : ""} — ${esc(e.message)}</li>`).join("")}</ul>` : ""}
+  </td></tr>`;
 }
 
 async function load() {
@@ -117,12 +140,23 @@ document.addEventListener("click", async (e) => {
   card.querySelectorAll("button, input, select, textarea").forEach((el) => el.disabled = true);
 });
 
+// Run-row drill-down: click toggles the breakdown row beneath.
+$("tab-runs").addEventListener("click", async (e) => {
+  const tr = e.target.closest("tr[data-run]");
+  if (!tr || e.target.closest("a")) return;
+  const open = tr.nextElementSibling?.classList.contains("run-detail");
+  if (open) { tr.nextElementSibling.remove(); tr.firstElementChild.textContent = `▸ #${tr.dataset.run}`; return; }
+  const r = await api("/api/scan/runs/" + tr.dataset.run);
+  tr.insertAdjacentHTML("afterend", runDetail(r));
+  tr.firstElementChild.textContent = `▾ #${tr.dataset.run}`;
+});
+
 $("runScan").addEventListener("click", async () => {
   $("runScan").disabled = true;
   $("runScan").textContent = "Scanning…";
   try {
     await api("/api/scan/run", { method: "POST" });
-    // Poll until the run finishes, then refresh the queue.
+    // Poll until the run finishes, showing the live pipeline step meanwhile.
     const poll = setInterval(async () => {
       const h = await api("/api/health");
       if (!h.scanRunning) {
@@ -130,6 +164,8 @@ $("runScan").addEventListener("click", async () => {
         $("runScan").disabled = false;
         $("runScan").textContent = "Run scan now";
         location.reload();
+      } else {
+        $("runScan").textContent = h.scanStep ? `Scanning: ${h.scanStep}…` : "Scanning…";
       }
     }, 4000);
   } catch (err) {

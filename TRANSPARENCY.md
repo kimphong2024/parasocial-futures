@@ -82,6 +82,8 @@ Every nightly (or manual) run executes five fenced steps; a failure in any step 
 4. **Deduplication.** (a) URL normalization (strip utm/fbclid/gclid, trailing slash, lowercase host) against every stored URL; (b) Voyage embedding cosine against the full in-memory index (approved + pending), threshold `DEDUP_THRESHOLD = 0.90`. The nearest existing signal and its score are stored with each pending hit and **shown in the review UI**, so threshold judgment stays visible to the human.
 5. **Insert as `pending`** with provenance `scan:perplexity` or `scan:firecrawl`, the raw machine payload preserved in `raw_json`, and an embedding so the *next* run dedups against it.
 
+**User control and per-run provenance.** The sweep themes, the Firecrawl source list, the scan knobs (search window, follow-through limit, duplicate threshold) and the relevance-gate text itself are all editable in the app's Scanning page — the reviewer controls what is scanned, not just what is approved. To keep that power accountable, every run records in `detail_json` exactly what it ran with: per-theme and per-source yield, the full list of candidates the gate rejected (auditable from the run history), the settings used, and the verbatim gate text (flagged when it differs from the shipped default documented in §8.3).
+
 Verified live behavior (2026-07-14): the first production scan produced 22 pending from 25 candidates; after the relevance tightening, a full 16-source run yielded 0–2 hits per source with most sources correctly returning zero.
 
 ### Human-in-the-loop map
@@ -155,6 +157,8 @@ Reproduced exactly as they exist in the deployed code.
 > You are a horizon-scanning analyst for a foresight project on parasocial AI — AI companions, artificial intimacy, human-AI relationships, grief tech, AI romance fraud, sycophancy as a relationship dynamic, and how AI reshapes social structures like friendship, romance, family and community. Extract ONLY items where the human-relationship or social-fabric angle is explicit. Strictly ignore generic AI/tech coverage: model releases, benchmarks, chips, enterprise tooling, coding assistants, robotics without a social-companionship role, and AI policy that is not about relationships or companionship. Ignore navigation, ads, and off-topic items. Most pages on general tech sites will yield ZERO relevant signals — returning an empty list is the normal outcome, not a failure.
 
 ### 8.3 Classification + relevance gate — system prompt (Claude, forced tool `classify_signals`)
+
+*The gate paragraph below is the shipped default. The reviewer may edit it in the app's Scanning page; every scan run permanently records the exact gate text it used, and runs with a modified gate are flagged in the run history.*
 
 > You classify horizon-scan hits for a foresight project on parasocial AI and the future of social relations.
 >

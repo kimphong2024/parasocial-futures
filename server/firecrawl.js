@@ -8,7 +8,7 @@ import { askTool, llmEnabled } from "./ai.js";
 
 const KEY = (process.env.FIRECRAWL_API_KEY || "").trim();
 const BASE = "https://api.firecrawl.dev/v2";
-const FOLLOW_LIMIT = Number(process.env.FOLLOW_LIMIT || 3);
+export const DEFAULT_FOLLOW_LIMIT = Number(process.env.FOLLOW_LIMIT || 3);
 export const firecrawlEnabled = () => !!KEY;
 
 async function fc(path, body) {
@@ -80,8 +80,8 @@ async function extractSignals(sourceName, pageUrl, markdown) {
 // not-yet-known article URLs and re-extract from full text, enriching the
 // teaser in place. Any failure keeps the teaser — the follow-through can only
 // add fidelity, never lose a candidate.
-async function followArticles(src, sigs, isKnown) {
-  let credits = FOLLOW_LIMIT;
+async function followArticles(src, sigs, isKnown, followLimit) {
+  let credits = followLimit;
   for (const s of sigs) {
     if (credits <= 0) break;
     if (s.url === src.url || (isKnown && isKnown(s.url))) continue; // already in the library — dedup will drop it anyway
@@ -103,7 +103,7 @@ async function followArticles(src, sigs, isKnown) {
 // sources: rows from scan_sources. isKnown(url) → true if the URL is already
 // in the signal library (lets the follow-through skip spending scrape credits
 // on articles dedup would drop). Returns { candidates, errors, perSource }.
-export async function firecrawlScan(sources, isKnown) {
+export async function firecrawlScan(sources, isKnown, followLimit = DEFAULT_FOLLOW_LIMIT) {
   const candidates = [], errors = [], perSource = {};
   if (!KEY) return { candidates, errors: [{ step: "firecrawl", message: "FIRECRAWL_API_KEY unset" }], perSource };
   if (!llmEnabled()) return { candidates, errors: [{ step: "firecrawl", message: "ANTHROPIC_API_KEY unset (needed for extraction)" }], perSource };
@@ -114,7 +114,7 @@ export async function firecrawlScan(sources, isKnown) {
       for (const page of pages) {
         if (!page.markdown.trim()) continue;
         const sigs = await extractSignals(src.name, page.url, page.markdown);
-        if (src.kind !== "crawl") await followArticles(src, sigs, isKnown);
+        if (src.kind !== "crawl" && followLimit > 0) await followArticles(src, sigs, isKnown, followLimit);
         candidates.push(...sigs.map((s) => ({ ...s, source_id: src.id })));
         found += sigs.length;
       }

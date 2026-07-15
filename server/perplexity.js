@@ -6,7 +6,9 @@ export const perplexityEnabled = () => !!KEY;
 
 // Every query names the human-relationship angle explicitly and excludes
 // generic AI industry news — the scan is about the social fabric, not the tech.
-export const THEMES = [
+// These are the shipped defaults; the live set is user-editable in scan_themes
+// (seeded from this array) and passed into perplexityScan by the orchestrator.
+export const DEFAULT_THEMES = [
   { key: "companions", query: "AI companion and AI friend apps as relationships: user attachment stories, incidents involving emotional dependence, companion shutdowns and user grief, changes to how companions handle intimacy (Replika, Character.AI, Talkie and similar). Exclude generic AI product or model news with no relationship angle." },
   { key: "governance", query: "Regulation, litigation or policy specifically about AI companions and human relationships: chatbots and minors, addictive companion design, AI romance fraud, emotional-manipulation rules, age verification for companion apps. Exclude general AI regulation like copyright, jobs or safety benchmarks." },
   { key: "research", query: "New studies about parasocial attachment to AI, AI companionship and loneliness, chatbots substituting or supporting human friendship and romance, effects of AI relationships on wellbeing or social skills. Exclude AI research with no human-relationship dimension." },
@@ -50,7 +52,7 @@ function extractJson(text) {
   return null;
 }
 
-async function queryTheme(theme) {
+async function queryTheme(theme, recency) {
   const r = await fetch("https://api.perplexity.ai/chat/completions", {
     method: "POST",
     headers: { "content-type": "application/json", authorization: "Bearer " + KEY },
@@ -60,7 +62,7 @@ async function queryTheme(theme) {
         { role: "system", content: "You are a horizon-scanning assistant for a foresight research team studying parasocial AI — how AI reshapes human relationships and social structures. Return only signals where the human-relationship or social-fabric angle is explicit: AI companionship, artificial intimacy, attachment, loneliness, grief tech, AI and family or romance, social norms around AI relationships. REJECT generic AI news (model releases, chips, enterprise tools, coding assistants, general AI policy) unless the item is specifically about AI's effect on human relationships. Return up to 10 distinct, dated, citable signals with a real, specific source URL each — prioritize items published in the last 48 hours over older ones, and prefer the primary source over syndicated copies of the same story. Return JSON only." },
         { role: "user", content: theme.query },
       ],
-      search_recency_filter: "week",
+      search_recency_filter: recency,
       response_format: { type: "json_schema", json_schema: { schema: SIGNAL_SCHEMA } },
     }),
   });
@@ -74,12 +76,14 @@ async function queryTheme(theme) {
 }
 
 // Returns { candidates, errors } — one theme failing never kills the rest.
-export async function perplexityScan() {
+// themes: rows with {key, query} (the user-editable scan_themes set);
+// recency: day | week | month.
+export async function perplexityScan({ themes = DEFAULT_THEMES, recency = "week" } = {}) {
   const candidates = [], errors = [];
   if (!KEY) return { candidates, errors: [{ step: "perplexity", message: "PERPLEXITY_API_KEY unset" }] };
-  for (const theme of THEMES) {
+  for (const theme of themes) {
     try {
-      candidates.push(...await queryTheme(theme));
+      candidates.push(...await queryTheme(theme, recency));
     } catch (e) {
       errors.push({ step: "perplexity", source: theme.key, message: e.message });
     }

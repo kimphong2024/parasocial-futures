@@ -14,8 +14,35 @@ function row(s) {
   </tr>`;
 }
 
+function themeRow(t) {
+  return `<tr data-tid="${t.id}">
+    <td class="caption" style="white-space:nowrap">${esc(t.key)}</td>
+    <td><textarea data-p="query" rows="3" style="width:100%;font-size:13px;line-height:1.5;resize:vertical">${esc(t.query)}</textarea></td>
+    <td><label class="toggle"><input type="checkbox" data-p="enabled" ${t.enabled ? "checked" : ""}></label></td>
+    <td><button class="btn-danger btn btn-sm" data-tdel>Remove</button></td>
+  </tr>`;
+}
+
+let gateDefault = "";
+function paintSettings(s) {
+  $("setRecency").value = s.recency;
+  $("setFollow").value = s.follow_limit;
+  $("setDedup").value = s.dedup_threshold;
+  $("setGate").value = s.relevance_gate;
+  gateDefault = s.gate_default ?? gateDefault;
+  $("gateModified").style.display = s.relevance_gate === gateDefault ? "none" : "";
+  const sch = s.schedule;
+  if (sch) $("scheduleLine").textContent = sch.enabled
+    ? `Nightly scan at ${sch.hour}:00 ${sch.tz}${sch.next_run_at ? ` · next run ${new Date(sch.next_run_at).toLocaleString()}` : ""}`
+    : "Automatic scanning is off in this environment — scans run manually from the Review page.";
+}
+
 async function load() {
-  const [j, h] = await Promise.all([api("/api/sources"), api("/api/health")]);
+  const [j, h, t, s] = await Promise.all([api("/api/sources"), api("/api/health"), api("/api/themes"), api("/api/scan/settings")]);
+  paintSettings(s);
+  $("themeList").innerHTML = t.themes.length
+    ? `<table class="data"><thead><tr><th>Key</th><th>Query</th><th>On</th><th></th></tr></thead><tbody>${t.themes.map(themeRow).join("")}</tbody></table>`
+    : `<div class="empty-note">No themes — the shipped defaults will be used until you add one.</div>`;
   const dot = (on) => `<span class="urgency-dot ${on ? "urgency-medium" : "urgency-critical"}" style="background:${on ? "var(--olive)" : "var(--urgentRed)"}"></span>`;
   $("integrations").innerHTML = `
     <div class="card stat-tile"><p>${dot(h.integrations.perplexity)} Perplexity — undirected sweep</p><p class="caption mt-2">${h.integrations.perplexity ? "key configured" : "PERPLEXITY_API_KEY not set"}</p></div>
@@ -53,6 +80,57 @@ $("list").addEventListener("click", async (e) => {
   if (!btn) return;
   const tr = btn.closest("tr[data-id]");
   await api("/api/sources/" + tr.dataset.id, { method: "DELETE" });
+  tr.remove();
+});
+
+// ---- scan settings ----
+$("saveSettings").addEventListener("click", async () => {
+  $("settingsMsg").textContent = "";
+  try {
+    const s = await api("/api/scan/settings", { method: "PUT", body: {
+      recency: $("setRecency").value,
+      follow_limit: Number($("setFollow").value),
+      dedup_threshold: Number($("setDedup").value),
+      relevance_gate: $("setGate").value,
+    }});
+    paintSettings({ ...s, gate_default: gateDefault });
+    $("settingsMsg").textContent = "Saved — applies to the next run.";
+  } catch (e) {
+    $("settingsMsg").textContent = e.message;
+  }
+});
+$("resetGate").addEventListener("click", () => {
+  $("setGate").value = gateDefault;
+  $("gateModified").style.display = "none";
+});
+$("setGate").addEventListener("input", () => {
+  $("gateModified").style.display = $("setGate").value === gateDefault ? "none" : "";
+});
+
+// ---- sweep themes ----
+$("addTheme").addEventListener("click", async () => {
+  $("themeErr").innerHTML = "";
+  try {
+    await api("/api/themes", { method: "POST", body: { key: $("newThemeKey").value.trim(), query: $("newThemeQuery").value.trim() } });
+    $("newThemeKey").value = ""; $("newThemeQuery").value = "";
+    load();
+  } catch (e) {
+    $("themeErr").innerHTML = `<div class="error-note">${esc(e.message)}</div>`;
+  }
+});
+$("themeList").addEventListener("change", async (e) => {
+  const tr = e.target.closest("tr[data-tid]");
+  if (!tr) return;
+  await api("/api/themes/" + tr.dataset.tid, { method: "PATCH", body: {
+    query: tr.querySelector('[data-p="query"]').value,
+    enabled: tr.querySelector('[data-p="enabled"]').checked,
+  }});
+});
+$("themeList").addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-tdel]");
+  if (!btn) return;
+  const tr = btn.closest("tr[data-tid]");
+  await api("/api/themes/" + tr.dataset.tid, { method: "DELETE" });
   tr.remove();
 });
 
