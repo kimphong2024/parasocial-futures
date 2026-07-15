@@ -16,6 +16,22 @@ const parallaxEls = [...document.querySelectorAll("[data-parallax]")];
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
 const easeOutExpo = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
 const easeInCubic = (x) => x * x * x;
+const easeInOutCubic = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+
+// --- 3D Janus head: crossfades in over the still image once the GLB loads.
+// The scroll then turns the head (human face → porcelain face) and the dive
+// pushes the camera into the glowing seam. Any failure leaves the image hero.
+const heroModel = document.getElementById("heroModel");
+let modelOn = false;
+if (heroModel && !reduced) {
+  heroModel.addEventListener("load", () => {
+    modelOn = true;
+    document.getElementById("specimenFigure")?.classList.add("model-on");
+  });
+  heroModel.addEventListener("error", () => heroModel.remove());
+} else {
+  heroModel?.remove();   // reduced motion / no element: the still image stays
+}
 
 // per-annotation drift rates (px across the hold + dive) — depth, not decoration
 const DRIFT = [-34, 26, -20, 30];
@@ -51,6 +67,14 @@ function update() {
     // bloom at the end of the dive, then the specimen dissolves into the void
     stage.style.setProperty("--glow", (0.9 * easeInCubic(clamp01((p - 0.80) / 0.20)) * (1 - clamp01((p - 0.96) / 0.04))).toFixed(4));
     stage.style.setProperty("--exit", (1 - clamp01((p - 0.93) / 0.06)).toFixed(4));
+
+    // 3D head: the visitor meets the human profile, the head turns through the
+    // half-and-half frontal, and settles on the porcelain face for the dive.
+    if (modelOn) {
+      const theta = 95 - 145 * easeInOutCubic(clamp01(p / 0.66));
+      const radius = 105 - 63 * easeInCubic(clamp01((p - 0.7) / 0.3));
+      heroModel.cameraOrbit = `${theta.toFixed(1)}deg 80deg ${radius.toFixed(1)}%`;
+    }
 
     nav.classList.toggle("scrolled", scrollY > innerHeight * 0.5);
   }

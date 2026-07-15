@@ -8,6 +8,7 @@
   <link rel="icon" href="/favicon.svg">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/home.css">
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.1.0/dist/model-viewer.min.js"></script>
 </head>
 <body class="home">
 
@@ -29,6 +30,12 @@
         <img id="heroImg" src="/img/hero-specimen.jpg"
              alt="A moss-covered stone and a serene porcelain synthetic face suspended in darkness, almost touching, warm light in the gap between them"
              onerror="this.parentElement.innerHTML='&lt;div class=&quot;specimen-fallback&quot;&gt;&lt;/div&gt;'">
+        <model-viewer id="heroModel" src="/models/hero.glb"
+             alt="A two-faced Janus head: one face of moss and ferns, the other of porcelain, turning as the page scrolls"
+             interaction-prompt="none" disable-zoom disable-pan disable-tap
+             loading="eager" reveal="auto" interpolation-decay="50"
+             camera-orbit="215deg 80deg 105%" min-camera-orbit="auto auto 30%" max-camera-orbit="auto auto 250%"
+             disable-scroll="true"></model-viewer>
       </figure>
       <div class="gap-glow" aria-hidden="true"></div>
 
