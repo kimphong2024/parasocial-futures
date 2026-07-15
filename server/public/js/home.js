@@ -7,17 +7,8 @@
 document.documentElement.classList.add("js");
 
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-// Lenis smooth scroll — animates real window scroll, so the act choreography
-// below (which reads scrollY) is unchanged, just interpolated.
-if (!reduced && window.Lenis) {
-  // higher wheel gain + snappier catch-up: the acts are long pinned tracks,
-  // and default Lenis gain makes them feel like wading
-  const lenis = new Lenis({ lerp: 0.16, wheelMultiplier: 1.8 });
-  const lraf = (t) => { lenis.raf(t); requestAnimationFrame(lraf); };
-  requestAnimationFrame(lraf);
-}
-
+// Native scrolling on the landing page — smoothed wheel handling made the
+// long pinned acts feel slow, so the home keeps the browser's 1:1 scroll.
 const stage = document.querySelector(".specimen-stage");
 const act = document.getElementById("specimen");
 const nav = document.getElementById("homeNav");
