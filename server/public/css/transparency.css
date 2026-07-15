@@ -155,6 +155,16 @@
   mask-image: radial-gradient(ellipse 68% 66% at 50% 50%, #000 36%, transparent 78%);
 }
 .tgallery figcaption { font-size: 12px; line-height: 1.6; color: var(--textDim); }
+/* narrow viewports: the gallery becomes a one-row draggable strip */
+@media (max-width: 900px) {
+  .tgallery[data-drag-scroll] {
+    display: flex;
+    gap: 14px;
+    grid-template-columns: none !important;
+    padding-bottom: 8px;
+  }
+  .tgallery[data-drag-scroll] figure { flex: 0 0 240px; }
+}
 .tgallery figcaption b { display: block; font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--textMid); margin-bottom: 3px; }
 
 .tdoc-close {

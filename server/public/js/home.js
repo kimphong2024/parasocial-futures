@@ -7,6 +7,15 @@
 document.documentElement.classList.add("js");
 
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Lenis smooth scroll — animates real window scroll, so the act choreography
+// below (which reads scrollY) is unchanged, just interpolated.
+if (!reduced && window.Lenis) {
+  const lenis = new Lenis({ lerp: 0.1 });
+  const lraf = (t) => { lenis.raf(t); requestAnimationFrame(lraf); };
+  requestAnimationFrame(lraf);
+}
+
 const stage = document.querySelector(".specimen-stage");
 const act = document.getElementById("specimen");
 const nav = document.getElementById("homeNav");

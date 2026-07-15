@@ -1,0 +1,104 @@
+/* ============================================================
+   Motion — scroll, reveal and interaction language ported from
+   the weareepoch reference: Lenis smooth scroll, clip-path mask
+   wipes, incremental-delay staggers, two easing tokens.
+   Loaded by every app page; js/motion.js drives the reveals.
+   ============================================================ */
+
+:root {
+  --ease-epoch: cubic-bezier(0.5, 0.01, 0.5, 1);   /* snappy symmetric — reveals, state changes */
+  --ease-over: cubic-bezier(0.17, 0.67, 0, 1.02);  /* slight overshoot — slides, lifts */
+  --motion-dur: 0.3s;
+}
+
+/* Lenis contract (html gets .lenis when active) */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+/* ---------- mask-wipe reveal vocabulary ---------- */
+@keyframes mask-up   { 0% { clip-path: inset(110% 0 -10% 0); } 100% { clip-path: inset(-10% 0 -10% 0); } }
+@keyframes mask-down { 0% { clip-path: inset(-10% 0 110% 0); } 100% { clip-path: inset(-10% 0 -10% 0); } }
+@keyframes mask-left { 0% { clip-path: inset(0 110% 0 -10%); } 100% { clip-path: inset(0 -10% 0 -10%); } }
+@keyframes fadein    { 0% { opacity: 0; } 80% { opacity: 0; } 100% { opacity: 1; } }
+
+/* Reveal targets: hidden state only exists once JS is running (html.mjs).
+   The resting state is opacity/transform only — a clip-path'd hidden state
+   makes Chromium's IntersectionObserver report the element as non-intersecting,
+   so the mask wipe runs as a one-shot entrance animation instead. */
+html.mjs .mreveal {
+  opacity: 0.001;
+  transform: translateY(14px);
+  transition:
+    opacity 0.45s var(--ease-epoch) var(--mdelay, 0s),
+    transform 0.6s var(--ease-over) var(--mdelay, 0s);
+  will-change: transform;
+}
+html.mjs .mreveal.in {
+  opacity: 1;
+  transform: translateY(0);
+  animation: mask-up 0.6s var(--ease-epoch) var(--mdelay, 0s) backwards;
+  will-change: auto;
+}
+/* the clone's incremental-delay stagger ladder, expressed positionally */
+html.mjs .mreveal:nth-child(2)  { --mdelay: 0.05s; }
+html.mjs .mreveal:nth-child(3)  { --mdelay: 0.10s; }
+html.mjs .mreveal:nth-child(4)  { --mdelay: 0.15s; }
+html.mjs .mreveal:nth-child(5)  { --mdelay: 0.20s; }
+html.mjs .mreveal:nth-child(6)  { --mdelay: 0.25s; }
+html.mjs .mreveal:nth-child(7)  { --mdelay: 0.30s; }
+html.mjs .mreveal:nth-child(8)  { --mdelay: 0.35s; }
+html.mjs .mreveal:nth-child(9)  { --mdelay: 0.40s; }
+html.mjs .mreveal:nth-child(10) { --mdelay: 0.45s; }
+html.mjs .mreveal:nth-child(n+11) { --mdelay: 0.5s; }
+/* table rows: skip the wipe (clip-path breaks hit-testing mid-animation) */
+html.mjs tr.mreveal.in { animation: none; }
+
+/* ---------- interaction language ---------- */
+.btn, .tag, .site-nav a, .tab {
+  transition: background var(--motion-dur) var(--ease-epoch),
+              color var(--motion-dur) var(--ease-epoch),
+              border-color var(--motion-dur) var(--ease-epoch),
+              transform var(--motion-dur) var(--ease-epoch);
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); transition-duration: 0.1s; }
+.card { transition: transform 0.45s var(--ease-over), border-color var(--motion-dur) var(--ease-epoch); }
+table.data tbody tr { transition: background var(--motion-dur) var(--ease-epoch); }
+
+/* ---------- draggable horizontal strips ---------- */
+[data-drag-scroll] {
+  overflow-x: auto;
+  cursor: grab;
+  user-select: none;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+[data-drag-scroll].dragging { cursor: grabbing; scroll-behavior: auto; }
+[data-drag-scroll].dragging * { pointer-events: none; }
+
+/* run drill-down rows wipe in when expanded */
+html.mjs tr.run-detail td { animation: mask-up 0.5s var(--ease-epoch); }
+
+/* ---------- scroll cue pulse (clone's pulse-arrows rhythm) ---------- */
+@keyframes pulse-arrow {
+  0% { transform: scaleY(0); opacity: 0; }
+  3% { transform: scaleY(1.2); opacity: 1; }
+  45% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+
+/* ---------- reduced motion: everything instant, nothing hidden ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html.mjs .mreveal,
+  html.mjs .mreveal.in {
+    clip-path: none;
+    opacity: 1;
+    transform: none;
+    transition: none;
+    animation: none;
+  }
+  .btn, .tag, .site-nav a, .tab, .card, table.data tbody tr { transition: none; }
+  .btn:hover { transform: none; }
+}

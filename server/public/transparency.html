@@ -8,6 +8,7 @@
   <link rel="icon" href="/favicon.svg">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/app-dark.css">
+  <link rel="stylesheet" href="/css/motion.css">
   <link rel="stylesheet" href="/css/transparency.css">
 </head>
 <body>
@@ -223,13 +224,13 @@ EVIDENCE for this exchange:
         <div class="tsec-head"><span class="num">10</span><h2>Imagery — provenance</h2></div>
         <p>Every image on this site was generated with Leonardo Phoenix 1.0 via a re-runnable script in the repository; every concept was chosen by the human, and off-brief outputs were rejected and regenerated. Two negative-prompt regimes exist: the default bans people and faces; a second permits synthetic faces and figures, used only where the concept requires them. No real persons are depicted. Black photo backgrounds dissolve into the page's olive void via a lighten blend and an elliptical mask — the rule that subjects float in the page, never sit printed on it.</p>
         <p><strong>The 3D hero.</strong> The landing page's centrepiece is a 3D Janus head — moss-human face and porcelain synthetic face sharing one head — that turns from organic to synthetic as you scroll. Four turnaround views of the same character were generated with Leonardo Phoenix at a fixed seed, then fused into a mesh by <strong>Rodin v2</strong> (via the Leonardo API; Quad mesh, PBR materials, GLB). The browser renders it with Google's model-viewer, user controls disabled — the scroll owns the camera. If anything fails to load, the 2D image below stands in.</p>
-        <div class="tgallery" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">
+        <div class="tgallery" data-drag-scroll style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">
           <figure><img src="/img/rodin-refs/janus-front.jpg" alt="" loading="lazy"><figcaption><b>rodin ref · front</b>The split face</figcaption></figure>
           <figure><img src="/img/rodin-refs/janus-left.jpg" alt="" loading="lazy"><figcaption><b>rodin ref · left</b>The moss profile</figcaption></figure>
           <figure><img src="/img/rodin-refs/janus-right.jpg" alt="" loading="lazy"><figcaption><b>rodin ref · right</b>The porcelain profile</figcaption></figure>
           <figure><img src="/img/rodin-refs/janus-back.jpg" alt="" loading="lazy"><figcaption><b>rodin ref · rear</b>Where moss becomes porcelain</figcaption></figure>
         </div>
-        <div class="tgallery">
+        <div class="tgallery" data-drag-scroll>
           <figure><img src="/img/hero-specimen.jpg" alt="" loading="lazy"><figcaption><b>hero-specimen</b>A human face of moss facing a porcelain synthetic face — the thesis in one frame (2D fallback for the 3D head)</figcaption></figure>
           <figure><img src="/img/colony.jpg" alt="" loading="lazy"><figcaption><b>colony</b>Diverse synthetic visages in moss hollows — the library in one image</figcaption></figure>
           <figure><img src="/img/device-hearth.jpg" alt="" loading="lazy"><figcaption><b>device-hearth</b>The device as hearth — light through cracked glass</figcaption></figure>
@@ -252,7 +253,7 @@ EVIDENCE for this exchange:
         <ul>
           <li><strong>Design system</strong>: Heartful Futures "Earthy Foresight" (Lexend; olive, brown, mustard) extended with a dark observation register — olive-black void <code>#101408</code>, Fragment Mono instrument annotations, reticle-cornered callouts — a specimen-observation grammar adapted from alethia.earth, not copied.</li>
           <li><strong>Chart palettes are machine-validated</strong>, not eyeballed: archetype colors pass a six-check validator (OKLCH lightness band, chroma floor, color-vision-deficiency separation, contrast) in both light and dark modes, and identity never rides on color alone — every bar is a direct-labeled row.</li>
-          <li><strong>Motion</strong> is rAF-driven CSS custom properties; every effect has a reduced-motion static equivalent; all content is visible without JavaScript.</li>
+          <li><strong>Motion</strong> is rAF-driven CSS custom properties, plus an app-wide language adapted from weareepoch.com's public site: smooth scrolling (vendored Lenis), clip-path mask-wipe reveals with incremental-delay staggers, two easing tokens and drag-to-scroll strips — re-implemented in vanilla CSS/JS. Every effect has a reduced-motion static equivalent; all content is visible without JavaScript.</li>
           <li><strong>One aligned content column</strong> — header and content resolve to <code>min(1240px, viewport − 2×gutter)</code> everywhere.</li>
         </ul>
       </section>
@@ -286,5 +287,7 @@ EVIDENCE for this exchange:
 
     </div>
   </div>
+  <script src="/js/vendor/lenis.min.js"></script>
+  <script type="module" src="/js/motion.js"></script>
 </body>
 </html>
