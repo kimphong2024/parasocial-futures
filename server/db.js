@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS scan_runs (
   new_pending INTEGER NOT NULL DEFAULT 0,
   dup_url INTEGER NOT NULL DEFAULT 0,
   dup_embedding INTEGER NOT NULL DEFAULT 0,
+  rejected_relevance INTEGER NOT NULL DEFAULT 0,
   errors_json TEXT NOT NULL DEFAULT '[]'
 );
 
@@ -132,6 +133,10 @@ CREATE TABLE IF NOT EXISTS chat_log (
 );
 `);
 
+// Guarded migrations for DBs created before a column existed (Railway volume
+// persists across deploys, so CREATE TABLE IF NOT EXISTS never re-runs).
+try { db.exec("ALTER TABLE scan_runs ADD COLUMN rejected_relevance INTEGER NOT NULL DEFAULT 0"); } catch { /* already migrated */ }
+
 export const now = () => new Date().toISOString();
 
 // ---- signals ----
@@ -184,7 +189,7 @@ export const deleteSource = db.prepare("DELETE FROM scan_sources WHERE id = ?");
 export const touchSource = db.prepare("UPDATE scan_sources SET last_run_at = ?, last_status = ? WHERE id = ?");
 
 export const insertScanRun = db.prepare("INSERT INTO scan_runs (started_at, trigger) VALUES (?,?)");
-export const finishScanRun = db.prepare("UPDATE scan_runs SET finished_at = ?, status = ?, perplexity_candidates = ?, firecrawl_candidates = ?, new_pending = ?, dup_url = ?, dup_embedding = ?, errors_json = ? WHERE id = ?");
+export const finishScanRun = db.prepare("UPDATE scan_runs SET finished_at = ?, status = ?, perplexity_candidates = ?, firecrawl_candidates = ?, new_pending = ?, dup_url = ?, dup_embedding = ?, rejected_relevance = ?, errors_json = ? WHERE id = ?");
 export const listScanRuns = db.prepare("SELECT * FROM scan_runs ORDER BY id DESC LIMIT 30");
 export const getScanRun = db.prepare("SELECT * FROM scan_runs WHERE id = ?");
 export const lastScanRun = db.prepare("SELECT * FROM scan_runs ORDER BY id DESC LIMIT 1");

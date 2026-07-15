@@ -42,7 +42,7 @@ server/
   db.js          schema + prepared statements (all tables below)
   auth.js        HMAC cookie auth; public paths whitelist
   scan.js        scan orchestrator: perplexity + firecrawl → classify → dedup → pending
-  perplexity.js  6 themed Sonar queries, weekly recency, tolerant JSON parsing
+  perplexity.js  12 themed Sonar queries, weekly recency, tolerant JSON parsing
   firecrawl.js   v2 scrape/crawl + Claude extraction (forced tool_use)
   scenarios.js   evidence-pack assembly + CLA drafting + publish/embedding
   montecarlo.js  PERT/triangular/uniform/discrete sampling, membership, tornado
@@ -60,7 +60,7 @@ scripts/
 - `signals` — title, summary, url (UNIQUE), source, topic_tags, cluster, signal_type, urgency, horizon, date/year, provenance, **status (pending/approved/rejected)**, scan_run_id, raw_json (audit trail of the original machine output), reviewed_at
 - `embeddings` / `scenario_embeddings` — 1024-dim Float32 vectors as BLOBs
 - `scan_sources` — Firecrawl directed list (url, scrape/crawl, limit, enabled, last_status)
-- `scan_runs` — per-run counters (candidates, new pending, URL dups, embedding dups) + per-step `errors_json`
+- `scan_runs` — per-run counters (candidates, new pending, URL dups, embedding dups, relevance rejects) + per-step `errors_json`
 - `scenarios` — slug, title, archetype, **four CLA layers (litany, systemic, worldview, myth)**, narrative, `signal_ids` (citations), `driver_conditions` (JSON), **status (draft/published/archived)**
 - `drivers` — key, name, unit, dist_type, params_json, **rationale (which clusters justify the range)**
 - `simulation_runs` — n, seed, full driver/condition snapshots, full results (reproducibility record)
@@ -76,9 +76,9 @@ scripts/
 
 Every nightly (or manual) run executes five fenced steps; a failure in any step is recorded in `errors_json` and never aborts the rest.
 
-1. **Perplexity Sonar (undirected sweep).** Six fixed themed queries (§8.1) with `search_recency_filter: "week"` and a JSON schema response format. Perplexity's structured output is unreliable, so a tolerant parser (whole-parse → regex block-extract → drop-and-log) guards it.
-2. **Firecrawl (directed watch).** Every enabled source is scraped (or crawled, capped at 5 pages / 90 s). Page markdown (truncated to 15k chars) goes to Claude with a forced tool call (`emit_signals`) — the structurally reliable leg. The 16 configured sources were mined from the seed corpus itself: domains ranked by how many corpus signals they produced.
-3. **Claude classification + relevance gate.** One batched forced-tool call normalizes both legs into the existing 33-cluster taxonomy, six signal types, urgency, horizon — and applies a strict relevance gate (§8.3) that rejects generic AI news with no human-relationship angle. Unclassifiable candidates are dropped, never inserted.
+1. **Perplexity Sonar (undirected sweep).** Twelve fixed themed queries (§8.1) with `search_recency_filter: "week"`, each asked for up to 10 distinct items with a last-48-hours priority, and a JSON schema response format. Perplexity's structured output is unreliable, so a tolerant parser (whole-parse → regex block-extract → drop-and-log) guards it.
+2. **Firecrawl (directed watch).** Every enabled source is scraped (or crawled, capped at 5 pages / 90 s). Page markdown (truncated to 15k chars) goes to Claude with a forced tool call (`emit_signals`) — the structurally reliable leg. Front-page teasers are then **followed through**: up to 3 not-yet-known article URLs per source are scraped and re-extracted from full article text, so classification judges real content rather than a headline; any follow-through failure keeps the teaser. The 16 configured sources were mined from the seed corpus itself: domains ranked by how many corpus signals they produced.
+3. **Claude classification + relevance gate.** One batched forced-tool call normalizes both legs into the existing 33-cluster taxonomy, six signal types, urgency, horizon — and applies a strict relevance gate (§8.3) that rejects generic AI news with no human-relationship angle. Unclassifiable candidates are dropped, never inserted. The number of rejects is recorded per run (`rejected_relevance`) and shown in the run history, so a low new-pending count is always explainable.
 4. **Deduplication.** (a) URL normalization (strip utm/fbclid/gclid, trailing slash, lowercase host) against every stored URL; (b) Voyage embedding cosine against the full in-memory index (approved + pending), threshold `DEDUP_THRESHOLD = 0.90`. The nearest existing signal and its score are stored with each pending hit and **shown in the review UI**, so threshold judgment stays visible to the human.
 5. **Insert as `pending`** with provenance `scan:perplexity` or `scan:firecrawl`, the raw machine payload preserved in `raw_json`, and an embedding so the *next* run dedups against it.
 
@@ -133,9 +133,9 @@ Reproduced exactly as they exist in the deployed code.
 
 ### 8.1 Perplexity sweep — system prompt
 
-> You are a horizon-scanning assistant for a foresight research team studying parasocial AI — how AI reshapes human relationships and social structures. Return only signals where the human-relationship or social-fabric angle is explicit: AI companionship, artificial intimacy, attachment, loneliness, grief tech, AI and family or romance, social norms around AI relationships. REJECT generic AI news (model releases, chips, enterprise tools, coding assistants, general AI policy) unless the item is specifically about AI's effect on human relationships. Return distinct, dated, citable signals with a real, specific source URL each. Return JSON only.
+> You are a horizon-scanning assistant for a foresight research team studying parasocial AI — how AI reshapes human relationships and social structures. Return only signals where the human-relationship or social-fabric angle is explicit: AI companionship, artificial intimacy, attachment, loneliness, grief tech, AI and family or romance, social norms around AI relationships. REJECT generic AI news (model releases, chips, enterprise tools, coding assistants, general AI policy) unless the item is specifically about AI's effect on human relationships. Return up to 10 distinct, dated, citable signals with a real, specific source URL each — prioritize items published in the last 48 hours over older ones, and prefer the primary source over syndicated copies of the same story. Return JSON only.
 
-**The six themed queries** (each sent as the user message with week recency):
+**The twelve themed queries** (each sent as the user message with week recency):
 
 1. *companions*: "AI companion and AI friend apps as relationships: user attachment stories, incidents involving emotional dependence, companion shutdowns and user grief, changes to how companions handle intimacy (Replika, Character.AI, Talkie and similar). Exclude generic AI product or model news with no relationship angle."
 2. *governance*: "Regulation, litigation or policy specifically about AI companions and human relationships: chatbots and minors, addictive companion design, AI romance fraud, emotional-manipulation rules, age verification for companion apps. Exclude general AI regulation like copyright, jobs or safety benchmarks."
@@ -143,6 +143,12 @@ Reproduced exactly as they exist in the deployed code.
 4. *grief_tech*: "Grief technology and digital resurrection as relationships: deadbots, AI avatars of deceased people, mourning and continuing bonds with AI recreations, memorial chatbot services and controversies."
 5. *market*: "Business of artificial intimacy: funding, revenue or acquisitions of AI companion, AI dating and grief-tech products, monetisation of AI relationships, dating apps adding or losing to AI companions. Exclude general AI industry funding with no intimacy or relationship product."
 6. *discourse*: "Cultural debate about humans forming relationships with AI: essays, backlash, normalization of AI romance and friendship, AI companions in family or religious life, loneliness discourse tied to AI. Exclude general AI hype or doom commentary without the relationship theme."
+7. *clones*: "AI clones and personas of real people as relationship objects: licensed or unauthorized AI versions of celebrities, influencers and creators that fans talk to, virtual influencers with parasocial followings, creators selling AI girlfriend/boyfriend versions of themselves, deepfake romance and impersonation in relationships. Exclude deepfake stories that are purely about misinformation or politics."
+8. *youth_family*: "Children, teens and families with AI companions: minors forming attachments to chatbots, school and parental responses, family conflict or bonding over AI companions, AI imaginary friends, toys with companion AI, custody or parenting debates about AI relationships. Exclude general ed-tech or AI-in-classroom news without a relationship angle."
+9. *therapy*: "Therapy and mental-health chatbots as relationships: people substituting AI for therapists or confidants, emotional reliance on wellbeing bots, clinical or regulatory reactions to AI emotional support, incidents where AI counseling affected a human relationship or crisis. Exclude generic digital-health funding or product news."
+10. *elder_care*: "AI companions for older adults and care relationships: companion robots or chatbots in eldercare, loneliness interventions with AI for seniors, families outsourcing contact to AI, caregiving norms changing around social AI. Exclude medical-device or diagnostics news without a companionship role."
+11. *work_school*: "Social AI reshaping everyday relationship norms in workplaces and schools: AI colleagues or study buddies people bond with, etiquette and friendship norms around always-available AI, people preferring AI interaction over coworkers or classmates, institutional rules about befriending AI. Exclude pure productivity-tool coverage."
+12. *fandom*: "Virtual beings, VTubers, romance games and fandom parasociality with AI: AI-powered idols and streamers with devoted fans, dating sims and romance games adding AI characters, fan communities forming around AI personas, parasocial dynamics of AI-generated influencers. Exclude game-industry business news without the fan-relationship angle."
 
 ### 8.2 Firecrawl extraction — system prompt (Claude, forced tool `emit_signals`)
 

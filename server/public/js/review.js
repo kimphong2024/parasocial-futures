@@ -63,6 +63,7 @@ function runRow(r) {
     <td>${r.perplexity_candidates + r.firecrawl_candidates}</td>
     <td>${r.new_pending}</td>
     <td>${r.dup_url + r.dup_embedding}</td>
+    <td>${r.rejected_relevance ?? 0}</td>
     <td>${fmtDate(r.finished_at || r.started_at)}</td>
   </tr>`;
 }
@@ -84,7 +85,7 @@ async function load() {
 
   const runs = await api("/api/scan/runs");
   $("tab-runs").innerHTML = runs.runs.length
-    ? `<table class="data"><thead><tr><th>Run</th><th>Trigger</th><th>Status</th><th>Candidates</th><th>New pending</th><th>Duplicates</th><th>Finished</th></tr></thead>
+    ? `<table class="data"><thead><tr><th>Run</th><th>Trigger</th><th>Status</th><th>Candidates</th><th>New pending</th><th>Duplicates</th><th>Off-topic</th><th>Finished</th></tr></thead>
        <tbody>${runs.runs.map(runRow).join("")}</tbody></table>`
     : `<div class="empty-note">No scan runs yet.</div>`;
 }

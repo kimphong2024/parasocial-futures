@@ -1,10 +1,14 @@
 // Firecrawl v2 — directed scanning of configured sources. Each source is
 // scraped (single page) or crawled (bounded), then Claude extracts candidate
 // signals from the markdown via forced tool_use (the structurally reliable leg).
+// Front-page teasers are followed through: up to FOLLOW_LIMIT not-yet-known
+// article URLs per source are scraped so classification sees real article
+// text instead of a headline teaser.
 import { askTool, llmEnabled } from "./ai.js";
 
 const KEY = (process.env.FIRECRAWL_API_KEY || "").trim();
 const BASE = "https://api.firecrawl.dev/v2";
+const FOLLOW_LIMIT = Number(process.env.FOLLOW_LIMIT || 3);
 export const firecrawlEnabled = () => !!KEY;
 
 async function fc(path, body) {
@@ -67,13 +71,39 @@ async function extractSignals(sourceName, pageUrl, markdown) {
     prompt: `Source: ${sourceName}\nPage: ${pageUrl}\n\nPage content (markdown):\n\n${markdown.slice(0, 15000)}`,
     toolName: "emit_signals",
     schema: EXTRACT_SCHEMA,
-    effort: "low",
+    effort: "medium",
   });
   return (signals || []).filter((s) => s.title && /^https?:\/\//.test(s.url || ""));
 }
 
-// sources: rows from scan_sources. Returns { candidates, errors, perSource }.
-export async function firecrawlScan(sources) {
+// Follow front-page teasers into their articles: scrape up to FOLLOW_LIMIT
+// not-yet-known article URLs and re-extract from full text, enriching the
+// teaser in place. Any failure keeps the teaser — the follow-through can only
+// add fidelity, never lose a candidate.
+async function followArticles(src, sigs, isKnown) {
+  let credits = FOLLOW_LIMIT;
+  for (const s of sigs) {
+    if (credits <= 0) break;
+    if (s.url === src.url || (isKnown && isKnown(s.url))) continue; // already in the library — dedup will drop it anyway
+    credits--;
+    try {
+      const [article] = await scrape(s.url);
+      if (!article.markdown.trim()) continue;
+      const rich = (await extractSignals(src.name, article.url, article.markdown))[0];
+      if (rich) {
+        s.title = rich.title;
+        s.summary = rich.summary;
+        if (rich.date) s.date = rich.date;
+        s.url = article.url;
+      }
+    } catch { /* keep the teaser */ }
+  }
+}
+
+// sources: rows from scan_sources. isKnown(url) → true if the URL is already
+// in the signal library (lets the follow-through skip spending scrape credits
+// on articles dedup would drop). Returns { candidates, errors, perSource }.
+export async function firecrawlScan(sources, isKnown) {
   const candidates = [], errors = [], perSource = {};
   if (!KEY) return { candidates, errors: [{ step: "firecrawl", message: "FIRECRAWL_API_KEY unset" }], perSource };
   if (!llmEnabled()) return { candidates, errors: [{ step: "firecrawl", message: "ANTHROPIC_API_KEY unset (needed for extraction)" }], perSource };
@@ -84,6 +114,7 @@ export async function firecrawlScan(sources) {
       for (const page of pages) {
         if (!page.markdown.trim()) continue;
         const sigs = await extractSignals(src.name, page.url, page.markdown);
+        if (src.kind !== "crawl") await followArticles(src, sigs, isKnown);
         candidates.push(...sigs.map((s) => ({ ...s, source_id: src.id })));
         found += sigs.length;
       }

@@ -70,7 +70,7 @@ ${clusters.join("\n")}`,
     toolName: "classify_signals",
     schema: CLASSIFY_SCHEMA,
     maxTokens: 16000,
-    effort: "low",
+    effort: "medium",
   });
   const byIndex = new Map(items.map((x) => [x.index, x]));
   return candidates
@@ -83,7 +83,7 @@ export async function runScan(trigger = "manual") {
   running = true;
   const runId = Number(insertScanRun.run(now(), trigger).lastInsertRowid);
   const errors = [];
-  let pplxCount = 0, fcCount = 0, newPending = 0, dupUrl = 0, dupEmb = 0;
+  let pplxCount = 0, fcCount = 0, newPending = 0, dupUrl = 0, dupEmb = 0, rejectedRel = 0;
 
   try {
     // Leg 1: Perplexity
@@ -98,7 +98,7 @@ export async function runScan(trigger = "manual") {
     // Leg 2: Firecrawl over enabled sources
     try {
       const sources = enabledSources.all();
-      const f = await firecrawlScan(sources);
+      const f = await firecrawlScan(sources, (url) => !!getSignalByUrl.get(normalizeUrl(url)));
       errors.push(...f.errors);
       fcCount = f.candidates.length;
       candidates.push(...f.candidates.map((c) => ({ ...c, provenance: "scan:firecrawl" })));
@@ -122,7 +122,9 @@ export async function runScan(trigger = "manual") {
     // Claude classification / relevance gate
     if (candidates.length && llmEnabled()) {
       try {
+        const before = candidates.length;
         candidates = await classify(candidates);
+        rejectedRel = before - candidates.length;
       } catch (e) {
         errors.push({ step: "classify", message: e.message });
         candidates = []; // unclassified hits would pollute the taxonomy — drop, keep the error visible
@@ -162,10 +164,10 @@ export async function runScan(trigger = "manual") {
       }
     });
 
-    finishScanRun.run(now(), "done", pplxCount, fcCount, newPending, dupUrl, dupEmb, JSON.stringify(errors), runId);
+    finishScanRun.run(now(), "done", pplxCount, fcCount, newPending, dupUrl, dupEmb, rejectedRel, JSON.stringify(errors), runId);
   } catch (e) {
     errors.push({ step: "run", message: e.message });
-    finishScanRun.run(now(), "failed", pplxCount, fcCount, newPending, dupUrl, dupEmb, JSON.stringify(errors), runId);
+    finishScanRun.run(now(), "failed", pplxCount, fcCount, newPending, dupUrl, dupEmb, rejectedRel, JSON.stringify(errors), runId);
   } finally {
     running = false;
   }
