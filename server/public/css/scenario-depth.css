@@ -1,0 +1,178 @@
+/* ============================================================
+   Scenario detail — the CLA descent. Reading a scenario is a
+   journey inward: one pinned stage, four layers passed through
+   in depth order (litany → systemic → worldview → myth), the
+   archetype's myth-image growing nearer the whole way down.
+   Same grammar as the home hero and the scenarios chambers.
+   ============================================================ */
+
+.scenario-bar {
+  max-width: 1240px;
+  margin-inline: max(var(--gutter, 24px), calc((100% - 1240px) / 2));
+  padding-block: clamp(20px, 4vh, 40px) 0;
+}
+.scenario-bar .divider { margin-top: 18px; }
+.scroll-hint {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--textDim);
+  font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+}
+.scroll-hint .tick { width: 34px; height: 1px; background: var(--textDim); }
+
+/* ---------- the descent ---------- */
+.descent { height: 460vh; position: relative; }
+.descent-stage {
+  position: sticky; top: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--void, #101408);
+}
+
+/* archetype myth-image: the destination, approached across the descent */
+.descent-figure {
+  position: absolute;
+  right: max(var(--gutter, 24px), calc((100% - 1240px) / 2));
+  top: 50%;
+  translate: 0 -50%;
+  width: min(52vmin, 520px);
+  height: min(52vmin, 520px);
+  pointer-events: none;
+}
+.descent-figure img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  display: block;
+  mix-blend-mode: lighten;
+  -webkit-mask-image: radial-gradient(ellipse 68% 66% at 50% 50%, #000 42%, transparent 72%);
+  mask-image: radial-gradient(ellipse 68% 66% at 50% 50%, #000 42%, transparent 72%);
+  filter: brightness(var(--breveal, 0.1));
+  transform: scale(var(--bscale, 1));
+  transform-origin: 50% 50%;
+  will-change: filter, transform;
+}
+.descent-glow {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 68% 50%, rgba(225, 184, 59, 0.45), rgba(211, 150, 62, 0.14) 34%, rgba(16, 20, 8, 0) 62%);
+  opacity: var(--glow, 0);
+  pointer-events: none;
+}
+
+/* depth counter, top center — a real ordered descent */
+.descent-index {
+  position: absolute;
+  top: 26px; left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: 3px;
+  color: var(--textDim);
+}
+
+/* depth rail: the four strata, present position lit */
+.descent-rail {
+  position: absolute;
+  right: max(var(--gutter, 24px), calc((100% - 1240px) / 2));
+  bottom: clamp(36px, 7vh, 72px);
+  display: flex; flex-direction: column; gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--textDim);
+  z-index: 3;
+}
+.descent-rail span { display: flex; align-items: center; gap: 8px; transition: color 0.3s var(--ease-epoch, ease); }
+.descent-rail span::before {
+  content: "";
+  width: 18px; height: 1px;
+  background: currentColor;
+  transition: width 0.3s var(--ease-epoch, ease);
+}
+.descent-rail span.now { color: var(--mustard, #E1B83B); }
+.descent-rail span.now::before { width: 34px; }
+
+/* the four layer panels, passed through in turn */
+.dlayer {
+  position: absolute;
+  left: max(var(--gutter, 24px), calc((100% - 1240px) / 2));
+  top: 50%;
+  translate: 0 -50%;
+  max-width: 52ch;
+  z-index: 2;
+  opacity: calc(var(--e, 0) * (1 - var(--x, 0)));
+  transform:
+    translateY(calc((1 - var(--e, 0)) * 30px - var(--x, 0) * 14px))
+    scale(calc(0.94 + 0.06 * var(--e, 0) + 0.2 * var(--x, 0)));
+  filter: blur(calc((1 - var(--e, 0)) * 9px));
+  transform-origin: 30% 50%;
+  will-change: transform, opacity, filter;
+  pointer-events: none;
+}
+.dlayer.now { pointer-events: auto; }
+.dlayer .dl-label {
+  font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--textDim);
+}
+.dlayer h3 {
+  margin-top: 10px;
+  font-size: clamp(1.6rem, 3.4vw, 2.8rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--charcoal);
+  text-wrap: balance;
+}
+.dlayer .dl-text {
+  margin-top: 16px;
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--textMid);
+}
+.dlayer .dl-hint {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--textDim);
+}
+/* the deepest layer speaks in the myth voice */
+.dlayer-myth .dl-text {
+  font-style: italic;
+  font-size: 17px;
+  line-height: 1.9;
+  color: var(--charcoal);
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 900px) {
+  .descent-figure {
+    right: 50%; translate: 50% 0; top: 8vh;
+    width: min(56vmin, 340px); height: min(56vmin, 340px);
+    opacity: 0.85;
+  }
+  .descent-rail { display: none; }
+  .dlayer {
+    left: var(--gutter, 24px);
+    right: var(--gutter, 24px);
+    top: auto; bottom: clamp(28px, 6vh, 60px);
+    translate: 0 0;
+    max-width: none;
+    padding-top: 40px;
+    background: linear-gradient(transparent, rgba(16, 20, 8, 0.85) 30%);
+  }
+  .dlayer .dl-text { font-size: 14px; line-height: 1.75; }
+}
+
+/* ---------- reduced motion: a static stratigraphy ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .descent { height: auto; }
+  .descent-stage { position: static; height: auto; overflow: visible; padding: 40px 0; }
+  .descent-figure { position: static; translate: none; margin: 0 auto 30px; }
+  .descent-figure img { filter: none; transform: none; }
+  .dlayer {
+    position: static; translate: none;
+    opacity: 1; transform: none; filter: none;
+    margin: 0 auto 48px;
+    max-width: 60ch;
+    pointer-events: auto;
+  }
+  .descent-glow, .descent-index { display: none; }
+  .descent-rail { display: none; }
+}

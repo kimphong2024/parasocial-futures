@@ -7,7 +7,7 @@ document.documentElement.classList.add("mjs");
 
 // ---------- Lenis smooth scroll ----------
 if (!reduced && window.Lenis) {
-  const lenis = new Lenis({ lerp: 0.1, wheelMultiplier: 1 });
+  const lenis = new Lenis({ lerp: 0.14, wheelMultiplier: 1.35 });
   const raf = (t) => { lenis.raf(t); requestAnimationFrame(raf); };
   requestAnimationFrame(raf);
   // inner scrollables keep native wheel behaviour
@@ -29,7 +29,7 @@ const REVEAL = [
   ".review-card",
   "table.data tbody tr:nth-child(-n+12)",
 ];
-const EXCLUDE = ".chamber, .chamber *, .specimen-stage, .specimen-stage *";
+const EXCLUDE = ".chamber, .chamber *, .specimen-stage, .specimen-stage *, .descent, .descent *";
 
 const io = reduced ? null : new IntersectionObserver((entries) => {
   for (const e of entries) {

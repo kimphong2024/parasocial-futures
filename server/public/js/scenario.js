@@ -19,10 +19,75 @@ const condText = (c) => {
   return `${c.driver_key} ${c.op}`;
 };
 
-function render() {
-  const conds = JSON.parse(sc.driver_conditions || "[]");
-  $("main").innerHTML = `
-    <div class="page-head flex-between">
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+const easeOutExpo = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
+const easeInCubic = (x) => x * x * x;
+const RAIL = ["Litany", "Systemic", "Worldview", "Myth"];
+
+// The CLA descent: one pinned stage, four layers passed through in depth
+// order, the archetype image approaching the whole way down.
+function descentHTML() {
+  return `
+    <section class="descent" id="descent">
+      <div class="descent-stage" id="descentStage">
+        <div class="descent-glow" aria-hidden="true"></div>
+        <figure class="descent-figure" aria-hidden="true">
+          <img src="/img/scenario-${esc(sc.archetype)}.jpg" alt="" onerror="this.remove()">
+        </figure>
+        <div class="descent-index" id="descentIndex">Layer I / IV</div>
+        <div class="descent-rail" id="descentRail">
+          ${RAIL.map((r, i) => `<span data-l="${i}">L${i + 1} ${r}</span>`).join("")}
+        </div>
+        ${LAYERS.map(([key, name, , hint], i) => `
+          <div class="dlayer ${key === "myth" ? "dlayer-myth" : ""}" data-layer="${i}">
+            <span class="dl-label">${name}</span>
+            <h3>${esc(RAIL[i])}</h3>
+            <p class="dl-text">${esc(sc[key])}</p>
+            <p class="dl-hint">${hint}</p>
+          </div>`).join("")}
+      </div>
+    </section>`;
+}
+
+const ROMAN = ["I", "II", "III", "IV"];
+function attachDescent() {
+  const descent = document.getElementById("descent");
+  if (!descent || reduced) return;
+  const stage = document.getElementById("descentStage");
+  const layers = [...stage.querySelectorAll(".dlayer")];
+  const rail = [...stage.querySelectorAll(".descent-rail span")];
+  const index = document.getElementById("descentIndex");
+  let ticking = false;
+  function update() {
+    ticking = false;
+    const rect = descent.getBoundingClientRect();
+    if (rect.bottom < -60 || rect.top > innerHeight + 60) return;
+    const p = clamp01(-rect.top / (rect.height - innerHeight));
+    // the destination approaches: brighter and nearer with depth
+    stage.style.setProperty("--breveal", (0.1 + 0.8 * easeOutExpo(clamp01(p / 0.22))).toFixed(4));
+    stage.style.setProperty("--bscale", (1 + 0.38 * p).toFixed(4));
+    stage.style.setProperty("--glow", (0.7 * easeInCubic(clamp01((p - 0.78) / 0.22))).toFixed(4));
+    const nowIdx = Math.min(3, Math.floor(p * 4));
+    layers.forEach((el, i) => {
+      const s = clamp01(p * 4 - i);
+      const e = easeOutExpo(clamp01(s / 0.35));
+      const x = i === 3 ? 0 : easeInCubic(clamp01((s - 0.72) / 0.28));
+      el.style.setProperty("--e", e.toFixed(4));
+      el.style.setProperty("--x", x.toFixed(4));
+      el.classList.toggle("now", i === nowIdx);
+    });
+    rail.forEach((el, i) => el.classList.toggle("now", i === nowIdx));
+    index.textContent = `Layer ${ROMAN[nowIdx]} / IV`;
+  }
+  addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+  addEventListener("resize", update, { passive: true });
+  update();
+}
+
+function headerHTML() {
+  return `
+    <div class="page-head flex-between" style="margin:0;padding:0">
       <div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <span class="tag tag-olive">${esc(sc.archetype)}</span>
@@ -35,6 +100,7 @@ function render() {
         ${editing
           ? `<textarea id="e-summary" rows="3" class="mt-2">${esc(sc.summary)}</textarea>`
           : `<p class="subtitle mt-2">${esc(sc.summary)}</p>`}
+        ${editing ? "" : `<div class="scroll-hint" style="margin-top:14px"><span class="tick"></span>Scroll to descend through the layers</div>`}
         <div class="divider mt-4"></div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -44,18 +110,11 @@ function render() {
              ${sc.status === "draft" ? `<button class="btn" id="publish">Publish</button>` : ""}
              ${sc.status !== "archived" ? `<button class="btn-danger btn" id="archive">Archive</button>` : ""}`}
       </div>
-    </div>
-    <div id="err"></div>
+    </div>`;
+}
 
-    ${LAYERS.map(([key, name, cls, hint]) => `
-      <section class="cla-band ${cls}">
-        <span class="label">${name}</span>
-        ${editing
-          ? `<textarea id="e-${key}" rows="5">${esc(sc[key])}</textarea>`
-          : `<p>${esc(sc[key])}</p>`}
-        <p class="caption mt-2">${hint}</p>
-      </section>`).join("")}
-
+function belowHTML(conds) {
+  return `
     <section class="card chart-block mt-6">
       <h4>Narrative — a day in this 2040</h4>
       ${editing
@@ -83,7 +142,34 @@ function render() {
           <div class="source">S${s.id} · ${esc(s.cluster)} · ${esc(s.source || "")}</div>
         </div>`).join("") || `<p class="caption">No citations recorded.</p>`}
     </section>`;
+}
 
+function render() {
+  const conds = JSON.parse(sc.driver_conditions || "[]");
+  const main = $("main");
+  if (editing) {
+    // Editing works on the flat layers — a form has no business being pinned.
+    main.className = "container";
+    main.innerHTML = `
+      ${headerHTML()}
+      <div id="err"></div>
+      ${LAYERS.map(([key, name, cls, hint]) => `
+        <section class="cla-band ${cls}">
+          <span class="label">${name}</span>
+          <textarea id="e-${key}" rows="5">${esc(sc[key])}</textarea>
+          <p class="caption mt-2">${hint}</p>
+        </section>`).join("")}
+      ${belowHTML(conds)}`;
+  } else {
+    // Reading is the descent: header bar, then the pinned journey inward,
+    // then the narrative and evidence back in normal flow.
+    main.className = "";
+    main.innerHTML = `
+      <div class="scenario-bar">${headerHTML()}<div id="err"></div></div>
+      ${descentHTML()}
+      <div class="container">${belowHTML(conds)}</div>`;
+    attachDescent();
+  }
   wire();
 }
 

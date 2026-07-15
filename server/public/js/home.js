@@ -11,7 +11,9 @@ const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 // Lenis smooth scroll — animates real window scroll, so the act choreography
 // below (which reads scrollY) is unchanged, just interpolated.
 if (!reduced && window.Lenis) {
-  const lenis = new Lenis({ lerp: 0.1 });
+  // higher wheel gain + snappier catch-up: the acts are long pinned tracks,
+  // and default Lenis gain makes them feel like wading
+  const lenis = new Lenis({ lerp: 0.16, wheelMultiplier: 1.8 });
   const lraf = (t) => { lenis.raf(t); requestAnimationFrame(lraf); };
   requestAnimationFrame(lraf);
 }
