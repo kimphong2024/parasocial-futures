@@ -21,8 +21,8 @@ export function loginHandler(req, res) {
 }
 
 const PUBLIC = (p) =>
-  p === "/" || p === "/transparency" || p === "/favicon.svg" || p === "/login" || p === "/api/login" ||
-  p === "/api/public/stats" || p === "/js/home.js" ||
+  p === "/" || p === "/transparency" || p === "/reference" || p === "/favicon.svg" || p === "/login" || p === "/api/login" ||
+  p === "/api/public/stats" || p === "/js/home.js" || p === "/js/motion.js" ||
   p.startsWith("/css/") || p.startsWith("/img/") || p.startsWith("/models/") || p.startsWith("/js/vendor/");
 
 export function authMiddleware(req, res, next) {

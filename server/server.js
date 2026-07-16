@@ -27,6 +27,7 @@ app.post("/api/login", loginHandler);
 app.get("/login", (_req, res) => res.sendFile(join(HERE, "public", "login.html")));
 app.get("/", (_req, res) => res.sendFile(join(HERE, "public", "home.html")));
 app.get("/transparency", (_req, res) => res.sendFile(join(HERE, "public", "transparency.html")));
+app.get("/reference", (_req, res) => res.sendFile(join(HERE, "public", "reference.html")));
 
 // Public counts for the home page annotations — numbers only, no content.
 app.get("/api/public/stats", (_req, res) => {

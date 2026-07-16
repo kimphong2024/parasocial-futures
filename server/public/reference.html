@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Method — Futures of Parasocial AI</title>
+  <meta name="description" content="How the platform reasons: how scanning finds and selects signals, how the four scenarios are derived from evidence, and how the Monte Carlo simulation turns driver beliefs into scenario probabilities.">
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/app-dark.css">
+  <link rel="stylesheet" href="/css/motion.css">
+  <link rel="stylesheet" href="/css/transparency.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="/" style="text-decoration:none">
+        <div class="brand">
+          <span class="label">Foresight Capstone · 2040</span>
+          <span class="brand-title">Futures of Parasocial AI</span>
+        </div>
+      </a>
+      <a class="btn btn-sm" href="/login">Enter the platform</a>
+    </div>
+  </header>
+
+  <div class="tdoc-head">
+    <span class="label" style="font-family:var(--font-mono);letter-spacing:2px">Method</span>
+    <h2>How this platform reasons</h2>
+    <p class="subtitle">A plain-language guide to the three engines: how the nightly scan finds and selects signals, how the four scenarios are derived from evidence, and how the simulation turns beliefs about drivers into scenario probabilities. For the verbatim prompts and full architecture, see the <a href="/transparency">transparency page</a>.</p>
+    <div class="tdoc-meta">
+      <div class="reticle"><span class="ret"></span><span class="k">Evidence base</span><span class="v">705+ signals</span></div>
+      <div class="reticle"><span class="ret"></span><span class="k">Scenario method</span><span class="v">Dator × CLA</span></div>
+      <div class="reticle"><span class="ret"></span><span class="k">Simulation</span><span class="v">10,000 futures</span></div>
+    </div>
+  </div>
+
+  <div class="tdoc-layout">
+    <nav class="tdoc-toc" aria-label="Sections">
+      <a href="#chain">01 · The evidence chain</a>
+      <a href="#scanning">02 · How scanning selects</a>
+      <a href="#scenarios">03 · How scenarios are derived</a>
+      <a href="#simulation">04 · How the simulation works</a>
+      <a href="#reading">05 · How to read the numbers</a>
+    </nav>
+
+    <div class="tdoc-body">
+
+      <section id="chain">
+        <div class="tsec-head"><span class="num">01</span><h2>The evidence chain</h2></div>
+        <p>Everything on this platform sits on one chain, and every link in it is inspectable:</p>
+        <p><strong>Signals → review → library → scenarios → driver conditions → simulation → advice.</strong></p>
+        <p>The scan finds candidate signals; a human decides which enter the library; scenarios are drafted from that library and cite the signals that anchor them; each scenario declares the region of driver space where it holds; the simulation samples thousands of futures and counts which region each lands in; and the decision chat answers questions by retrieving and citing the same library. Nothing in the chain publishes without a human decision — the review gate is the method, not a feature.</p>
+        <p class="tdoc-rule">If you follow any number on this platform upstream, you arrive at a named source.</p>
+      </section>
+
+      <section id="scanning">
+        <div class="tsec-head"><span class="num">02</span><h2>How scan hits are found and selected</h2></div>
+        <p>The library began as 705 hand-vetted signals across 33 clusters. Every night (22:00 Singapore time) the scan extends it in five steps. A candidate has to survive all of them to reach your review queue — and even then it is only <em>pending</em>.</p>
+        <div class="tstep"><span class="n">1</span><div><h4>The undirected sweep</h4><p>Twelve themed questions go to a search model (Perplexity Sonar), each scoped to one angle of the domain — companion apps, governance, research, grief tech, the market, cultural discourse, AI clones of real people, youth and family, therapy bots, elder care, workplace and school norms, virtual-being fandom. Each asks for up to ten distinct items from the past week, preferring the last 48 hours and primary sources. The themes are editable on the Scanning page: what is asked is exactly what you see there.</p></div></div>
+        <div class="tstep"><span class="n">2</span><div><h4>The directed watch</h4><p>Sixteen configured sources — chosen because they produced the seed corpus's signals — are scraped. Headlines alone are not trusted: up to three not-yet-known articles per source are followed and read in full, so selection judges real content rather than a teaser.</p></div></div>
+        <div class="tstep"><span class="n">3</span><div><h4>The relevance gate</h4><p>Every candidate from both legs is classified by Claude against one strict test: <em>is the core subject AI's effect on human relationships or social structures?</em> Generic AI news — model releases, chips, funding without an intimacy product, policy without a relationship angle — is rejected, and the rejection is counted and listed in the run record so you can audit the gate's judgment. The gate text itself is editable on the Scanning page; every run permanently records the exact text it used.</p></div></div>
+        <div class="tstep"><span class="n">4</span><div><h4>Deduplication</h4><p>A candidate is dropped if its normalized URL is already in the library, or if its embedding sits closer than 0.90 cosine similarity to an existing signal — the same story from a second outlet should not count as two signals. The nearest existing signal and its score are shown in the review queue, so the threshold's judgment stays visible.</p></div></div>
+        <div class="tstep"><span class="n">5</span><div><h4>Human selection</h4><p>Survivors land as <em>pending</em>, with their provenance and the raw machine output preserved. In the Review queue you approve, re-classify, edit or reject each one. Only approval places a signal in the library — which means everything downstream (scenarios, simulation, chat) stands only on signals a human accepted.</p></div></div>
+        <p>Each run's record stores what it ran with — per-theme and per-source yield, the rejected list, the settings and gate text — so a quiet night and a broken night never look the same.</p>
+      </section>
+
+      <section id="scenarios">
+        <div class="tsec-head"><span class="num">03</span><h2>How the scenarios are derived</h2></div>
+        <p>The four scenarios are not predictions and not brainstorms. They are structured readings of the same evidence through Jim Dator's four archetypes of the future — the four deep shapes a future can take:</p>
+        <table class="data">
+          <thead><tr><th>Archetype</th><th>Its logic</th></tr></thead>
+          <tbody>
+            <tr><td>Continued Growth</td><td>Current trajectories extend: AI companionship scales into a normal, commercially mature layer of social life. Momentum wins over friction.</td></tr>
+            <tr><td>Collapse</td><td>The system breaks: harms compound, trust craters, a crisis or slow rot makes parasocial AI a story of social damage and retreat.</td></tr>
+            <tr><td>Discipline</td><td>Society constrains the technology: norms, regulation and design mandates channel parasocial AI into bounded, supervised roles.</td></tr>
+            <tr><td>Transformation</td><td>A structural break in what "relationship" means: categories of kinship, personhood and intimacy dissolve and re-form.</td></tr>
+          </tbody>
+        </table>
+        <div class="tstep"><span class="n">1</span><div><h4>The evidence pack</h4><p>The archetype's logic (plus any focus you give it) is embedded and matched against the approved library; the most similar signals form a pack of roughly a hundred, with long-horizon and critical-urgency evidence guaranteed a seat. The draft can only be built from signals in this pack.</p></div></div>
+        <div class="tstep"><span class="n">2</span><div><h4>Causal Layered Analysis</h4><p>Claude drafts the scenario as four layers of increasing depth — the structure you travel when reading one: <strong>Litany</strong> (the visible surface of 2040: headlines, statistics, everyday observations), <strong>Systemic causes</strong> (the economic, technological, regulatory and demographic structures producing that surface), <strong>Worldview</strong> (the shared beliefs that make this world coherent to the people in it), and <strong>Myth</strong> (the deep metaphor underneath — the hearth, the golem, the mirror). A 400–600 word narrative vignette makes the world habitable.</p></div></div>
+        <div class="tstep"><span class="n">3</span><div><h4>Citations and conditions</h4><p>The draft must name the 8–15 signals that anchored it — real IDs from the pack, inspectable on the scenario page — and declare its <em>driver conditions</em>: the region of driver space where this future holds (for instance, "companion adoption ≥ 25% and regulation stringency ≤ 55"). Those conditions are the scenario's handshake with the simulation.</p></div></div>
+        <div class="tstep"><span class="n">4</span><div><h4>Human authorship</h4><p>Everything lands as a <em>draft</em>. Every layer, the narrative, and the conditions are edited by the human author before publishing; only publishing makes a scenario real to the rest of the platform (including the chat's retrieval). The four live scenarios were all reshaped by hand after drafting.</p></div></div>
+      </section>
+
+      <section id="simulation">
+        <div class="tsec-head"><span class="num">04</span><h2>How the simulation works</h2></div>
+        <p>The simulation answers one question: <em>given our beliefs about the key drivers, how much of the plausible future belongs to each scenario?</em></p>
+        <div class="tstep"><span class="n">1</span><div><h4>Seven drivers, each a belief</h4><p>A driver is an uncertain quantity that shapes the outcome — companion adoption, regulation stringency, incident pressure, substitution vs complement, and so on. Each is expressed not as a single guess but as a distribution: by default a PERT (minimum, most-likely, maximum — a smoothed bell over that range), with triangular, uniform and discrete available. Every parameter is editable on the Simulation page, and each driver carries a written rationale naming the signal clusters that justify its range.</p></div></div>
+        <div class="tstep"><span class="n">2</span><div><h4>Ten thousand sampled futures</h4><p>Each run draws 10,000 futures — a future being one sampled value for every driver. The random generator is seeded, so a run is exactly reproducible: same seed, same parameters, same result, and every run is stored with a full snapshot of what produced it.</p></div></div>
+        <div class="tstep"><span class="n">3</span><div><h4>Counting membership</h4><p>A sampled future <em>belongs</em> to a scenario when it satisfies all of that scenario's driver conditions. The share of futures landing in each scenario's region is that scenario's probability. Futures that match no scenario are the <strong>residual</strong> — unclaimed territory. A large residual is a finding, not an error: it says the scenario set does not yet cover the space our own beliefs consider plausible.</p></div></div>
+        <div class="tstep"><span class="n">4</span><div><h4>Sensitivity — what actually moves the futures</h4><p>For each driver and scenario, the run compares the scenario's probability when that driver falls in its top third against its bottom third. The difference is the tornado chart: which beliefs, if they shifted, would most redraw the map. This is where the simulation earns its keep for decisions — it points at the drivers worth watching and arguing about.</p></div></div>
+      </section>
+
+      <section id="reading">
+        <div class="tsec-head"><span class="num">05</span><h2>How to read the numbers</h2></div>
+        <p>The probabilities are <strong>model-conditional plausibility</strong>, not forecasts. They answer "how much of the future-space implied by our stated beliefs falls inside each scenario's declared region" — nothing more. Change a driver's range and the numbers move; that is the point. The honest uses are comparative and diagnostic:</p>
+        <p>— <em>Comparative:</em> is Discipline gaining ground on Growth as evidence accumulates and ranges tighten?<br>
+        — <em>Diagnostic:</em> which single belief, if wrong, changes the answer most? (Read the tornado.)<br>
+        — <em>Coverage:</em> how big is the residual — how much plausible future have we not yet written a scenario for?</p>
+        <p>What the numbers are not: a claim about 2040. The platform's claim is narrower and more defensible — <em>given this library of observed signals, these four readings of it, and these stated uncertainties, this is where the weight sits today.</em> Tomorrow's scan may move it. That is working as intended.</p>
+        <p class="tdoc-rule">Every number is an argument you can inspect, edit, and re-run.</p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="/js/vendor/lenis.min.js"></script>
+  <script type="module" src="/js/motion.js"></script>
+</body>
+</html>
