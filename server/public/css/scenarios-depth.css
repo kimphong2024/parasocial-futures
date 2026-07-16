@@ -1,8 +1,10 @@
 /* ============================================================
-   Scenarios — four depth chambers. Each archetype is a pinned
-   act: its myth-image reveals out of darkness, the write-up
-   reports in around it, then the scroll dives through the light
-   into the next chamber. Same grammar as the home hero.
+   Scenarios — one strata composition. All four archetypes are
+   layered together in a single pinned scene (multilayer
+   parallax): the stack is visible at once — each deeper layer
+   smaller, dimmer, softer — and scrolling dollies the camera
+   inward. The current layer flies apart past the camera while
+   every deeper layer swells one step nearer.
    ============================================================ */
 
 .scen-head {
@@ -20,123 +22,128 @@
 }
 .scroll-hint .tick { width: 34px; height: 1px; background: var(--textDim); }
 
-/* ---------- chamber ---------- */
-.chamber { height: 300vh; position: relative; }
-.chamber-stage {
+/* ---------- the strata scene ---------- */
+.strata { height: 520vh; position: relative; }
+.strata-stage {
   position: sticky; top: 0;
   height: 100vh;
   overflow: hidden;
   background: var(--void, #101408);
-  display: grid;
-  place-items: center;
 }
-.chamber-figure {
-  width: min(70vmin, 660px);
-  height: min(70vmin, 660px);
-}
-.chamber-figure img {
-  width: 100%; height: 100%;
-  object-fit: contain;
-  display: block;
-  mix-blend-mode: lighten;                 /* black photo bg dissolves into the void */
-  /* feather any residual frame edge so the subject reads as a floating cutout */
-  -webkit-mask-image: radial-gradient(ellipse 74% 74% at 50% 50%, #000 52%, transparent 80%);
-  mask-image: radial-gradient(ellipse 74% 74% at 50% 50%, #000 52%, transparent 80%);
-  filter: brightness(var(--reveal, 0.06));
-  transform: scale(var(--scale, 1.08));
-  transform-origin: 50% 50%;
-  opacity: var(--exit, 1);
-  will-change: filter, transform, opacity;
-}
-.chamber-glow {
+.strata-glow {
   position: absolute; inset: 0;
-  background: radial-gradient(circle at 50% 50%, rgba(225, 184, 59, 0.5), rgba(211, 150, 62, 0.16) 36%, rgba(16, 20, 8, 0) 64%);
+  z-index: 45; /* blooms over every layer at each hand-off */
+  background: radial-gradient(circle at 62% 46%, rgba(225, 184, 59, 0.5), rgba(211, 150, 62, 0.16) 36%, rgba(16, 20, 8, 0) 64%);
   opacity: var(--glow, 0);
   pointer-events: none;
 }
-
-/* the one legitimate numbered sequence: a real descent order */
-.chamber-index {
+.strata-index {
   position: absolute;
   top: 26px; left: 50%;
   transform: translateX(-50%);
+  z-index: 46;
   font-family: var(--font-mono);
   font-size: 11px; letter-spacing: 3px;
   color: var(--textDim);
-  opacity: var(--ui, 1);
+}
+.strata-rail {
+  position: absolute;
+  right: max(var(--gutter, 24px), calc((100% - 1240px) / 2));
+  bottom: clamp(36px, 7vh, 72px);
+  z-index: 46;
+  display: flex; flex-direction: column; gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--textDim);
+}
+.strata-rail span { display: flex; align-items: center; gap: 8px; transition: color 0.3s var(--ease-epoch, ease); }
+.strata-rail span::before {
+  content: "";
+  width: 18px; height: 1px;
+  background: currentColor;
+  transition: width 0.3s var(--ease-epoch, ease);
+}
+.strata-rail span.now { color: var(--mustard, #E1B83B); }
+.strata-rail span.now::before { width: 34px; }
+
+/* one layer of the stack — all four exist simultaneously.
+   The wrapper carries NO transform/filter (the img must blend against the
+   stage's void); motion vars are applied to the img and panel directly. */
+.stratum { position: absolute; inset: 0; pointer-events: none; }
+.stratum.now { pointer-events: auto; }
+.stratum-figure {
+  position: absolute;
+  top: 0; bottom: 0;
+  right: max(var(--gutter, 24px), calc((100% - 1240px) / 2));
+  width: min(56vmin, 540px);
+  display: grid;
+  place-items: center;
+}
+.stratum-figure img, .stratum-figure .empty-orb {
+  transform: translate3d(var(--fx, 0px), var(--y, 0px), 0) scale(var(--s, 1));
+  transform-origin: 50% 42%;
+  filter: brightness(var(--br, 1)) blur(var(--bl, 0px));
+  opacity: var(--o, 1);
+  will-change: transform, filter, opacity;
+}
+.stratum-figure img {
+  width: 100%; aspect-ratio: 1;
+  object-fit: contain;
+  display: block;
+  mix-blend-mode: lighten;                 /* black photo bg dissolves into the void */
+  -webkit-mask-image: radial-gradient(ellipse 68% 66% at 50% 50%, #000 42%, transparent 72%);
+  mask-image: radial-gradient(ellipse 68% 66% at 50% 50%, #000 42%, transparent 72%);
+}
+.stratum-figure .empty-orb {
+  width: 62%; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle at 42% 40%, rgba(225,184,59,0.30), rgba(35,43,18,0.9) 55%, transparent 72%);
 }
 
-.chamber-titleblock {
+.stratum-panel {
   position: absolute;
-  left: var(--gutter, clamp(24px, 6vw, 96px));
-  bottom: clamp(48px, 9vh, 96px);
+  left: max(var(--gutter, 24px), calc((100% - 1240px) / 2));
+  top: 50%;
+  translate: 0 -50%;
   max-width: 46ch;
-  z-index: 2;
-  opacity: calc(var(--rise, 0) * var(--ui, 1));
-  transform: translateY(calc((1 - var(--rise, 0)) * 18px));
+  opacity: calc(var(--pv, 0) * var(--o, 1));
+  transform: translate3d(var(--px, 0px), calc(var(--y, 0px) * 0.5), 0);
+  will-change: transform, opacity;
 }
 .chamber-arch {
   font-family: var(--font-mono);
   font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
   color: var(--textDim);
 }
-.chamber-title {
+.stratum-title {
   margin-top: 10px;
-  font-size: clamp(1.9rem, 4.2vw, 3.6rem);
+  font-size: clamp(1.9rem, 4vw, 3.4rem);
   font-weight: 800;
   line-height: 1.06;
   letter-spacing: -0.03em;
   color: var(--charcoal);
   text-wrap: balance;
 }
-.chamber-summary {
+.stratum-summary {
   margin-top: 14px;
   max-width: 44ch;
   font-size: 13.5px;
   line-height: 1.75;
   color: var(--textMid);
 }
-.chamber-actions { display: flex; gap: 12px; align-items: center; margin-top: 20px; }
-
-.chamber-myth {
-  position: absolute;
-  right: var(--gutter, clamp(24px, 6vw, 96px));
-  bottom: clamp(48px, 9vh, 96px);
-  max-width: 30ch;
-  z-index: 2;
+.stratum-myth {
+  margin-top: 14px;
   font-size: 13px; font-style: italic; line-height: 1.7;
   color: var(--textMid);
-  background: var(--brownLight);
-  border-radius: var(--r-box);
-  padding: 14px 18px;
-  opacity: calc(var(--myth, 0) * var(--ui, 1));
-  transform: translateY(calc((1 - var(--myth, 0)) * 12px));
+  border-left: none;
+  padding-left: 14px;
+  position: relative;
 }
-.chamber-myth .mono-src {
-  display: block; margin-top: 8px;
-  font-family: var(--font-mono); font-style: normal;
-  font-size: 9.5px; letter-spacing: 1.5px; text-transform: uppercase;
-  color: var(--brown);
+.stratum-myth::before {
+  content: "";
+  position: absolute; left: 0; top: 4px; bottom: 4px;
+  width: 1px; background: var(--mustard, #E1B83B);
 }
-
-.chamber-annos {
-  position: absolute;
-  right: var(--gutter, clamp(24px, 6vw, 96px));
-  top: clamp(70px, 13vh, 130px);
-  display: flex; flex-direction: column; gap: 12px;
-  z-index: 2;
-}
-.chamber-annos .reticle { opacity: calc(var(--o, 0) * var(--ui, 1)); transform: translateY(calc((1 - var(--o, 0)) * 8px)); }
-.chamber-annos .v { font-size: 14px; }
-
-/* empty archetype — the chamber invites a draft */
-.chamber-empty .chamber-figure { display: grid; place-items: center; }
-.chamber-empty .empty-orb {
-  width: 42%; aspect-ratio: 1; border-radius: 50%;
-  background: radial-gradient(circle at 42% 40%, rgba(225,184,59,0.30), rgba(35,43,18,0.9) 55%, transparent 72%);
-  filter: brightness(var(--reveal, 0.06));
-  transform: scale(var(--scale, 1.08));
-}
+.chamber-actions { display: flex; gap: 12px; align-items: center; margin-top: 20px; flex-wrap: wrap; }
 
 /* draft strip after the chambers */
 .draft-strip {
@@ -151,23 +158,41 @@
 
 /* ---------- responsive ---------- */
 @media (max-width: 900px) {
-  .chamber-annos { display: none; }
-  .chamber-myth { display: none; }
-  .chamber-stage { place-items: start center; }
-  .chamber-figure { width: min(64vmin, 420px); height: min(64vmin, 420px); margin-top: 9vh; }
-  .chamber-titleblock {
-    max-width: calc(100vw - 2 * var(--gutter, 24px));
-    bottom: 24px;
+  .strata-rail { display: none; }
+  .stratum-myth { display: none; }
+  .stratum-figure {
+    right: 50%; translate: 50% 0;
+    top: 4vh; bottom: auto;
+    width: min(54vmin, 320px); height: min(54vmin, 320px);
+  }
+  .stratum-panel {
+    left: var(--gutter, 24px);
+    right: var(--gutter, 24px);
+    top: auto; bottom: clamp(24px, 5vh, 56px);
+    translate: 0 0;
+    max-width: none;
     padding-top: 40px;
-    background: linear-gradient(transparent, rgba(16, 20, 8, 0.82) 28%);
+    background: linear-gradient(transparent, rgba(16, 20, 8, 0.85) 30%);
   }
 }
 
-/* ---------- reduced motion: static stacked sections ---------- */
+/* ---------- reduced motion: the stack laid out flat ---------- */
 @media (prefers-reduced-motion: reduce) {
-  .chamber { height: auto; }
-  .chamber-stage { position: static; height: auto; min-height: 92vh; padding: 60px 0 40px; }
-  .chamber-figure img, .chamber-empty .empty-orb { filter: none; transform: none; opacity: 1; }
-  .chamber-titleblock, .chamber-myth, .chamber-annos .reticle, .chamber-index { opacity: 1; transform: none; }
-  .chamber-glow { display: none; }
+  .strata { height: auto; }
+  .strata-stage { position: static; height: auto; overflow: visible; padding: 40px 0; }
+  .stratum {
+    position: static;
+    pointer-events: auto;
+    display: grid;
+    grid-template-columns: minmax(0, 46ch) minmax(0, 1fr);
+    gap: 32px;
+    align-items: center;
+    max-width: 1240px;
+    margin: 0 auto 64px;
+    padding-inline: var(--gutter, 24px);
+  }
+  .stratum-figure { position: static; width: min(40vmin, 360px); }
+  .stratum-figure img, .stratum-figure .empty-orb { transform: none; filter: none; opacity: 1; }
+  .stratum-panel { position: static; translate: none; transform: none; opacity: 1; }
+  .strata-glow, .strata-index, .strata-rail { display: none; }
 }

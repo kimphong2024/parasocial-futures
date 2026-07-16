@@ -1,5 +1,7 @@
-// Scenario depth chambers — one pinned act per archetype, driven by the same
-// rAF scroll grammar as the home hero: reveal → report → dive through.
+// Scenario strata — all four archetypes layered in ONE pinned composition
+// (multilayer parallax): the stack is visible at once, and scrolling dollies
+// the camera inward. The current layer flies apart past the camera while
+// every deeper layer swells one step nearer. Vanilla rAF, no libraries.
 import { api, esc } from "./api.js";
 import { renderNav } from "./nav.js";
 
@@ -8,84 +10,102 @@ const ORDER = ["growth", "collapse", "discipline", "transformation"];
 const ROMAN = ["I", "II", "III", "IV"];
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const condText = (c) => {
-  if (c.op === "lte") return `${c.driver_key.replaceAll("_", " ")} ≤ ${c.value}`;
-  if (c.op === "gte") return `${c.driver_key.replaceAll("_", " ")} ≥ ${c.value}`;
-  if (c.op === "between") return `${c.driver_key.replaceAll("_", " ")} ∈ [${c.lo}, ${c.hi}]`;
-  return c.driver_key;
-};
-
-function chamberHTML(arch, meta, sc, i) {
-  const conds = sc ? JSON.parse(sc.driver_conditions || "[]").slice(0, 3) : [];
+function stratumHTML(arch, meta, sc, i) {
   const cited = sc ? JSON.parse(sc.signal_ids || "[]").length : 0;
-  return `<section class="chamber ${sc ? "" : "chamber-empty"}" data-arch="${arch}">
-    <div class="chamber-stage">
-      <figure class="chamber-figure">
-        ${sc
-          ? `<img src="/img/scenario-${arch}.jpg" alt="${esc(meta.name)} — the scenario's myth as a specimen photograph" onerror="this.style.display='none'">`
-          : `<div class="empty-orb"></div>`}
-      </figure>
-      <div class="chamber-glow" aria-hidden="true"></div>
-      <span class="chamber-index">${ROMAN[i]} / IV</span>
-
-      <div class="chamber-titleblock">
-        <span class="chamber-arch">${esc(meta.name)}</span>
-        ${sc ? `
-          <h2 class="chamber-title">${esc(sc.title)}</h2>
-          <p class="chamber-summary">${esc(sc.summary)}</p>
-          <div class="chamber-actions">
-            <a class="btn btn-sm" href="/scenario?id=${sc.id}">Read the full scenario</a>
-            <span class="status-chip status-${esc(sc.status)}">${esc(sc.status)}</span>
-          </div>`
-        : `
-          <h2 class="chamber-title">Not yet drafted</h2>
-          <p class="chamber-summary">${esc(meta.logic)}</p>
-          <div class="chamber-actions">
-            <button class="btn btn-sm" data-draft="${arch}">Draft with Claude</button>
-          </div>`}
-      </div>
-
+  // nearer strata paint over deeper ones
+  return `<div class="stratum ${sc ? "" : "stratum-empty"}" data-i="${i}" data-arch="${arch}" style="z-index:${40 - i}">
+    <figure class="stratum-figure">
+      ${sc
+        ? `<img src="/img/scenario-${arch}.jpg" alt="${esc(meta.name)} — the scenario's myth as a specimen photograph" onerror="this.style.display='none'">`
+        : `<div class="empty-orb"></div>`}
+    </figure>
+    <div class="stratum-panel">
+      <span class="chamber-arch">${esc(meta.name)} · stratum ${ROMAN[i]}</span>
       ${sc ? `
-        <blockquote class="chamber-myth">${esc(sc.myth)}<span class="mono-src">Layer 4 · myth and metaphor</span></blockquote>
-        <div class="chamber-annos">
-          ${conds.map((c) => `<div class="reticle"><span class="ret"></span><span class="k">Holds when</span><span class="v">${esc(condText(c))}</span></div>`).join("")}
-          <div class="reticle"><span class="ret"></span><span class="k">Evidence</span><span class="v">${cited} cited signals</span></div>
-        </div>` : ""}
+        <h2 class="stratum-title">${esc(sc.title)}</h2>
+        <p class="stratum-summary">${esc(sc.summary)}</p>
+        <blockquote class="stratum-myth">${esc(sc.myth)}</blockquote>
+        <div class="chamber-actions">
+          <a class="btn btn-sm" href="/scenario?id=${sc.id}">Enter this scenario</a>
+          <span class="status-chip status-${esc(sc.status)}">${esc(sc.status)}</span>
+          <span class="caption">${cited} cited signals</span>
+        </div>`
+      : `
+        <h2 class="stratum-title">Not yet drafted</h2>
+        <p class="stratum-summary">${esc(meta.logic)}</p>
+        <div class="chamber-actions">
+          <button class="btn btn-sm" data-draft="${arch}">Draft with Claude</button>
+        </div>`}
     </div>
-  </section>`;
+  </div>`;
 }
 
-// --- scroll engine (shared grammar with the home hero) ---
+// --- the camera engine: one global depth, every layer driven from it ---
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
 const easeOutExpo = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
 const easeInCubic = (x) => x * x * x;
-const ANNO_STARTS = [0.34, 0.44, 0.54, 0.64];
 
 function attachEngine() {
-  const chambers = [...document.querySelectorAll(".chamber")];
-  if (!chambers.length) return;
+  const strata = $("strata");
+  if (!strata) return;
+  const stage = $("strataStage");
+  const layers = [...stage.querySelectorAll(".stratum")];
+  const rail = [...document.querySelectorAll("#strataRail span")];
+  const index = $("strataIndex");
+  const last = layers.length - 1;
   let ticking = false;
   function update() {
     ticking = false;
-    for (const ch of chambers) {
-      const stage = ch.querySelector(".chamber-stage");
-      const rect = ch.getBoundingClientRect();
-      if (rect.bottom < -60 || rect.top > innerHeight + 60) continue;
-      const track = rect.height - innerHeight;
-      const p = clamp01(-rect.top / track);
-      const lit = easeOutExpo(clamp01(p / 0.4));
-      const settle = 1.08 - 0.08 * clamp01(p / 0.4);
-      const zoom = 1 + 1.6 * easeInCubic(clamp01((p - 0.7) / 0.3));
-      stage.style.setProperty("--reveal", (0.06 + 0.94 * lit).toFixed(4));
-      stage.style.setProperty("--scale", (settle * zoom).toFixed(4));
-      stage.style.setProperty("--rise", easeOutExpo(clamp01((p - 0.16) / 0.16)).toFixed(4));
-      stage.style.setProperty("--myth", easeOutExpo(clamp01((p - 0.30) / 0.14)).toFixed(4));
-      stage.style.setProperty("--ui", (1 - clamp01((p - 0.72) / 0.12)).toFixed(4));
-      stage.style.setProperty("--glow", (0.85 * easeInCubic(clamp01((p - 0.82) / 0.18)) * (1 - clamp01((p - 0.96) / 0.04))).toFixed(4));
-      stage.style.setProperty("--exit", (1 - clamp01((p - 0.93) / 0.06)).toFixed(4));
-      ch.querySelectorAll(".chamber-annos .reticle").forEach((el, i) =>
-        el.style.setProperty("--o", easeOutExpo(clamp01((p - ANNO_STARTS[i]) / 0.10)).toFixed(4)));
-    }
+    const rect = strata.getBoundingClientRect();
+    if (rect.bottom < -60 || rect.top > innerHeight + 60) return;
+    const p = clamp01(-rect.top / (rect.height - innerHeight));
+    const z = p * last; // camera depth in layer units; ends settled on the deepest
+
+    layers.forEach((el, i) => {
+      const d = i - z; // signed distance from the camera
+      let s, o, br, bl, y, fx, px, pv;
+      if (d >= 0) {
+        // ahead: smaller, dimmer, softer, cascading up-left — a visible stack
+        s = 1 / (1 + 0.42 * d);
+        o = clamp01((2.6 - d) / 1.0);
+        br = Math.max(0.16, 1 - 0.42 * Math.min(d, 1) - 0.15 * Math.max(0, d - 1));
+        bl = Math.min(5, 1.8 * d);
+        y = -120 * d;
+        fx = -150 * d;
+        px = 0;
+        pv = easeOutExpo(clamp01(1 - d / 0.8));
+      } else {
+        // passed: flies apart past the camera — image right, words left
+        const a = clamp01(-d / 0.55);
+        s = 1 + 0.95 * a;
+        o = 1 - a;
+        br = 1;
+        bl = 3.5 * a;
+        y = 0;
+        fx = 130 * a;
+        px = -110 * a;
+        pv = clamp01(1 - a * 1.25);
+      }
+      el.style.setProperty("--s", s.toFixed(4));
+      el.style.setProperty("--o", o.toFixed(4));
+      el.style.setProperty("--br", br.toFixed(4));
+      el.style.setProperty("--bl", bl.toFixed(2) + "px");
+      el.style.setProperty("--y", y.toFixed(1) + "px");
+      el.style.setProperty("--fx", fx.toFixed(1) + "px");
+      el.style.setProperty("--px", px.toFixed(1) + "px");
+      el.style.setProperty("--pv", pv.toFixed(4));
+      el.classList.toggle("now", Math.abs(d) < 0.5);
+    });
+
+    // a brief bloom at each hand-off, and a settle glow on arrival at the deepest
+    const frac = z % 1;
+    const pulse = z < last - 0.02 ? Math.pow(Math.sin(Math.PI * frac), 8) * 0.2 : 0;
+    const settle = 0.5 * easeInCubic(clamp01((p - 0.88) / 0.12));
+    stage.style.setProperty("--glow", (pulse + settle).toFixed(4));
+
+    const cur = Math.min(last, Math.max(0, Math.round(z)));
+    rail.forEach((el, i) => el.classList.toggle("now", i === cur));
+    index.textContent = `${ROMAN[cur]} / IV`;
   }
   addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
   addEventListener("resize", update, { passive: true });
@@ -95,7 +115,17 @@ function attachEngine() {
 async function load() {
   const j = await api("/api/scenarios");
   const active = (arch) => j.scenarios.find((s) => s.archetype === arch && s.status !== "archived");
-  $("chambers").innerHTML = ORDER.map((arch, i) => chamberHTML(arch, j.archetypes[arch], active(arch), i)).join("");
+  $("chambers").innerHTML = `
+    <section class="strata" id="strata">
+      <div class="strata-stage" id="strataStage">
+        <div class="strata-glow" aria-hidden="true"></div>
+        ${ORDER.map((arch, i) => stratumHTML(arch, j.archetypes[arch], active(arch), i)).join("")}
+        <span class="strata-index" id="strataIndex">I / IV</span>
+        <div class="strata-rail" id="strataRail">
+          ${ORDER.map((arch, i) => `<span data-l="${i}">${ROMAN[i]} ${esc(j.archetypes[arch].name)}</span>`).join("")}
+        </div>
+      </div>
+    </section>`;
   $("draftButtons").innerHTML = ORDER.map((arch) =>
     `<button class="btn btn-secondary btn-sm" data-draft="${arch}">Draft ${esc(j.archetypes[arch].name)}</button>`).join("");
   if (!reduced) attachEngine();

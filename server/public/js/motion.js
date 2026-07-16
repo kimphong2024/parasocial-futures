@@ -29,7 +29,7 @@ const REVEAL = [
   ".review-card",
   "table.data tbody tr:nth-child(-n+12)",
 ];
-const EXCLUDE = ".chamber, .chamber *, .specimen-stage, .specimen-stage *, .descent, .descent *";
+const EXCLUDE = ".strata, .strata *, .specimen-stage, .specimen-stage *, .descent, .descent *";
 
 const io = reduced ? null : new IntersectionObserver((entries) => {
   for (const e of entries) {
