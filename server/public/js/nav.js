@@ -5,6 +5,7 @@ const LINKS = [
   ["/signals", "Signals"],
   ["/review", "Review"],
   ["/scenarios", "Scenarios"],
+  ["/scenario-config", "Configure"],
   ["/drivers", "Drivers"],
   ["/simulation", "Simulation"],
   ["/chat", "Chat"],

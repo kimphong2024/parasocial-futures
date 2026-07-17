@@ -160,5 +160,5 @@ async function load() {
   render();
 }
 
-renderNav("/scenarios");
+renderNav("/scenario-config");
 load();
