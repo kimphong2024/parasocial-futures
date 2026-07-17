@@ -132,6 +132,24 @@ a:hover { text-decoration: underline; }
   border: 1px solid rgba(225,184,59,0.3); border-radius: var(--r-pill);
   font-size: 10px; font-weight: 700; padding: 1px 6px;
 }
+.nav-dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--mustard); margin-left: 5px; vertical-align: 2px;
+}
+
+/* second nav row: the active section's children */
+.site-subnav { border-top: 1px solid var(--borderLight); margin-top: var(--s-4); }
+.site-subnav-inner {
+  max-width: 1240px; margin: 0 auto;
+  display: flex; gap: var(--s-5); align-items: center; flex-wrap: wrap;
+  padding-top: 8px;
+}
+.site-subnav a {
+  font-size: 12px; color: var(--textDim); padding: 4px 0;
+  letter-spacing: 0.3px;
+}
+.site-subnav a:hover { color: var(--charcoal); text-decoration: none; }
+.site-subnav a.active { color: var(--mustard, #b8892c); font-weight: 600; }
 
 .container { max-width: 1240px; margin: 0 auto; padding: var(--s-6); }
 .page-head { margin-bottom: var(--s-6); }

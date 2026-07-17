@@ -1,19 +1,23 @@
-// Shared shell: triad bar + header + nav with pending-review badge.
+// Shared shell: triad bar + header + two-row nav (sections + sub-nav).
+// Five sections; a child page lights its parent in the top row and itself
+// in the sub-row. The pending-review count rides on "Signal review", with
+// a dot on Signals so the queue is visible from anywhere.
 import { api } from "./api.js";
 
-const LINKS = [
-  ["/signals", "Signals"],
-  ["/review", "Review"],
-  ["/scenarios", "Scenarios"],
-  ["/scenario-config", "Configure"],
-  ["/drivers", "Drivers"],
-  ["/simulation", "Simulation"],
-  ["/chat", "Chat"],
-  ["/sources", "Scanning"],
-  ["/reference", "Method"],
+const SECTIONS = [
+  { path: "/signals", label: "Signals", children: [["/review", "Signal review"], ["/sources", "Scan settings"]] },
+  { path: "/drivers", label: "Drivers", children: [["/driver-config", "Driver configure"]] },
+  { path: "/scenarios", label: "Scenarios", children: [["/scenario-config", "Scenario configure"], ["/simulation", "Scenario simulation"]] },
+  { path: "/chat", label: "Chat", children: [] },
+  { path: "/reference", label: "Method", children: [] },
 ];
 
+const sectionOf = (path) =>
+  SECTIONS.find((s) => s.path === path || s.children.some(([p]) => p === path)) ||
+  (path === "/scenario" ? SECTIONS[2] : null);
+
 export async function renderNav(active) {
+  const section = sectionOf(active);
   const header = document.createElement("div");
   header.innerHTML = `
     <div class="triad-bar"></div>
@@ -26,18 +30,26 @@ export async function renderNav(active) {
           </div>
         </a>
         <nav class="site-nav">
-          ${LINKS.map(([href, name]) =>
-            `<a href="${href}" class="${href === active ? "active" : ""}" data-nav="${name.toLowerCase()}">${name}</a>`).join("")}
+          ${SECTIONS.map((s) =>
+            `<a href="${s.path}" class="${s === section ? "active" : ""}" data-nav="${s.path}">${s.label}</a>`).join("")}
         </nav>
       </div>
+      ${section && section.children.length ? `
+      <div class="site-subnav">
+        <div class="site-subnav-inner">
+          <a href="${section.path}" class="${active === section.path ? "active" : ""}">${section.label} home</a>
+          ${section.children.map(([p, name]) =>
+            `<a href="${p}" class="${p === active ? "active" : ""}" data-nav="${p}">${name}</a>`).join("")}
+        </div>
+      </div>` : ""}
     </header>`;
   document.body.prepend(header);
   try {
     const h = await api("/api/health");
     const pending = (h.pending || 0) + (h.drafts || 0);
     if (pending > 0) {
-      const a = header.querySelector('[data-nav="review"]');
-      a.insertAdjacentHTML("beforeend", `<span class="nav-badge">${pending}</span>`);
+      header.querySelector('[data-nav="/review"]')?.insertAdjacentHTML("beforeend", `<span class="nav-badge">${pending}</span>`);
+      header.querySelector('[data-nav="/signals"]')?.insertAdjacentHTML("beforeend", `<span class="nav-dot" title="${pending} awaiting review"></span>`);
     }
     return h;
   } catch { return null; }
