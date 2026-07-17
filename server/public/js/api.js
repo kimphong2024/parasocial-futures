@@ -1,11 +1,10 @@
-// Fetch wrapper — JSON in/out, 401 → login redirect.
+// Fetch wrapper — JSON in/out.
 export async function api(path, opts = {}) {
   const r = await fetch(path, {
     headers: { "content-type": "application/json" },
     ...opts,
     body: opts.body && typeof opts.body !== "string" ? JSON.stringify(opts.body) : opts.body,
   });
-  if (r.status === 401) { location.href = "/login"; throw new Error("unauthorized"); }
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(j.error || `request failed (${r.status})`);
   return j;

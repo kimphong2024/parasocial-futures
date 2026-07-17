@@ -20,7 +20,7 @@
           <span class="brand-title">Futures of Parasocial AI</span>
         </div>
       </a>
-      <a class="btn btn-sm" href="/login">Enter the platform</a>
+      <a class="btn btn-sm" href="/signals">Enter the platform</a>
     </div>
   </header>
 
@@ -70,14 +70,13 @@
             <tr><td>Database</td><td>node:sqlite, WAL mode</td><td>Zero-dependency single-file state on a persistent volume</td></tr>
             <tr><td>Frontend</td><td>Vanilla HTML/CSS/JS, no build step</td><td>Every file served is the file written — auditable</td></tr>
             <tr><td>Charts</td><td>Hand-rolled SVG</td><td>Full palette control; colors resolve from CSS custom properties</td></tr>
-            <tr><td>Auth</td><td>Shared password → HMAC cookie</td><td>Single-reviewer tool; no accounts, no PII</td></tr>
+            <tr><td>Auth</td><td>None — fully open</td><td>A public demonstration instrument; all actions exposed by design</td></tr>
             <tr><td>Hosting</td><td>Railway, Dockerfile, /data volume</td><td>Deploys via railway up; DB persists across deploys</td></tr>
           </tbody>
         </table>
         <div class="tdoc-tree"><b>server/</b>
   server.js      routes + boot (seed → vector index → scheduler)
   db.js          schema + prepared statements
-  auth.js        HMAC cookie auth; public-path whitelist
   scan.js        orchestrator: perplexity + firecrawl → classify → dedup → pending
   perplexity.js  6 themed Sonar queries, weekly recency, tolerant JSON
   firecrawl.js   v2 scrape/crawl + Claude extraction (forced tool_use)
@@ -261,7 +260,7 @@ EVIDENCE for this exchange:
       <section id="security">
         <div class="tsec-head"><span class="num">12</span><h2>Security, privacy, operations</h2></div>
         <ul>
-          <li>Public surface: this page, the home page, and a counts-only stats endpoint. Everything else sits behind the password gate.</li>
+          <li><strong>Fully open by design.</strong> There are no accounts and no password: every page and every action — reviewing signals, editing drivers and scenarios, steering the scan, running simulations — is publicly reachable and writable. The platform is a public demonstration instrument; openness of the machinery is part of the method, and the trade-off (anyone may edit) is accepted knowingly.</li>
           <li>No user accounts, no analytics, no tracking. The chat log stores questions and cited ids only — never conversations.</li>
           <li>All keys live in environment variables; every integration is env-gated and degrades gracefully when its key is absent.</li>
           <li>Nightly scan at 22:00 Asia/Singapore; per-step failures are visible in the review queue's scan history.</li>

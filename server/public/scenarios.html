@@ -22,7 +22,10 @@
   <div id="chambers"></div>
 
   <section class="card draft-strip">
-    <h4>Draft a new reading</h4>
+    <div class="flex-between" style="flex-wrap:wrap;gap:10px">
+      <h4>Draft a new reading</h4>
+      <a class="btn btn-sm btn-secondary" href="/scenario-config">Configure scenarios — all statuses, conditions</a>
+    </div>
     <p class="caption mt-2">Claude drafts from the approved evidence; the result lands as an editable draft, never published on its own. Give it an optional focus first.</p>
     <div class="row">
       <input type="text" id="focus" placeholder="Optional focus (e.g. implications for minors, Southeast Asia)…">

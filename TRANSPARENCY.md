@@ -30,7 +30,7 @@ The binding rule across all four: **nothing publishes without a human decision.*
 | Database | `node:sqlite` (`DatabaseSync`), WAL mode | Zero-dependency, single-file state on a Railway volume; prepared statements throughout |
 | Frontend | Vanilla HTML/CSS/JS, no build step | Every file served is the file written; auditability and zero toolchain drift |
 | Charts | Hand-rolled SVG | Full control of palette and marks; colors resolve from CSS custom properties |
-| Auth | Single shared password → HMAC-signed cookie | Appropriate for a single-reviewer capstone tool; no PII, no accounts |
+| Auth | None — fully open | A public demonstration instrument; all pages and actions exposed by design |
 | Hosting | Railway (Dockerfile build, `/data` volume) | Deploy is `railway up`; volume persists DB across deploys |
 | Scheduler | In-process `setTimeout` timer (DST-safe via `Intl`) | Railway volumes bind to one service, so web + nightly scan share a process |
 
@@ -40,7 +40,6 @@ The binding rule across all four: **nothing publishes without a human decision.*
 server/
   server.js      routes + boot sequence (seed → vector index → scheduler)
   db.js          schema + prepared statements (all tables below)
-  auth.js        HMAC cookie auth; public paths whitelist
   scan.js        scan orchestrator: perplexity + firecrawl → classify → dedup → pending
   perplexity.js  12 themed Sonar queries, weekly recency, tolerant JSON parsing
   firecrawl.js   v2 scrape/crawl + Claude extraction (forced tool_use)
@@ -235,7 +234,7 @@ Rendering rule for all imagery: pure-black photo backgrounds dissolve into the p
 
 ## 11. Security, privacy, operations
 
-- Auth: single shared password (`APP_PASSWORD`) → stateless HMAC cookie; public surface is only the home page and a counts-only stats endpoint (`/api/public/stats`).
+- Auth: none — the platform is fully open by design. Every page and every action (review, driver and scenario editing, scan controls, simulation) is publicly reachable and writable; the trade-off is accepted knowingly for a public demonstration instrument.
 - Secrets live in environment variables (Railway) and a gitignored local `.env`; never in the repository.
 - No user accounts, no analytics, no tracking. `chat_log` stores questions and cited ids only.
 - All third-party keys are env-gated: any missing key degrades that feature gracefully (recorded scan error, 503 on chat) without breaking the rest.

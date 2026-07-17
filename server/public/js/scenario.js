@@ -108,7 +108,8 @@ function headerHTML() {
           ? `<button class="btn" id="save">Save changes</button><button class="btn btn-secondary" id="cancel">Cancel</button>`
           : `<button class="btn btn-secondary" id="edit">Edit</button>
              ${sc.status === "draft" ? `<button class="btn" id="publish">Publish</button>` : ""}
-             ${sc.status !== "archived" ? `<button class="btn-danger btn" id="archive">Archive</button>` : ""}`}
+             ${sc.status !== "archived" ? `<button class="btn-danger btn" id="archive">Archive</button>` : ""}
+             <a class="btn btn-secondary btn-sm" href="/scenario-config" style="align-self:center">All scenarios</a>`}
       </div>
     </div>`;
 }

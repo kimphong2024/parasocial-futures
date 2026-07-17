@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Drivers — Futures of Parasocial AI</title>
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/app-dark.css">
+  <link rel="stylesheet" href="/css/motion.css">
+</head>
+<body>
+  <main class="container">
+    <div class="page-head">
+      <figure class="page-motif" aria-hidden="true"><img src="/img/motif-simulation.jpg" alt="" onerror="this.parentElement.remove()"></figure>
+      <span class="label">Driver Space</span>
+      <h2>Drivers</h2>
+      <p class="subtitle">The uncertain quantities the simulation reasons over — defined here by a human. Name each driver, write its rationale, and group the signal clusters that justify its range. Distribution shapes are tuned on the Simulation page.</p>
+      <div class="divider mt-4"></div>
+    </div>
+
+    <div class="card chart-block">
+      <h4>Unclaimed clusters</h4>
+      <p class="caption mt-2">Signal clusters not yet grouped under any driver — the evidence still waiting for a home. Assign them below, or decide they inform no driver.</p>
+      <div id="unclaimed" class="mt-4"></div>
+    </div>
+
+    <div id="driverList"></div>
+
+    <div class="card chart-block">
+      <h4>Add a driver</h4>
+      <p class="caption mt-2">New drivers start with a neutral 0–100 PERT range — set the real range on the Simulation page, then reference the driver from scenario conditions.</p>
+      <div class="filter-bar mt-4">
+        <input type="text" id="newKey" placeholder="key_snake_case" style="flex:0 1 200px">
+        <input type="text" id="newName" placeholder="Driver name" style="flex:1 1 240px">
+        <input type="text" id="newUnit" placeholder="unit (e.g. % of adults)" style="flex:0 1 200px">
+        <button class="btn" id="addDriver">Add driver</button>
+      </div>
+      <div id="addErr"></div>
+    </div>
+  </main>
+  <script type="module" src="/js/drivers.js"></script>
+  <script src="/js/vendor/lenis.min.js"></script>
+  <script type="module" src="/js/motion.js"></script>
+</body>
+</html>

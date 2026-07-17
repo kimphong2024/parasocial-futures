@@ -151,6 +151,27 @@ CREATE TABLE IF NOT EXISTS scan_themes (
 // persists across deploys, so CREATE TABLE IF NOT EXISTS never re-runs).
 try { db.exec("ALTER TABLE scan_runs ADD COLUMN rejected_relevance INTEGER NOT NULL DEFAULT 0"); } catch { /* already migrated */ }
 try { db.exec("ALTER TABLE scan_runs ADD COLUMN detail_json TEXT NOT NULL DEFAULT '{}'"); } catch { /* already migrated */ }
+try { db.exec("ALTER TABLE drivers ADD COLUMN cluster_json TEXT NOT NULL DEFAULT '[]'"); } catch { /* already migrated */ }
+
+// One-time data migration: seed the evidence grouping for the shipped drivers
+// from the clusters their rationales already name. Runs only while every
+// driver's grouping is still empty, so human edits are never overwritten.
+{
+  const DRIVER_CLUSTERS = {
+    companion_adoption: ["AI Companions", "Intimacy Economy", "Dating Reinvention", "Platform Strategy"],
+    regulation_stringency: ["Governance Emerging", "Legal Reckoning", "Privacy & Surveillance", "Safety & Prosocial Design"],
+    sycophancy_mitigation: ["AI Sycophancy", "AI Safety & Alignment", "Safety & Prosocial Design"],
+    social_trust: ["Partnership Collapse", "Clinical & Public Health", "Male Loneliness & Friendship", "Culture & Discourse"],
+    youth_norm_shift: ["Youth & Development", "Gaming & Virtual Worlds", "Fictosexuality & 2D-Love"],
+    incident_severity: ["Legal Reckoning", "AI Romance Fraud", "Digital Resurrection & Grief"],
+    substitution_vs_complement: ["Clinical & Public Health", "Relationship Services", "Arts, Ideas & Academy", "Sex Recession & Fertility"],
+  };
+  const unmapped = db.prepare("SELECT COUNT(*) AS n FROM drivers WHERE cluster_json != '[]'").get().n === 0;
+  if (unmapped) {
+    const put = db.prepare("UPDATE drivers SET cluster_json = ? WHERE key = ?");
+    for (const [key, clusters] of Object.entries(DRIVER_CLUSTERS)) put.run(JSON.stringify(clusters), key);
+  }
+}
 
 export const now = () => new Date().toISOString();
 
@@ -234,6 +255,8 @@ export const listDrivers = db.prepare("SELECT * FROM drivers ORDER BY sort_order
 export const enabledDrivers = db.prepare("SELECT * FROM drivers WHERE enabled = 1 ORDER BY sort_order, id");
 export const getDriver = db.prepare("SELECT * FROM drivers WHERE id = ?");
 export const countDrivers = db.prepare("SELECT COUNT(*) AS n FROM drivers");
+export const deleteDriver = db.prepare("DELETE FROM drivers WHERE id = ?");
+export const maxDriverOrder = db.prepare("SELECT COALESCE(MAX(sort_order), 0) AS m FROM drivers");
 
 export const insertSimRun = db.prepare("INSERT INTO simulation_runs (created_at, n_samples, seed, drivers_snapshot, conditions_snapshot, results_json, duration_ms) VALUES (?,?,?,?,?,?,?)");
 export const listSimRuns = db.prepare("SELECT id, created_at, n_samples, seed, duration_ms FROM simulation_runs ORDER BY id DESC LIMIT 20");

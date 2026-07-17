@@ -22,7 +22,7 @@ npm start              # seeds the DB from server/seed/*.csv on first boot
 # open http://localhost:8080
 ```
 
-No `APP_PASSWORD` → auth is off (dev). No `VOYAGE_API_KEY` → semantic features off. No scan keys → scans record the error and keep going.
+No `VOYAGE_API_KEY` → semantic features off. No scan keys → scans record the error and keep going.
 
 ## Deploy (Railway)
 
@@ -30,7 +30,6 @@ Dockerfile build via `railway.json`. Attach a volume at `/data` and set:
 
 ```
 STATE_DB=/data/state.db
-APP_PASSWORD=…  SESSION_SECRET=…
 ANTHROPIC_API_KEY=…  VOYAGE_API_KEY=…
 PERPLEXITY_API_KEY=…  FIRECRAWL_API_KEY=…
 ENABLE_CRON=1  REFRESH_HOUR=22  REFRESH_TZ=Asia/Singapore
@@ -47,7 +46,6 @@ Node 22+ ESM, Express, `node:sqlite` (no ORM), vanilla JS frontend (no build ste
 server/
   server.js      routes + boot (seed → vector index → scheduler)
   db.js          schema + prepared statements
-  auth.js        single-password HMAC cookie
   scan.js        orchestrator: perplexity + firecrawl → classify → dedup → pending
   perplexity.js  6 themed sonar queries, weekly recency, tolerant JSON
   firecrawl.js   v2 scrape/crawl + Claude extraction (forced tool_use)

@@ -4,7 +4,6 @@ import express from "express";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as d from "./db.js";
-import { loginHandler, authMiddleware } from "./auth.js";
 import { seedIfEmpty } from "../scripts/seed.js";
 import { loadIndex, ensureEmbeddings, ensureScenarioEmbeddings, similarTo, topSignals, indexedCount } from "./vectors.js";
 import { embedQuery, voyageEnabled } from "./voyage.js";
@@ -23,8 +22,9 @@ const PORT = process.env.PORT || 8080;
 const app = express();
 app.use(express.json({ limit: "2mb" }));
 
-app.post("/api/login", loginHandler);
-app.get("/login", (_req, res) => res.sendFile(join(HERE, "public", "login.html")));
+// The platform is fully open by design — no accounts, no password.
+// Old /login links land on the app.
+app.get("/login", (_req, res) => res.redirect("/signals"));
 app.get("/", (_req, res) => res.sendFile(join(HERE, "public", "home.html")));
 app.get("/transparency", (_req, res) => res.sendFile(join(HERE, "public", "transparency.html")));
 app.get("/reference", (_req, res) => res.sendFile(join(HERE, "public", "reference.html")));
@@ -39,8 +39,6 @@ app.get("/api/public/stats", (_req, res) => {
     lastScan: last?.finished_at?.slice(0, 10) || null,
   });
 });
-
-app.use(authMiddleware);
 
 // ---------- meta ----------
 app.get("/api/health", (_req, res) => {
@@ -223,7 +221,7 @@ app.patch("/api/scenarios/:id", (req, res) => {
   const patch = { ...req.body, updated_at: d.now() };
   if (patch.driver_conditions && typeof patch.driver_conditions !== "string") patch.driver_conditions = JSON.stringify(patch.driver_conditions);
   if (patch.signal_ids && typeof patch.signal_ids !== "string") patch.signal_ids = JSON.stringify(patch.signal_ids);
-  const ok = d.updateRow("scenarios", +req.params.id, patch, ["title", "summary", "litany", "systemic", "worldview", "myth", "narrative", "signal_ids", "driver_conditions", "updated_at"]);
+  const ok = d.updateRow("scenarios", +req.params.id, patch, ["title", "summary", "litany", "systemic", "worldview", "myth", "narrative", "signal_ids", "driver_conditions", "horizon_year", "archetype", "updated_at"]);
   res.json({ ok });
 });
 app.post("/api/scenarios/:id/publish", async (req, res) => {
@@ -237,9 +235,39 @@ app.post("/api/scenarios/:id/archive", (req, res) => {
   const ok = d.updateRow("scenarios", +req.params.id, { status: "archived", updated_at: d.now() }, ["status", "updated_at"]);
   res.json({ ok });
 });
+app.post("/api/scenarios/:id/restore", (req, res) => {
+  const sc = d.getScenario.get(+req.params.id);
+  if (!sc) return res.status(404).json({ error: "not found" });
+  const ok = d.updateRow("scenarios", sc.id, { status: "draft", updated_at: d.now() }, ["status", "updated_at"]);
+  res.json({ ok });
+});
 
 // ---------- drivers + simulation ----------
 app.get("/api/drivers", (_req, res) => res.json({ drivers: d.listDrivers.all() }));
+app.post("/api/drivers", (req, res) => {
+  const { key, name, unit = "", description = "", rationale = "" } = req.body || {};
+  if (!/^[a-z0-9_]{2,50}$/.test(key || "")) return res.status(400).json({ error: "key must be snake_case (a-z, 0-9, _)" });
+  if (!(name || "").trim()) return res.status(400).json({ error: "name required" });
+  try {
+    const order = d.maxDriverOrder.get().m + 1;
+    const info = d.insertDriver.run(key, name.trim(), description, unit, "pert", JSON.stringify({ min: 0, mode: 50, max: 100 }), rationale, 1, order, d.now());
+    res.json({ ok: true, id: Number(info.lastInsertRowid) });
+  } catch (e) {
+    res.status(400).json({ error: /UNIQUE/.test(e.message) ? "a driver with that key already exists" : e.message });
+  }
+});
+app.delete("/api/drivers/:id", (req, res) => {
+  const dr = d.getDriver.get(+req.params.id);
+  if (!dr) return res.status(404).json({ error: "not found" });
+  // a driver referenced by a live scenario's conditions must not vanish
+  const using = d.listScenarios.all()
+    .filter((sc) => sc.status !== "archived")
+    .filter((sc) => JSON.parse(sc.driver_conditions || "[]").some((c) => c.driver_key === dr.key))
+    .map((sc) => sc.title);
+  if (using.length) return res.status(400).json({ error: `still referenced by: ${using.join(", ")} — remove those conditions first` });
+  d.deleteDriver.run(dr.id);
+  res.json({ ok: true });
+});
 app.patch("/api/drivers/:id", (req, res) => {
   const patch = { ...req.body, updated_at: d.now() };
   if (patch.params_json) {
@@ -253,7 +281,8 @@ app.patch("/api/drivers/:id", (req, res) => {
     patch.params_json = JSON.stringify(p);
   }
   if ("enabled" in patch) patch.enabled = patch.enabled ? 1 : 0;
-  const ok = d.updateRow("drivers", +req.params.id, patch, ["name", "description", "unit", "dist_type", "params_json", "rationale", "enabled", "updated_at"]);
+  if (patch.cluster_json && typeof patch.cluster_json !== "string") patch.cluster_json = JSON.stringify(patch.cluster_json);
+  const ok = d.updateRow("drivers", +req.params.id, patch, ["name", "description", "unit", "dist_type", "params_json", "rationale", "enabled", "cluster_json", "sort_order", "updated_at"]);
   res.json({ ok });
 });
 app.get("/api/drivers/:id/preview", (req, res) => {
@@ -293,7 +322,7 @@ app.post("/api/chat", chatHandler);
 // ---------- static frontend ----------
 app.use(express.static(join(HERE, "public")));
 app.get("/signals", (_req, res) => res.sendFile(join(HERE, "public", "index.html")));
-["review", "scenarios", "scenario", "simulation", "chat", "sources"].forEach((p) =>
+["review", "scenarios", "scenario", "scenario-config", "simulation", "chat", "sources", "drivers"].forEach((p) =>
   app.get("/" + p, (_req, res) => res.sendFile(join(HERE, "public", p + ".html"))));
 
 // ---------- boot ----------
