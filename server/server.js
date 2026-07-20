@@ -74,6 +74,32 @@ app.get("/api/signals", (req, res) => {
 
 app.get("/api/signals/facets", (req, res) => res.json(d.facets(req.query.status || "approved")));
 
+// Signal relational graph: nodes = approved signals, edges = embedding
+// nearest-neighbour pairs (the library as one connected field). Computed
+// from the in-memory vector index and cached until the process restarts
+// or the library count changes.
+let graphCache = null;
+app.get("/api/signals/graph", (_req, res) => {
+  const approved = d.db.prepare("SELECT id, title, cluster, horizon FROM signals WHERE status = 'approved'").all();
+  if (graphCache && graphCache.n === approved.length) return res.json(graphCache.payload);
+  const K = 4, MIN_W = 0.45;
+  const ok = new Set(approved.map((s) => s.id));
+  const edges = new Map();
+  for (const s of approved) {
+    for (const hit of similarTo(s.id, K + 4).filter((h) => ok.has(h.id)).slice(0, K)) {
+      if (hit.score < MIN_W) continue;
+      const key = s.id < hit.id ? `${s.id}-${hit.id}` : `${hit.id}-${s.id}`;
+      if (!edges.has(key)) edges.set(key, { a: Math.min(s.id, hit.id), b: Math.max(s.id, hit.id), w: Math.round(hit.score * 100) / 100 });
+    }
+  }
+  const payload = {
+    nodes: approved.map((s) => ({ id: s.id, t: s.title.slice(0, 90), c: s.cluster, h: s.horizon || "H1" })),
+    edges: [...edges.values()],
+  };
+  graphCache = { n: approved.length, payload };
+  res.json(payload);
+});
+
 // Library composition for the overview charts: clusters, sources (long tail
 // folded), provenance families.
 app.get("/api/signals/overview", (_req, res) => {
@@ -358,7 +384,7 @@ app.post("/api/chat", chatHandler);
 // ---------- static frontend ----------
 app.use(express.static(join(HERE, "public")));
 app.get("/signals", (_req, res) => res.sendFile(join(HERE, "public", "index.html")));
-["review", "scenarios", "scenario", "scenario-config", "simulation", "chat", "sources", "drivers", "driver-config"].forEach((p) =>
+["review", "scenarios", "scenario", "scenario-config", "simulation", "chat", "sources", "drivers", "driver-config", "map"].forEach((p) =>
   app.get("/" + p, (_req, res) => res.sendFile(join(HERE, "public", p + ".html"))));
 
 // ---------- boot ----------
