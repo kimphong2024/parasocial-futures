@@ -42,7 +42,7 @@
       <div>
         <span class="label">Signal Map</span>
         <h2 style="margin-top:4px">The library as one field</h2>
-        <p class="caption" style="max-width:70ch">Every approved signal, connected to its nearest semantic neighbours by embedding similarity. Clusters emerge from the connections rather than being drawn — drag to pan, scroll to zoom, click a node to read it.</p>
+        <p class="caption" style="max-width:70ch">Every approved signal, connected to its nearest semantic neighbours by embedding similarity, settled by a 3D physics simulation. Clusters emerge from the connections rather than being drawn — drag to orbit, scroll to zoom, click a node to read it.</p>
       </div>
     </div>
     <div class="map-controls">
@@ -63,6 +63,9 @@
     </div>
   </main>
   <script src="/js/vendor/d3.min.js"></script>
+  <script src="/js/vendor/d3-binarytree.min.js"></script>
+  <script src="/js/vendor/d3-octree.min.js"></script>
+  <script src="/js/vendor/d3-force-3d.min.js"></script>
   <script type="module" src="/js/map.js"></script>
   <script src="/js/vendor/lenis.min.js"></script>
   <script type="module" src="/js/motion.js"></script>
