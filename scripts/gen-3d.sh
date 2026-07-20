@@ -15,14 +15,16 @@ mkdir -p "$OUT" "$MODELS"
 
 KEY=$(grep '^LEONARDO_API_KEY=' "$DIR/.env" | cut -d= -f2- | tr -d '"'"'"' \r\n')
 MODEL="de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3"   # Leonardo Phoenix 1.0
-SEED=20523
+SEED=20777
 NEG="text, words, letters, watermark, logo, signature, illustration, cartoon, painting, bright background, daylight, sky, blue, purple, two heads, two separate objects, body, shoulders, neck stump, pedestal, stand, base, table, hair, wig, moss, plants, fine filigree, wire, static noise"
 
-# Two-faced Janus in the kintsugi register: realistic human face forward,
-# a second sculpted porcelain face (features traced in gold seams) on the
-# back of the same head. Profiles MUST show both nose silhouettes — that is
-# what teaches the image-to-3D model there are two faces.
-BASE="a single two-faced sculpted Janus head floating in complete darkness: the front face is a realistic human face with lifelike warm skin, natural pores and a calm neutral expression, completely hairless; the back of the same head is a second sculpted face made of glossy white porcelain with softly modelled features, its brows, eyelids and lips traced in fine gold kintsugi seam lines; the porcelain shell wraps the skull and meets the skin along thin gold seams; the two faces look in exactly opposite directions on one shared head, complete with a smoothly finished rounded underside, no neck, no pedestal, museum turntable photograph, pure black background, soft studio specimen lighting"
+# Two-faced Janus in the kintsugi register. Lessons encoded here:
+# (1) profiles must show both nose silhouettes or the 3D model assumes one
+#     face; (2) BOTH faces also need a frontal view or their geometry is
+#     invented (asymmetric); (3) dramatic lighting bakes into albedo and
+#     shape — keep the light soft, even and shadowless; (4) the view
+#     directive goes FIRST so the seed doesn't collapse all views into one.
+BASE="a single two-faced sculpted Janus head floating against a plain dark backdrop: the front face is a realistic human face with lifelike warm skin and a calm neutral expression, completely hairless; the back of the same head is a second face of smooth matte white glazed porcelain, perfectly symmetric, serene and simplified like a fine china doll mask, its brows and closed eyelids traced with one thin gold line each; the porcelain shell wraps the skull and meets the skin along a single clean gold seam; the two faces look in exactly opposite directions on one shared head, smoothly finished rounded underside, no neck, no pedestal, soft even diffuse studio lighting with no harsh shadows and no strong highlights, flat catalogue photograph"
 
 log() { echo "[$(date +%H:%M:%S)] $*"; }
 
@@ -30,7 +32,7 @@ gen_view() {
   local name="$1" view="$2"
   log ">> $name"
   local body
-  body=$(FULLPROMPT="$BASE, $view" NEG="$NEG" MODEL="$MODEL" SEED="$SEED" python3 - <<'PY'
+  body=$(FULLPROMPT="$view — $BASE" NEG="$NEG" MODEL="$MODEL" SEED="$SEED" python3 - <<'PY'
 import json, os
 print(json.dumps({
   "prompt": os.environ["FULLPROMPT"],
@@ -69,10 +71,10 @@ PY
 
 if [ "${1:-refs}" = "refs" ]; then
   : > "$OUT/image-ids.txt"
-  gen_view "janus-front"  "front view facing the camera: the realistic human face straight on, the white porcelain shell just visible wrapping the temples and sides of the head"
-  gen_view "janus-back"   "rear view facing the camera: the sculpted porcelain face straight on, its gold-traced features looking directly at the viewer, warm skin just visible at the edges of the head"
-  gen_view "janus-left"   "perfect left profile view: the human face in profile with its nose pointing left, and on the back of the head the porcelain face in reverse profile with its nose pointing right — two opposite-facing nose silhouettes clearly visible on one head"
-  gen_view "janus-right"  "perfect right profile view: the human face in profile with its nose pointing right, and on the back of the head the porcelain face in reverse profile with its nose pointing left — two opposite-facing nose silhouettes clearly visible on one head"
+  gen_view "janus-front"  "STRAIGHT FRONTAL VIEW, camera dead ahead at eye level, perfectly centred and symmetric composition: the realistic human face fills the frame looking directly at the camera, the white porcelain shell just visible at the temples"
+  gen_view "janus-back"   "STRAIGHT REAR VIEW, camera dead ahead at eye level, perfectly centred and symmetric composition: the matte white porcelain face fills the frame looking directly at the camera with its serene gold-lined closed eyes, warm skin just visible at the edges"
+  gen_view "janus-left"   "STRICT LEFT PROFILE VIEW, camera exactly side-on: the human face in profile with its nose pointing left, and the porcelain face in reverse profile with its nose pointing right — two opposite-facing nose silhouettes on one head"
+  gen_view "janus-right"  "STRICT RIGHT PROFILE VIEW, camera exactly side-on: the human face in profile with its nose pointing right, and the porcelain face in reverse profile with its nose pointing left — two opposite-facing nose silhouettes on one head"
   log "REFS DONE — ids in $OUT/image-ids.txt"
   exit 0
 fi
@@ -90,7 +92,7 @@ print(json.dumps({
     "quantity": 1,
     "output_format": "glb",
     "mesh_mode": "Quad",
-    "quality": "medium",
+    "quality": "high",
     "material": "PBR",
     "seed": 20400,
     "guidances": {"image_reference": refs},

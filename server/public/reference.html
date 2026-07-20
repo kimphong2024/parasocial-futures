@@ -79,6 +79,44 @@
         </table>
         <div class="tstep"><span class="n">1</span><div><h4>The evidence pack</h4><p>The archetype's logic (plus any focus you give it) is embedded and matched against the approved library; the most similar signals form a pack of roughly a hundred, with long-horizon and critical-urgency evidence guaranteed a seat. The draft can only be built from signals in this pack.</p></div></div>
         <div class="tstep"><span class="n">2</span><div><h4>Causal Layered Analysis</h4><p>Claude drafts the scenario as four layers of increasing depth — the structure you travel when reading one: <strong>Litany</strong> (the visible surface of 2040: headlines, statistics, everyday observations), <strong>Systemic causes</strong> (the economic, technological, regulatory and demographic structures producing that surface), <strong>Worldview</strong> (the shared beliefs that make this world coherent to the people in it), and <strong>Myth</strong> (the deep metaphor underneath — the hearth, the golem, the mirror). A 400–600 word narrative vignette makes the world habitable.</p></div></div>
+
+        <p class="tdoc-rule">Most of a future is under the waterline.</p>
+        <div class="iceberg-wrap">
+          <div class="iceberg-controls">
+            <select id="icebergScenario" aria-label="Choose a scenario to read through the layers"></select>
+            <span class="caption">Click a layer of the iceberg to read it.</span>
+          </div>
+          <div class="iceberg-grid">
+            <svg id="icebergSvg" viewBox="0 0 560 520" role="group" aria-label="Causal Layered Analysis iceberg — four clickable layers">
+              <defs>
+                <linearGradient id="iceWater" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#232B12" stop-opacity="0.55"/>
+                  <stop offset="1" stop-color="#0B0E05" stop-opacity="0.98"/>
+                </linearGradient>
+                <clipPath id="bergClip">
+                  <path d="M280 28 L342 84 L336 148 L420 150 L455 265 L392 388 L318 492 L252 470 L170 380 L120 262 L152 150 L228 146 L232 86 Z"/>
+                </clipPath>
+              </defs>
+              <rect x="0" y="150" width="560" height="370" fill="url(#iceWater)"/>
+              <path d="M0 150 Q 70 142 140 150 T 280 150 T 420 150 T 560 150" fill="none" stroke="#B9BFAD" stroke-opacity="0.5" stroke-width="1.5"/>
+              <g id="bergBody" clip-path="url(#bergClip)">
+                <rect class="iceband" data-layer="litany"    x="0" y="0"   width="560" height="150" fill="#F5F6F0"/>
+                <rect class="iceband" data-layer="systemic"  x="0" y="150" width="560" height="115" fill="#C9CFBB"/>
+                <rect class="iceband" data-layer="worldview" x="0" y="265" width="560" height="123" fill="#8F9A78"/>
+                <rect class="iceband" data-layer="myth"      x="0" y="388" width="560" height="132" fill="#55613B"/>
+              </g>
+              <path d="M280 28 L342 84 L336 148 L420 150 L455 265 L392 388 L318 492 L252 470 L170 380 L120 262 L152 150 L228 146 L232 86 Z"
+                    fill="none" stroke="#EDEFE4" stroke-opacity="0.35" stroke-width="1.5"/>
+              <g class="icelabels" aria-hidden="true">
+                <text x="24" y="120">Litany · the visible surface</text>
+                <text x="24" y="212">Systemic causes</text>
+                <text x="24" y="330">Worldview</text>
+                <text x="24" y="452">Myth &amp; metaphor</text>
+              </g>
+            </svg>
+            <div class="iceberg-panel" id="icebergPanel" aria-live="polite"></div>
+          </div>
+        </div>
         <div class="tstep"><span class="n">3</span><div><h4>Citations and conditions</h4><p>The draft must name the 8–15 signals that anchored it — real IDs from the pack, inspectable on the scenario page — and declare its <em>driver conditions</em>: the region of driver space where this future holds (for instance, "companion adoption ≥ 25% and regulation stringency ≤ 55"). Those conditions are the scenario's handshake with the simulation.</p></div></div>
         <div class="tstep"><span class="n">4</span><div><h4>Human authorship</h4><p>Everything lands as a <em>draft</em>. Every layer, the narrative, and the conditions are edited by the human author before publishing; only publishing makes a scenario real to the rest of the platform (including the chat's retrieval). The four live scenarios were all reshaped by hand after drafting.</p></div></div>
       </section>
@@ -105,6 +143,7 @@
     </div>
   </div>
 
+  <script type="module" src="/js/iceberg.js"></script>
   <script src="/js/vendor/lenis.min.js"></script>
   <script type="module" src="/js/motion.js"></script>
 </body>
