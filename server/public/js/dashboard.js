@@ -52,13 +52,8 @@ async function loadFacets() {
   });
 }
 
-// "Where the library comes from" — three magnitude charts (single hue each,
+// "Where the library comes from" — magnitude charts (single hue each,
 // direct-labeled thin bars). Cluster bars filter the library on click.
-const PROV_LABEL = (v) =>
-  v.startsWith("scan:perplexity") ? "Nightly scan — sweep (Perplexity)"
-  : v.startsWith("scan:firecrawl") ? "Nightly scan — watched sources (Firecrawl)"
-  : "Curated seed — " + v.replaceAll("_", " ");
-
 function hbar(label, n, max, { cls = "", title = "", data = "" } = {}) {
   const w = Math.max(0.6, (n / max) * 100);
   return `<div class="hbar ${cls}" ${data} title="${esc(title || `${label} — ${n} signals`)}">
@@ -77,11 +72,6 @@ async function loadOverview() {
   $("sourceChart").innerHTML =
     o.sources.top.map((s) => hbar(s.v, s.n, sMax, { cls: "alt" })).join("") +
     `<p class="caption hbar-note">…plus ${o.sources.other} signals from ${o.sources.distinct - o.sources.top.length} sources cited only a handful of times each — the long tail is most of the library, by design.</p>`;
-  const pMax = Math.max(...o.provenance.map((p) => p.n));
-  $("provChart").innerHTML = o.provenance
-    .slice()
-    .sort((a, b) => b.n - a.n)
-    .map((p) => hbar(PROV_LABEL(p.v), p.n, pMax, { cls: p.v.startsWith("scan") ? "alt" : "" })).join("");
   $("overviewNote").textContent = `${o.total} signals · ${o.clusters.length} clusters · ${o.sources.distinct} distinct sources`;
   $("overview").style.display = "";
   $("clusterChart").addEventListener("click", (e) => {
