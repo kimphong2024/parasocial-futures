@@ -216,10 +216,10 @@ All site imagery is generated with **Leonardo Phoenix 1.0** via `scripts/gen-ima
 | `colony` | Many diverse synthetic visages glowing in moss hollows — "the library in one image: 705 observed attachments" |
 | `device-hearth` | A moss-overgrown phone with light through cracked glass — the device as hearth |
 | `gate-texture` | A moss figure inside a luminous ring examining an orb — the human in the loop, literally |
-| `scenario-growth` | A hearth of embers in moss (myth: "the hearth that never goes cold") |
-| `scenario-collapse` | A luminous orb sinking beneath dark water on a floating island (the siren) |
-| `scenario-discipline` | A fenced moss garden, light contained (the tended enclosure) |
-| `scenario-transformation` | A loom weaving a thread of light into dark cloth (the new thread) |
+| `scenario-growth` | Narrative scene: a firelit living-room corner at night, a glowing porcelain synthetic face at home on the mantelpiece (myth: "the hearth that answers back") |
+| `scenario-collapse` | Narrative scene: an abandoned dining table, a cracked gold-seamed porcelain mask served on a dusty plate by one guttering candle (the golem that never said no) |
+| `scenario-discipline` | Narrative scene: a hearth fire and a porcelain mask together inside a roped-off museum case under an inspection lamp (the hearth with a fire code) |
+| `scenario-transformation` | Narrative scene: a porcelain synthetic face garlanded with flowers at an honoured place on a candlelit celebration table (the hearth widened to seat a stranger) |
 | `motif-*` (6) | Small page-head specimens: lantern field, bell jar, four-tipped branch, lit/unlit orbs, paired orbs, root clod |
 
 Rendering rule for all imagery: pure-black photo backgrounds dissolve into the page's olive void via `mix-blend-mode: lighten` over an explicit backdrop, plus an elliptical mask vignette — so subjects float in the page rather than sit printed on it. Full prompt text lives in `scripts/gen-images.sh` in the repository.
