@@ -72,7 +72,9 @@ function update() {
 
     // 3D head: turn moss→porcelain across the reveal + hold, then dive into the seam
     if (modelOn) {
-      const theta = 215 - 190 * easeInOutCubic(clamp01(p / 0.66));
+      // human face (285°) → back-to-back seam (185°) → porcelain face (85°);
+      // the muddled composite side near 0°/360° is never shown
+      const theta = 285 - 200 * easeInOutCubic(clamp01(p / 0.66));
       const radius = 105 - 63 * easeInCubic(clamp01((p - 0.7) / 0.3));
       heroModel.cameraOrbit = `${theta.toFixed(1)}deg 80deg ${radius.toFixed(1)}%`;
     }

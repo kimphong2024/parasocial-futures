@@ -15,10 +15,14 @@ mkdir -p "$OUT" "$MODELS"
 
 KEY=$(grep '^LEONARDO_API_KEY=' "$DIR/.env" | cut -d= -f2- | tr -d '"'"'"' \r\n')
 MODEL="de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3"   # Leonardo Phoenix 1.0
-SEED=20411
-NEG="text, words, letters, watermark, logo, signature, illustration, cartoon, painting, bright background, daylight, sky, blue, purple, two heads, two separate objects, body, shoulders, neck stump, pedestal, stand, base, table, fine filigree, wire, static noise"
+SEED=20523
+NEG="text, words, letters, watermark, logo, signature, illustration, cartoon, painting, bright background, daylight, sky, blue, purple, two heads, two separate objects, body, shoulders, neck stump, pedestal, stand, base, table, hair, wig, moss, plants, fine filigree, wire, static noise"
 
-BASE="a single sculpted head floating in darkness, one face split vertically down the middle: the left half covered in thick soft clumps of green moss over dark stone, sculptural and chunky; the right half a smooth flawless white porcelain synthetic surface with a thin glowing golden seam where the halves meet; a complete floating head with a smoothly rounded finished underside, no neck, no pedestal, museum turntable photograph, pure black background, soft studio specimen lighting, clean sculptural forms"
+# Two-faced Janus in the kintsugi register: realistic human face forward,
+# a second sculpted porcelain face (features traced in gold seams) on the
+# back of the same head. Profiles MUST show both nose silhouettes — that is
+# what teaches the image-to-3D model there are two faces.
+BASE="a single two-faced sculpted Janus head floating in complete darkness: the front face is a realistic human face with lifelike warm skin, natural pores and a calm neutral expression, completely hairless; the back of the same head is a second sculpted face made of glossy white porcelain with softly modelled features, its brows, eyelids and lips traced in fine gold kintsugi seam lines; the porcelain shell wraps the skull and meets the skin along thin gold seams; the two faces look in exactly opposite directions on one shared head, complete with a smoothly finished rounded underside, no neck, no pedestal, museum turntable photograph, pure black background, soft studio specimen lighting"
 
 log() { echo "[$(date +%H:%M:%S)] $*"; }
 
@@ -65,10 +69,10 @@ PY
 
 if [ "${1:-refs}" = "refs" ]; then
   : > "$OUT/image-ids.txt"
-  gen_view "janus-front"  "front view facing the camera, the golden seam running vertically down the centre of the face, moss half on the left, porcelain half on the right"
-  gen_view "janus-left"   "left profile view showing the thick mossy half of the head in full profile"
-  gen_view "janus-right"  "right profile view showing the smooth porcelain half of the head in full profile"
-  gen_view "janus-back"   "rear view of the head, moss half on one side and porcelain half on the other meeting at the golden seam down the back"
+  gen_view "janus-front"  "front view facing the camera: the realistic human face straight on, the white porcelain shell just visible wrapping the temples and sides of the head"
+  gen_view "janus-back"   "rear view facing the camera: the sculpted porcelain face straight on, its gold-traced features looking directly at the viewer, warm skin just visible at the edges of the head"
+  gen_view "janus-left"   "perfect left profile view: the human face in profile with its nose pointing left, and on the back of the head the porcelain face in reverse profile with its nose pointing right — two opposite-facing nose silhouettes clearly visible on one head"
+  gen_view "janus-right"  "perfect right profile view: the human face in profile with its nose pointing right, and on the back of the head the porcelain face in reverse profile with its nose pointing left — two opposite-facing nose silhouettes clearly visible on one head"
   log "REFS DONE — ids in $OUT/image-ids.txt"
   exit 0
 fi
