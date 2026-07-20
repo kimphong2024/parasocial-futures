@@ -1,7 +1,7 @@
 import { api, esc, fmtDate } from "./api.js";
 import { renderNav } from "./nav.js";
 
-const state = { q: "", semantic: false, cluster: "", type: "", urgency: "", horizon: "", provenance: "", sort: "newest", page: 1 };
+const state = { q: "", semantic: false, cluster: "", type: "", horizon: "", provenance: "", sort: "newest", page: 1 };
 const $ = (id) => document.getElementById(id);
 
 const TYPE_TAG = { research: "tag-olive", market: "tag-brown", regulatory: "tag-blue", discourse: "tag-mustard", behavioral: "tag-olive", "crisis/legal": "tag-red" };
@@ -38,7 +38,6 @@ async function loadFacets() {
     rows.forEach((r) => sel.insertAdjacentHTML("beforeend", `<option value="${esc(r.v)}">${esc(r.v)} (${r.n})</option>`));
   };
   fill("type", f.signal_type);
-  fill("urgency", f.urgency);
   fill("horizon", f.horizon);
   fill("provenance", f.provenance);
   $("clusters").innerHTML = `<button class="pill active" data-cluster="">All clusters</button>` +
@@ -65,7 +64,7 @@ async function load() {
     }
     return;
   }
-  const params = new URLSearchParams({ q: state.q, cluster: state.cluster, type: state.type, urgency: state.urgency, horizon: state.horizon, provenance: state.provenance, sort: state.sort, page: state.page, limit: 30 });
+  const params = new URLSearchParams({ q: state.q, cluster: state.cluster, type: state.type, horizon: state.horizon, provenance: state.provenance, sort: state.sort, page: state.page, limit: 30 });
   const j = await api("/api/signals?" + params);
   grid.innerHTML = j.signals.length ? j.signals.map(signalCard).join("") : `<div class="empty-note">No signals match these filters.</div>`;
   const pages = Math.max(1, Math.ceil(j.total / j.limit));
@@ -95,6 +94,10 @@ async function openDrawer(id) {
       <div><span class="label" style="color:var(--textDim)">Status</span><p>${esc(s.status)}</p></div>
     </div>
     ${s.topic_tags ? `<p class="caption">${esc(s.topic_tags.split(";").join(" · "))}</p>` : ""}
+    ${s.horizon_reasoning ? `
+      <h4 class="mt-4">Horizon ${esc(s.horizon)} — judged with reasoning</h4>
+      <p class="caption" style="line-height:1.7">${esc(s.horizon_reasoning)}</p>
+      ${s.horizon_judged_at ? `<p class="caption mt-2" style="color:var(--textDim)">Judged ${esc(s.horizon_judged_at.slice(0, 10))}</p>` : ""}` : ""}
     <div class="citation mt-4">
       <div class="quote">${esc(s.summary)}</div>
       <div class="source"><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.source || s.url)}</a></div>
@@ -116,7 +119,7 @@ $("q").addEventListener("input", (e) => {
   debounce = setTimeout(() => { state.q = e.target.value.trim(); state.page = 1; load(); }, 300);
 });
 $("semantic").addEventListener("change", (e) => { state.semantic = e.target.checked; load(); });
-["type", "urgency", "horizon", "provenance", "sort"].forEach((k) =>
+["type", "horizon", "provenance", "sort"].forEach((k) =>
   $(k).addEventListener("change", (e) => { state[k === "type" ? "type" : k] = e.target.value; state.page = 1; load(); }));
 $("backdrop").addEventListener("click", closeDrawer);
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });

@@ -151,6 +151,13 @@ $("tab-runs").addEventListener("click", async (e) => {
   tr.firstElementChild.textContent = `▾ #${tr.dataset.run}`;
 });
 
+$("approveAll").addEventListener("click", async () => {
+  if (!confirm("Approve every pending scan hit into the library?")) return;
+  const r = await api("/api/review/approve-all", { method: "POST" });
+  alert(`Approved ${r.approved} signals into the library.`);
+  location.reload();
+});
+
 $("runScan").addEventListener("click", async () => {
   $("runScan").disabled = true;
   $("runScan").textContent = "Scanning…";

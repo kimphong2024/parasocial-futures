@@ -152,6 +152,8 @@ CREATE TABLE IF NOT EXISTS scan_themes (
 try { db.exec("ALTER TABLE scan_runs ADD COLUMN rejected_relevance INTEGER NOT NULL DEFAULT 0"); } catch { /* already migrated */ }
 try { db.exec("ALTER TABLE scan_runs ADD COLUMN detail_json TEXT NOT NULL DEFAULT '{}'"); } catch { /* already migrated */ }
 try { db.exec("ALTER TABLE drivers ADD COLUMN cluster_json TEXT NOT NULL DEFAULT '[]'"); } catch { /* already migrated */ }
+try { db.exec("ALTER TABLE signals ADD COLUMN horizon_reasoning TEXT NOT NULL DEFAULT ''"); } catch { /* already migrated */ }
+try { db.exec("ALTER TABLE signals ADD COLUMN horizon_judged_at TEXT"); } catch { /* already migrated */ }
 
 // One-time data migration: seed the evidence grouping for the shipped drivers
 // from the clusters their rationales already name. Runs only while every
@@ -183,6 +185,8 @@ export const getSignalByUrl = db.prepare("SELECT id FROM signals WHERE url = ?")
 export const countSignals = db.prepare("SELECT COUNT(*) AS n FROM signals");
 export const countByStatus = db.prepare("SELECT COUNT(*) AS n FROM signals WHERE status = ?");
 export const setSignalStatus = db.prepare("UPDATE signals SET status = ?, reviewed_at = ? WHERE id = ?");
+export const setSignalHorizon = db.prepare("UPDATE signals SET horizon = ?, horizon_reasoning = ?, horizon_judged_at = ? WHERE id = ?");
+export const approvedSignals = db.prepare("SELECT id, title, summary, cluster, signal_type, date, year, horizon FROM signals WHERE status = 'approved' ORDER BY id");
 export const pendingSignals = db.prepare("SELECT * FROM signals WHERE status = 'pending' ORDER BY created_at DESC, id DESC");
 
 // Dynamic filtered list — returns { total, rows }.

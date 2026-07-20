@@ -9,6 +9,7 @@ import { loadIndex, ensureEmbeddings, ensureScenarioEmbeddings, similarTo, topSi
 import { embedQuery, voyageEnabled } from "./voyage.js";
 import { llmEnabled } from "./ai.js";
 import { runScan, scanRunning, scanStep, scanSettings, DEFAULT_GATE } from "./scan.js";
+import { judgeHorizons, horizonStatus } from "./horizons.js";
 import { startScheduler, scheduleInfo } from "./scheduler.js";
 import { ARCHETYPES, draftScenario, embedScenario } from "./scenarios.js";
 import { simulate, previewDistribution, makeSampler } from "./montecarlo.js";
@@ -106,6 +107,13 @@ app.get("/api/review/queue", (_req, res) => {
   res.json({ signals: pending, scenario_drafts: d.draftScenarios.all() });
 });
 
+app.post("/api/review/approve-all", (_req, res) => {
+  const pending = d.pendingSignals.all();
+  const ts = d.now();
+  for (const s of pending) d.setSignalStatus.run("approved", ts, s.id);
+  res.json({ ok: true, approved: pending.length });
+});
+
 app.post("/api/review/signals/:id/approve", (req, res) => {
   const s = d.getSignal.get(+req.params.id);
   if (!s) return res.status(404).json({ error: "not found" });
@@ -124,6 +132,14 @@ app.patch("/api/review/signals/:id", (req, res) => {
   const ok = d.updateRow("signals", +req.params.id, req.body || {}, ["title", "summary", "cluster", "signal_type", "urgency", "horizon", "topic_tags", "source", "date"]);
   res.json({ ok });
 });
+
+// ---------- horizon audit ----------
+app.post("/api/horizons/judge", (_req, res) => {
+  if (horizonStatus().running) return res.status(409).json({ error: "horizon audit already running" });
+  judgeHorizons().then((r) => console.log("[horizons] audit finished:", JSON.stringify(r))).catch((e) => console.error("[horizons] audit crashed:", e.message));
+  res.json({ ok: true, started: true });
+});
+app.get("/api/horizons/status", (_req, res) => res.json(horizonStatus()));
 
 // ---------- scanning ----------
 app.post("/api/scan/run", (_req, res) => {

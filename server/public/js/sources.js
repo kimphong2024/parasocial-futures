@@ -134,5 +134,23 @@ $("themeList").addEventListener("click", async (e) => {
   tr.remove();
 });
 
+// ---- horizon audit ----
+$("judgeHorizons").addEventListener("click", async () => {
+  $("horizonMsg").textContent = "";
+  try {
+    await api("/api/horizons/judge", { method: "POST" });
+    $("judgeHorizons").disabled = true;
+    const poll = setInterval(async () => {
+      const s = await api("/api/horizons/status");
+      $("horizonMsg").textContent = s.running
+        ? `Judging… ${s.done}/${s.total} (${s.changed} re-assigned)`
+        : `Done — ${s.done} judged, ${s.changed} horizons re-assigned${s.errors ? `, ${s.errors} batch errors` : ""}.`;
+      if (!s.running) { clearInterval(poll); $("judgeHorizons").disabled = false; }
+    }, 3000);
+  } catch (e) {
+    $("horizonMsg").textContent = e.message;
+  }
+});
+
 renderNav("/sources");
 load();
