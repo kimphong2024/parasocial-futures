@@ -26,7 +26,7 @@ let hoverNode = null, selected = null;
 const degree = new Map();
 
 // ---- camera ----
-const cam = { yaw: 0.4, pitch: 0.25, zoom: 0.62, fov: 1100 };
+const cam = { yaw: 0.4, pitch: 0.25, zoom: 0.48, fov: 1250 };
 let dragging = false, settled = false;
 let sim = null;
 let pointerWorld = null;   // cursor position unprojected into the field
@@ -223,11 +223,25 @@ async function boot() {
 
   // 3-dimensional physics: link springs + n-body repulsion in x/y/z,
   // plus the cursor as a live force source
+  // Perpetual gentle agitation: every particle receives a small, slowly
+  // rotating impulse, so the repulsion field keeps negotiating on its own —
+  // the map never freezes into a static layout.
+  function forceAgitate() {
+    return () => {
+      const t = performance.now();
+      for (const n of nodes) {
+        n.vx += Math.sin(t * 0.00021 + n.phase) * 0.045;
+        n.vy += Math.cos(t * 0.00017 + n.phase * 1.9) * 0.045;
+        n.vz += Math.sin(t * 0.00025 + n.phase * 0.7) * 0.045;
+      }
+    };
+  }
+
   sim = d3.forceSimulation(nodes, 3)
-    .force("link", d3.forceLink(edges).id((n) => n.id).distance((e) => 70 + (1 - e.w) * 130).strength((e) => 0.12 + e.w * 0.3))
-    .force("charge", d3.forceManyBody().strength(-55).theta(0.9))
+    .force("link", d3.forceLink(edges).id((n) => n.id).distance((e) => 100 + (1 - e.w) * 170).strength((e) => 0.1 + e.w * 0.25))
+    .force("charge", d3.forceManyBody().strength(-90).theta(0.9))
     .force("center", d3.forceCenter(0, 0, 0))
-    .force("collide", d3.forceCollide(10))
+    .force("collide", d3.forceCollide(14))
     .force("pointer", forcePointer());
   if (reduced) {
     sim.stop();
@@ -235,9 +249,13 @@ async function boot() {
     settled = true;
     draw(0);
   } else {
-    sim.on("end", () => { settled = true; });
+    // never let the physics sleep: a low floor keeps repulsion live so the
+    // field drifts and re-negotiates on its own
+    sim.force("agitate", forceAgitate());
+    sim.alphaTarget(0.035);
     // continuous render loop: physics + idle orbit + particle drift
     const loop = (t) => {
+      if (!settled && sim.alpha() < 0.09) settled = true;
       if (!dragging && settled) cam.yaw += 0.0009;   // slow idle orbit
       draw(t);
       requestAnimationFrame(loop);
@@ -266,7 +284,7 @@ async function boot() {
     if (dragNode) {
       dragNode.fx = dragNode.fy = dragNode.fz = null;
       dragNode = null;
-      sim.alphaTarget(0);
+      sim.alphaTarget(0.035);
     }
     canvas.classList.remove("dragging");
     canvas.releasePointerCapture(ev.pointerId);
