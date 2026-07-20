@@ -28,6 +28,49 @@ const degree = new Map();
 // ---- camera ----
 const cam = { yaw: 0.4, pitch: 0.25, zoom: 1, fov: 900 };
 let dragging = false, settled = false;
+let sim = null;
+let pointerWorld = null;   // cursor position unprojected into the field
+let dragNode = null;       // node pinned to the cursor — springs carry the tension
+
+// Inverse of project(): screen point → world coords at a camera-space depth.
+function screenToWorld(px, py, depth = 0) {
+  const cw = canvas.width / devicePixelRatio, ch = canvas.height / devicePixelRatio;
+  const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
+  const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+  const s = cam.fov / (cam.fov + depth);
+  const rx = (px - cw / 2) / (s * cam.zoom);
+  const ry = (py - ch / 2) / (s * cam.zoom);
+  const y = ry * cp + depth * sp;
+  const rz0 = -ry * sp + depth * cp;
+  return { x: rx * cy - rz0 * sy, y, z: rx * sy + rz0 * cy };
+}
+
+// The cursor as a force source: nodes inside the bubble are pushed away,
+// the link springs pull back — a tension ripple that relaxes when you leave.
+const POINTER_R = 70;
+function forcePointer() {
+  function force(alpha) {
+    if (!pointerWorld || dragNode) return;
+    const R2 = POINTER_R * POINTER_R;
+    for (const n of nodes) {
+      const dx = n.x - pointerWorld.x, dy = n.y - pointerWorld.y, dz = (n.z || 0) - pointerWorld.z;
+      const d2 = dx * dx + dy * dy + dz * dz;
+      if (d2 > R2 || d2 < 1e-4) continue;
+      const d = Math.sqrt(d2);
+      const k = (1 - d / POINTER_R) * 1.6 * alpha / d;
+      n.vx += dx * k * POINTER_R;
+      n.vy += dy * k * POINTER_R;
+      n.vz += dz * k * POINTER_R;
+    }
+  }
+  return force;
+}
+
+// keep the physics warm enough to answer the cursor
+function wake(target = 0.12) {
+  if (reduced || !sim) return;
+  if (sim.alpha() < target) sim.alpha(target).restart();
+}
 
 function fit() {
   const r = canvas.parentElement.getBoundingClientRect();
@@ -178,12 +221,14 @@ async function boot() {
 
   fit();
 
-  // 3-dimensional physics: link springs + n-body repulsion in x/y/z
-  const sim = d3.forceSimulation(nodes, 3)
+  // 3-dimensional physics: link springs + n-body repulsion in x/y/z,
+  // plus the cursor as a live force source
+  sim = d3.forceSimulation(nodes, 3)
     .force("link", d3.forceLink(edges).id((n) => n.id).distance((e) => 30 + (1 - e.w) * 70).strength((e) => 0.25 + e.w * 0.5))
     .force("charge", d3.forceManyBody().strength(-16).theta(0.9))
     .force("center", d3.forceCenter(0, 0, 0))
-    .force("collide", d3.forceCollide(5));
+    .force("collide", d3.forceCollide(5))
+    .force("pointer", forcePointer());
   if (reduced) {
     sim.stop();
     for (let i = 0; i < 250; i++) sim.tick();
@@ -200,15 +245,29 @@ async function boot() {
     requestAnimationFrame(loop);
   }
 
-  // ---- orbit + zoom controls ----
+  // ---- orbit + zoom + physical interaction ----
   let px = 0, py = 0;
   canvas.addEventListener("pointerdown", (ev) => {
-    dragging = true; px = ev.clientX; py = ev.clientY;
+    const rect = canvas.getBoundingClientRect();
+    const n = nodeAt(ev.clientX - rect.left, ev.clientY - rect.top);
+    if (n && !reduced) {
+      // pin the node to the cursor — link tension drags its neighborhood
+      dragNode = n;
+      sim.alphaTarget(0.28).restart();
+    } else {
+      dragging = true;
+    }
+    px = ev.clientX; py = ev.clientY;
     canvas.classList.add("dragging");
     canvas.setPointerCapture(ev.pointerId);
   });
   canvas.addEventListener("pointerup", (ev) => {
     dragging = false;
+    if (dragNode) {
+      dragNode.fx = dragNode.fy = dragNode.fz = null;
+      dragNode = null;
+      sim.alphaTarget(0);
+    }
     canvas.classList.remove("dragging");
     canvas.releasePointerCapture(ev.pointerId);
   });
@@ -220,25 +279,39 @@ async function boot() {
 
   canvas.addEventListener("pointermove", (ev) => {
     const rect = canvas.getBoundingClientRect();
+    const mx = ev.clientX - rect.left, my = ev.clientY - rect.top;
+    if (dragNode) {
+      // hold the node on the cursor ray at its current camera depth
+      const w = screenToWorld(mx, my, dragNode.sz || 0);
+      dragNode.fx = w.x; dragNode.fy = w.y; dragNode.fz = w.z;
+      tip.style.display = "none";
+      return;
+    }
     if (dragging) {
       cam.yaw += (ev.clientX - px) * 0.005;
       cam.pitch = Math.max(-1.35, Math.min(1.35, cam.pitch + (ev.clientY - py) * 0.005));
       px = ev.clientX; py = ev.clientY;
+      pointerWorld = null;
       if (reduced) draw(lastDraw);
       return;
     }
-    const n = nodeAt(ev.clientX - rect.left, ev.clientY - rect.top);
+    // the cursor presses on the field: unproject and let the pointer force answer
+    if (!reduced) {
+      pointerWorld = screenToWorld(mx, my, 0);
+      wake();
+    }
+    const n = nodeAt(mx, my);
     if (n !== hoverNode) { hoverNode = n; if (reduced) draw(lastDraw); }
     if (n) {
       tip.style.display = "block";
-      tip.style.left = (ev.clientX - rect.left + 14) + "px";
-      tip.style.top = (ev.clientY - rect.top + 10) + "px";
+      tip.style.left = (mx + 14) + "px";
+      tip.style.top = (my + 10) + "px";
       tip.innerHTML = `<strong>${esc(n.t)}</strong><br><span style="color:var(--textDim)">${esc(n.c)} · ${esc(HLABEL[n.h] || n.h)}</span>`;
     } else {
       tip.style.display = "none";
     }
   });
-  canvas.addEventListener("pointerleave", () => { hoverNode = null; tip.style.display = "none"; });
+  canvas.addEventListener("pointerleave", () => { hoverNode = null; pointerWorld = null; tip.style.display = "none"; });
 
   // click = select (suppressed after a real drag)
   let downAt = null;
