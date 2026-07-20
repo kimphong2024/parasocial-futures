@@ -74,6 +74,26 @@ app.get("/api/signals", (req, res) => {
 
 app.get("/api/signals/facets", (req, res) => res.json(d.facets(req.query.status || "approved")));
 
+// Library composition for the overview charts: clusters, sources (long tail
+// folded), provenance families.
+app.get("/api/signals/overview", (_req, res) => {
+  const f = d.facets("approved");
+  const srcRows = d.db.prepare(`
+    SELECT CASE WHEN TRIM(source) = '' THEN 'unattributed' ELSE TRIM(source) END AS s, COUNT(*) AS n
+    FROM signals WHERE status = 'approved'
+    GROUP BY LOWER(CASE WHEN TRIM(source) = '' THEN 'unattributed' ELSE TRIM(source) END)
+    ORDER BY n DESC, s`).all();
+  const TOP = 20;
+  const top = srcRows.slice(0, TOP).map((r) => ({ v: r.s, n: r.n }));
+  const other = srcRows.slice(TOP).reduce((a, r) => a + r.n, 0);
+  res.json({
+    total: d.countByStatus.get("approved").n,
+    clusters: f.cluster,
+    sources: { top, other, distinct: srcRows.length },
+    provenance: f.provenance,
+  });
+});
+
 app.get("/api/search", async (req, res) => {
   const q = (req.query.q || "").trim();
   if (!q) return res.json({ signals: [] });

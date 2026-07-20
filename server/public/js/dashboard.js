@@ -52,6 +52,50 @@ async function loadFacets() {
   });
 }
 
+// "Where the library comes from" — three magnitude charts (single hue each,
+// direct-labeled thin bars). Cluster bars filter the library on click.
+const PROV_LABEL = (v) =>
+  v.startsWith("scan:perplexity") ? "Nightly scan — sweep (Perplexity)"
+  : v.startsWith("scan:firecrawl") ? "Nightly scan — watched sources (Firecrawl)"
+  : "Curated seed — " + v.replaceAll("_", " ");
+
+function hbar(label, n, max, { cls = "", title = "", data = "" } = {}) {
+  const w = Math.max(0.6, (n / max) * 100);
+  return `<div class="hbar ${cls}" ${data} title="${esc(title || `${label} — ${n} signals`)}">
+    <span class="hbar-label">${esc(label)}</span>
+    <span class="hbar-track"><span class="hbar-fill" style="width:${w.toFixed(1)}%"></span></span>
+    <span class="hbar-value">${n}</span>
+  </div>`;
+}
+
+async function loadOverview() {
+  const o = await api("/api/signals/overview");
+  const cMax = Math.max(...o.clusters.map((c) => c.n));
+  $("clusterChart").innerHTML = o.clusters.map((c) =>
+    hbar(c.v, c.n, cMax, { cls: "clickable", data: `data-gocluster="${esc(c.v)}"` })).join("");
+  const sMax = Math.max(...o.sources.top.map((s) => s.n));
+  $("sourceChart").innerHTML =
+    o.sources.top.map((s) => hbar(s.v, s.n, sMax, { cls: "alt" })).join("") +
+    `<p class="caption hbar-note">…plus ${o.sources.other} signals from ${o.sources.distinct - o.sources.top.length} sources cited only a handful of times each — the long tail is most of the library, by design.</p>`;
+  const pMax = Math.max(...o.provenance.map((p) => p.n));
+  $("provChart").innerHTML = o.provenance
+    .slice()
+    .sort((a, b) => b.n - a.n)
+    .map((p) => hbar(PROV_LABEL(p.v), p.n, pMax, { cls: p.v.startsWith("scan") ? "alt" : "" })).join("");
+  $("overviewNote").textContent = `${o.total} signals · ${o.clusters.length} clusters · ${o.sources.distinct} distinct sources`;
+  $("overview").style.display = "";
+  $("clusterChart").addEventListener("click", (e) => {
+    const bar = e.target.closest("[data-gocluster]");
+    if (!bar) return;
+    state.cluster = bar.dataset.gocluster;
+    state.page = 1;
+    document.querySelectorAll("#clusters .pill").forEach((p) =>
+      p.classList.toggle("active", p.dataset.cluster === state.cluster));
+    load();
+    $("grid").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
 async function load() {
   const grid = $("grid");
   if (state.semantic && state.q) {
@@ -131,4 +175,5 @@ document.addEventListener("click", (e) => {
 const health = await renderNav("/signals");
 loadStats(health);
 loadFacets();
+loadOverview();
 load();

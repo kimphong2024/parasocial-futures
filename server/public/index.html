@@ -20,6 +20,24 @@
     </div>
 
     <div class="stats-row" id="stats"></div>
+    <div class="card chart-block" id="overview" style="display:none">
+      <div class="flex-between" style="flex-wrap:wrap;gap:10px">
+        <h4 style="margin-bottom:0">Where the library comes from</h4>
+        <span class="caption" id="overviewNote"></span>
+      </div>
+      <div class="mt-4" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:28px">
+        <div>
+          <p class="caption mb-4"><strong>Clusters</strong> — every signal belongs to one of 33; click a bar to filter the library</p>
+          <div class="hbar-chart" id="clusterChart"></div>
+        </div>
+        <div>
+          <p class="caption mb-4"><strong>Sources</strong> — top 20 by signal count; the long tail is the point</p>
+          <div class="hbar-chart" id="sourceChart"></div>
+          <p class="caption mt-4 mb-4" style="margin-top:18px"><strong>Provenance</strong> — how each signal entered</p>
+          <div class="hbar-chart" id="provChart"></div>
+        </div>
+      </div>
+    </div>
 
     <div class="filter-bar">
       <input type="search" id="q" placeholder="Search signals…">
