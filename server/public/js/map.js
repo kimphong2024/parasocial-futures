@@ -47,9 +47,10 @@ function screenToWorld(px, py, depth = 0) {
 
 // The cursor as a force source: nodes inside the bubble are pushed away,
 // the link springs pull back — a tension ripple that relaxes when you leave.
-const POINTER_R = 70;
+const POINTER_R = 160;   // world-space bubble around the cursor
+const POINTER_S = 6;     // impulse strength — deliberately alpha-independent
 function forcePointer() {
-  function force(alpha) {
+  function force() {
     if (!pointerWorld || dragNode) return;
     const R2 = POINTER_R * POINTER_R;
     for (const n of nodes) {
@@ -57,10 +58,10 @@ function forcePointer() {
       const d2 = dx * dx + dy * dy + dz * dz;
       if (d2 > R2 || d2 < 1e-4) continue;
       const d = Math.sqrt(d2);
-      const k = (1 - d / POINTER_R) * 1.6 * alpha / d;
-      n.vx += dx * k * POINTER_R;
-      n.vy += dy * k * POINTER_R;
-      n.vz += dz * k * POINTER_R;
+      const k = (1 - d / POINTER_R) * POINTER_S / d;
+      n.vx += dx * k;
+      n.vy += dy * k;
+      n.vz += dz * k;
     }
   }
   return force;
