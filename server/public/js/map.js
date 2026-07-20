@@ -26,7 +26,7 @@ let hoverNode = null, selected = null;
 const degree = new Map();
 
 // ---- camera ----
-const cam = { yaw: 0.4, pitch: 0.25, zoom: 1, fov: 900 };
+const cam = { yaw: 0.4, pitch: 0.25, zoom: 0.62, fov: 1100 };
 let dragging = false, settled = false;
 let sim = null;
 let pointerWorld = null;   // cursor position unprojected into the field
@@ -224,10 +224,10 @@ async function boot() {
   // 3-dimensional physics: link springs + n-body repulsion in x/y/z,
   // plus the cursor as a live force source
   sim = d3.forceSimulation(nodes, 3)
-    .force("link", d3.forceLink(edges).id((n) => n.id).distance((e) => 30 + (1 - e.w) * 70).strength((e) => 0.25 + e.w * 0.5))
-    .force("charge", d3.forceManyBody().strength(-16).theta(0.9))
+    .force("link", d3.forceLink(edges).id((n) => n.id).distance((e) => 70 + (1 - e.w) * 130).strength((e) => 0.12 + e.w * 0.3))
+    .force("charge", d3.forceManyBody().strength(-55).theta(0.9))
     .force("center", d3.forceCenter(0, 0, 0))
-    .force("collide", d3.forceCollide(5))
+    .force("collide", d3.forceCollide(10))
     .force("pointer", forcePointer());
   if (reduced) {
     sim.stop();
