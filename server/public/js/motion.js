@@ -10,13 +10,15 @@ if (!reduced && window.Lenis) {
   const lenis = new Lenis({ lerp: 0.14, wheelMultiplier: 1.35 });
   const raf = (t) => { lenis.raf(t); requestAnimationFrame(raf); };
   requestAnimationFrame(raf);
-  // inner scrollables keep native wheel behaviour
+  // inner scrollables keep native wheel behaviour; drawers fill after load,
+  // so they are opted out unconditionally rather than by measured overflow
   addEventListener("load", () => {
     for (const el of document.querySelectorAll("main *")) {
       const o = getComputedStyle(el).overflowY;
       if ((o === "auto" || o === "scroll") && el.scrollHeight > el.clientHeight)
         el.setAttribute("data-lenis-prevent", "");
     }
+    for (const el of document.querySelectorAll(".drawer")) el.setAttribute("data-lenis-prevent", "");
   });
 }
 
