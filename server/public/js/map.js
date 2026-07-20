@@ -183,10 +183,10 @@ async function openPanel(n) {
     </div>
     <h4>${esc(s.title)}</h4>
     <p class="caption" style="line-height:1.6">${esc(s.summary)}</p>
-    ${s.horizon_reasoning ? `<p class="caption mt-2" style="color:var(--textDim)">${esc(s.horizon_reasoning)}</p>` : ""}
+    ${s.horizon_reasoning ? `<p class="caption mt-2" style="color:#8A927B">${esc(s.horizon_reasoning)}</p>` : ""}
     <p class="mt-2"><a href="${esc(s.url)}" target="_blank" rel="noopener" class="caption">${esc(s.source || "source")} ↗</a></p>
     ${s.similar?.length ? `<p class="caption mt-4"><strong>Nearest in the field</strong></p>` +
-      s.similar.map((x) => `<p class="caption" style="margin-top:6px"><a data-jump="${x.id}" style="cursor:pointer">${esc(x.title)}</a> <span style="color:var(--textDim)">cos ${x.score}</span></p>`).join("") : ""}`;
+      s.similar.map((x) => `<p class="caption" style="margin-top:6px"><a data-jump="${x.id}" style="cursor:pointer">${esc(x.title)}</a> <span style="color:#8A927B">cos ${x.score}</span></p>`).join("") : ""}`;
   panel.style.display = "block";
 }
 panel.addEventListener("click", (e) => {
@@ -325,7 +325,7 @@ async function boot() {
       tip.style.display = "block";
       tip.style.left = (mx + 14) + "px";
       tip.style.top = (my + 10) + "px";
-      tip.innerHTML = `<strong>${esc(n.t)}</strong><br><span style="color:var(--textDim)">${esc(n.c)} · ${esc(HLABEL[n.h] || n.h)}</span>`;
+      tip.innerHTML = `<strong>${esc(n.t)}</strong><br><span style="color:#8A927B">${esc(n.c)} · ${esc(HLABEL[n.h] || n.h)}</span>`;
     } else {
       tip.style.display = "none";
     }

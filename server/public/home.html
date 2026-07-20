@@ -22,14 +22,24 @@
     </div>
   </header>
 
-  <!-- Act 1 — the display hero: giant type, the head punching through it -->
+  <!-- Act 1 — the display hero: heading left, the head right -->
   <section class="fib-hero" id="hero">
-    <h1 class="fib-display" aria-label="The future in parasocial">
-      <span class="line l1">THE FUTURE</span>
-      <span class="line l2">IN&nbsp;PARASOCIAL</span>
-    </h1>
+    <div class="fib-hero-copy">
+      <h1 class="fib-display" aria-label="The future in parasocial">
+        <span class="line">THE</span>
+        <span class="line">FUTURE IN</span>
+        <span class="line">PARASOCIAL</span>
+      </h1>
+      <p class="fib-tag">Where evidence, scenarios and simulation<br>shape what comes next.</p>
+      <div class="fib-herostats">
+        <span><b data-stat="signals">938</b> signals observed</span>
+        <span><b data-stat="clusters">33</b> clusters</span>
+        <span><b data-stat="scenarios">4</b> futures · 2040</span>
+        <span>nightly scan · 22:00 SGT</span>
+      </div>
+    </div>
     <figure class="fib-heroCard" id="heroCard">
-      <img id="heroImg" src="/img/hero-specimen.jpg"
+      <img id="heroImg" src="/img/hero-specimen.jpg" data-pin-nopin="true"
            alt="A moss face and a porcelain synthetic face suspended in darkness, almost touching"
            onerror="this.style.display='none'">
       <model-viewer id="heroModel" src="/models/hero.glb"
@@ -39,18 +49,11 @@
            camera-orbit="285deg 80deg 105%" min-camera-orbit="auto auto 30%" max-camera-orbit="auto auto 250%"
            disable-scroll="true"></model-viewer>
     </figure>
-    <p class="fib-tag">Where evidence, scenarios and simulation<br>shape what comes next.</p>
-    <div class="fib-herostats">
-      <span><b data-stat="signals">938</b> signals observed</span>
-      <span><b data-stat="clusters">33</b> clusters</span>
-      <span><b data-stat="scenarios">4</b> futures · 2040</span>
-      <span>nightly scan · 22:00 SGT</span>
-    </div>
   </section>
 
   <!-- full-bleed interstitial with triangular wipes -->
   <section class="fib-inter">
-    <img src="/img/colony.jpg" alt="A dark field holding many small glowing synthetic faces, each nested in its own hollow" loading="lazy" data-parallax="0.12">
+    <img data-pin-nopin="true" src="/img/colony.jpg" alt="A dark field holding many small glowing synthetic faces, each nested in its own hollow" loading="lazy" data-parallax="0.12">
     <div class="fib-wipes" aria-hidden="true"></div>
     <p class="fib-inter-caption">The library in one image — 938 observed attachments, growing nightly.</p>
   </section>
@@ -66,22 +69,22 @@
       <a class="fib-card rise" href="/signals">
         <span class="pill">Signal library</span>
         <h3>A library that refreshes itself</h3>
-        <img src="/img/shot-signals.png" alt="The signal library dashboard" loading="lazy">
+        <img data-pin-nopin="true" src="/img/shot-signals.png" alt="The signal library dashboard" loading="lazy">
       </a>
       <a class="fib-card rise" href="/scenarios">
         <span class="pill">Scenarios</span>
         <h3>Four futures, argued in layers</h3>
-        <img src="/img/shot-scenario.png" alt="A scenario page with Causal Layered Analysis bands" loading="lazy">
+        <img data-pin-nopin="true" src="/img/shot-scenario.png" alt="A scenario page with Causal Layered Analysis bands" loading="lazy">
       </a>
       <a class="fib-card rise" href="/simulation">
         <span class="pill">Simulation</span>
         <h3>Odds, not opinions</h3>
-        <img src="/img/shot-simulation.png" alt="Scenario probability and sensitivity charts" loading="lazy">
+        <img data-pin-nopin="true" src="/img/shot-simulation.png" alt="Scenario probability and sensitivity charts" loading="lazy">
       </a>
       <a class="fib-card rise" href="/chat">
         <span class="pill">Decision chat</span>
         <h3>Advice that shows its sources</h3>
-        <img src="/img/shot-chat.png" alt="The decision-support chat with citations" loading="lazy">
+        <img data-pin-nopin="true" src="/img/shot-chat.png" alt="The decision-support chat with citations" loading="lazy">
       </a>
     </div>
   </section>
@@ -97,22 +100,22 @@
       <a class="fib-card green rise" href="/scenarios">
         <span class="pill">Growth</span>
         <h3 data-arch="growth">The Warm Layer</h3>
-        <img src="/img/scenario-growth.jpg" alt="A porcelain face at home on a firelit mantelpiece" loading="lazy">
+        <img data-pin-nopin="true" src="/img/scenario-growth.jpg" alt="A porcelain face at home on a firelit mantelpiece" loading="lazy">
       </a>
       <a class="fib-card green rise" href="/scenarios">
         <span class="pill">Collapse</span>
         <h3 data-arch="collapse">Forgetting How to Say Thou</h3>
-        <img src="/img/scenario-collapse.jpg" alt="A cracked porcelain mask served on a dusty plate" loading="lazy">
+        <img data-pin-nopin="true" src="/img/scenario-collapse.jpg" alt="A cracked porcelain mask served on a dusty plate" loading="lazy">
       </a>
       <a class="fib-card green rise" href="/scenarios">
         <span class="pill">Discipline</span>
         <h3 data-arch="discipline">The Supervised Hearth</h3>
-        <img src="/img/scenario-discipline.jpg" alt="A hearth and porcelain mask inside a roped-off museum case" loading="lazy">
+        <img data-pin-nopin="true" src="/img/scenario-discipline.jpg" alt="A hearth and porcelain mask inside a roped-off museum case" loading="lazy">
       </a>
       <a class="fib-card green rise" href="/scenarios">
         <span class="pill">Transformation</span>
         <h3 data-arch="transformation">The Algorithmic Third</h3>
-        <img src="/img/scenario-transformation.jpg" alt="A garlanded porcelain face at a candlelit family table" loading="lazy">
+        <img data-pin-nopin="true" src="/img/scenario-transformation.jpg" alt="A garlanded porcelain face at a candlelit family table" loading="lazy">
       </a>
     </div>
   </section>
@@ -125,8 +128,8 @@
       <p>The governance question is no longer whether people bond with machines — it is which rules arrive before the norms harden. The library holds the litigation, the mandates and the harms ledger; the scenarios show where each settlement leads.</p>
       <a class="fib-btn" href="/scenarios">Read the futures <span>→</span></a>
     </div>
-    <div class="cell image rise"><img src="/img/scenario-discipline.jpg" alt="" loading="lazy"></div>
-    <div class="cell image rise"><img src="/img/scenario-transformation.jpg" alt="" loading="lazy"></div>
+    <div class="cell image rise"><img data-pin-nopin="true" src="/img/scenario-discipline.jpg" alt="" loading="lazy"></div>
+    <div class="cell image rise"><img data-pin-nopin="true" src="/img/scenario-transformation.jpg" alt="" loading="lazy"></div>
     <div class="cell text cream-cell rise">
       <h2>For builders</h2>
       <p>Every engagement choice in a companion product is a position on 2040. The simulation names the drivers your design moves — prosocial maturity, displacement, harm accumulation — and the chat answers with citations, not vibes.</p>

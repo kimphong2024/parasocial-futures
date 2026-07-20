@@ -22,7 +22,10 @@ const heroModel = document.getElementById("heroModel");
 const hero = document.getElementById("hero");
 let modelOn = false;
 if (heroModel && !reduced) {
-  heroModel.addEventListener("load", () => { modelOn = true; });
+  heroModel.addEventListener("load", () => {
+    modelOn = true;
+    document.getElementById("heroCard")?.classList.add("model-on");
+  });
   heroModel.addEventListener("error", () => heroModel.remove());
 } else {
   heroModel?.remove();

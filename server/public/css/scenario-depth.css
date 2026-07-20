@@ -65,7 +65,7 @@
   transform: translateX(-50%);
   font-family: var(--font-mono);
   font-size: 11px; letter-spacing: 3px;
-  color: var(--textDim);
+  color: #8A927B;
 }
 
 /* depth rail: the four strata, present position lit */
@@ -76,7 +76,7 @@
   display: flex; flex-direction: column; gap: 10px;
   font-family: var(--font-mono);
   font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
-  color: var(--textDim);
+  color: #8A927B;
   z-index: 3;
 }
 .descent-rail span { display: flex; align-items: center; gap: 8px; transition: color 0.3s var(--ease-epoch, ease); }
@@ -110,7 +110,7 @@
 .dlayer .dl-label {
   font-family: var(--font-mono);
   font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
-  color: var(--textDim);
+  color: #8A927B;
 }
 .dlayer h3 {
   margin-top: 10px;
@@ -118,26 +118,26 @@
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.02em;
-  color: var(--charcoal);
+  color: #F5F6EE;
   text-wrap: balance;
 }
 .dlayer .dl-text {
   margin-top: 16px;
   font-size: 15px;
   line-height: 1.85;
-  color: var(--textMid);
+  color: #B9BFAD;
 }
 .dlayer .dl-hint {
   margin-top: 14px;
   font-size: 12px;
-  color: var(--textDim);
+  color: #8A927B;
 }
 /* the deepest layer speaks in the myth voice */
 .dlayer-myth .dl-text {
   font-style: italic;
   font-size: 17px;
   line-height: 1.9;
-  color: var(--charcoal);
+  color: #F5F6EE;
 }
 
 /* ---------- responsive ---------- */
