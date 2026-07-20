@@ -15,16 +15,14 @@ function entry(d, i, clusters) {
     ? `${p.min} – ${p.max}`
     : `${p.min} – ${p.max}, most likely ${p.mode}`;
   return `<section class="card chart-block">
-    <div class="flex-between" style="flex-wrap:wrap;gap:10px">
-      <div>
-        <span class="caption" style="font-family:var(--font-mono)">Driver ${i + 1} · ${esc(d.key)}${d.enabled ? "" : " · <strong>disabled</strong>"}</span>
-        <h3 style="margin-top:6px">${esc(d.name)}</h3>
-      </div>
-      <div style="text-align:right">
+    <div class="flex-between" style="flex-wrap:wrap;gap:10px;align-items:baseline">
+      <span class="caption" style="font-family:var(--font-mono)">Driver ${i + 1} · ${esc(d.key)}${d.enabled ? "" : " · <strong>disabled</strong>"}</span>
+      <span style="display:inline-flex;gap:10px;align-items:baseline;flex-wrap:wrap">
         <span class="tag tag-mustard">${DIST[d.dist_type] || esc(d.dist_type)} · ${esc(range)}</span>
-        ${d.unit ? `<div class="caption mt-2">${esc(d.unit)}</div>` : ""}
-      </div>
+        ${d.unit ? `<span class="caption">${esc(d.unit)}</span>` : ""}
+      </span>
     </div>
+    <h3 style="margin-top:8px">${esc(d.name)}</h3>
     <p class="mt-4" style="max-width:70ch">${esc(d.description)}</p>
     ${d.rationale ? `<p class="caption mt-2" style="max-width:75ch"><strong>Why this range:</strong> ${esc(d.rationale)}</p>` : ""}
     <p class="caption mt-4"><strong>Evidence</strong> — ${evidence} signals across ${mine.length} cluster${mine.length === 1 ? "" : "s"}:</p>
