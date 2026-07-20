@@ -1,0 +1,137 @@
+/* ============================================================
+   FIB skin — the display-editorial design system rolled across
+   the product pages: paper-white ground, Anton display headings,
+   square-bullet section rows, pill controls, cream cards, deep
+   green + mustard accents. Loads after style.css and replaces
+   the former dark remap on product pages. Dark immersive pages
+   (scenarios, scenario, map, transparency, reference) keep their
+   own register.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Fragment+Mono&display=swap');
+
+:root {
+  --ink: #131309;
+  --paperWhite: #FFFEF9;
+  --deepGreen: #24331A;
+  --cream: #F2E9D4;
+  --creamLine: #E2DBC2;
+  --gold: #E1B83B;
+  --font-display: 'Anton', 'Arial Narrow', sans-serif;
+  --font-mono: 'Fragment Mono', ui-monospace, monospace;
+  --ease-epoch: cubic-bezier(0.5, 0.01, 0.5, 1);
+  /* light chart tokens (validated light palette lives in style.css --arch-*) */
+  --chart-ink: #2A2A20;
+  --chart-mid: #6B6852;
+  --chart-dim: #93906F;
+  --chart-grid: #E7E1CB;
+  --chart-series: #4E5A2B;
+}
+
+body { background: var(--paperWhite); color: var(--ink); }
+
+/* ---------- header: wordmark + pill nav ---------- */
+.triad-bar { background: var(--ink); height: 3px; }
+.site-header { border-bottom: 1px solid var(--creamLine); background: var(--paperWhite); }
+.brand .label { color: var(--chart-mid); }
+.brand-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+.site-nav a { color: var(--chart-mid); border-bottom: none; border-radius: 999px; padding: 8px 14px; }
+.site-nav a:hover { color: var(--ink); background: var(--cream); }
+.site-nav a.active { color: var(--paperWhite); background: var(--ink); border-bottom: none; font-weight: 500; }
+.site-subnav { border-top: 1px solid var(--creamLine); }
+.site-subnav a { color: var(--chart-mid); }
+.site-subnav a:hover { color: var(--ink); }
+.site-subnav a.active { color: var(--ink); font-weight: 600; border-bottom: 2px solid var(--gold); }
+.nav-dot { background: var(--gold); }
+.nav-badge { background: var(--gold); color: var(--ink); border-color: transparent; }
+
+/* ---------- page heads: square-bullet row + display heading ---------- */
+.page-motif { display: none; }
+.page-head .label {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--chart-mid);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--ink);
+  margin-bottom: 18px;
+}
+.page-head .label::before { content: ""; width: 8px; height: 8px; background: var(--gold); }
+.page-head h2, h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.page-head h2 { font-size: clamp(2rem, 4.6vw, 3.4rem); line-height: 1.02; }
+.page-head .subtitle { color: var(--chart-mid); }
+.divider { background: var(--creamLine); }
+
+/* ---------- cards: cream, rounded, unbordered ---------- */
+.card {
+  background: var(--cream);
+  border: none;
+  border-radius: 18px;
+  box-shadow: none;
+}
+.card .card, .review-card { background: #FBF6E9; border-radius: 14px; }
+.stat-tile .stat-number { color: var(--deepGreen); }
+.stat-tile .stat-number.mustard { color: #A87F14; }
+.stat-tile .stat-number.brown { color: var(--brown, #AC7222); }
+
+/* ---------- pills everywhere ---------- */
+.btn {
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paperWhite);
+  border: 1px solid var(--ink);
+  transition: background 0.25s var(--ease-epoch), transform 0.25s var(--ease-epoch);
+}
+.btn:hover { background: var(--deepGreen); border-color: var(--deepGreen); transform: translateY(-1px); }
+.btn-secondary { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
+.btn-secondary:hover { background: var(--ink); color: var(--paperWhite); }
+.btn-danger { background: transparent; color: #A03325; border-color: #A03325; }
+.btn-danger:hover { background: #A03325; color: var(--paperWhite); }
+.tag { border-radius: 999px; padding: 5px 14px; border: none; }
+.tag-mustard { background: var(--gold); color: var(--ink); font-weight: 600; }
+.tag-olive { background: var(--deepGreen); color: var(--paperWhite); }
+.tag-dim { background: var(--cream); color: var(--chart-mid); }
+.tag-brown { background: #E9D9BD; color: #6B4A12; }
+.tag-red { background: #F3D9D3; color: #A03325; }
+.tag-blue { background: #DCE7EC; color: #35606F; }
+.pill { border-radius: 999px; }
+.pill.active { background: var(--ink); color: var(--paperWhite); }
+
+/* ---------- tables & forms ---------- */
+table.data th {
+  font-family: var(--font-mono);
+  font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--chart-mid);
+  border-bottom: 1px solid var(--ink);
+}
+table.data td { border-bottom: 1px solid var(--creamLine); }
+input, select, textarea {
+  background: var(--paperWhite);
+  border: 1px solid var(--creamLine);
+  border-radius: 10px;
+  color: var(--ink);
+}
+input:focus, select:focus, textarea:focus { border-color: var(--deepGreen); }
+.toggle input { accent-color: var(--deepGreen); }
+
+/* ---------- misc surfaces ---------- */
+.filter-bar { gap: 10px; }
+.empty-note, .error-note { border-radius: 14px; }
+.citation { background: #FBF6E9; border-radius: 12px; border-left: none; }
+.drawer { background: var(--paperWhite); border-left: 1px solid var(--creamLine); }
+.status-chip { border-radius: 999px; }
+.hbar .hbar-fill { background: var(--chart-series); }
+.hbar.alt .hbar-fill { background: var(--goldenBrown, #D3963E); }
+.chamber-arch { color: var(--chart-mid); }

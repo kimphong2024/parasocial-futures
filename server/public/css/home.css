@@ -80,9 +80,9 @@ html.js .rise.in { opacity: 1; transform: none; }
 .fib-display .l2 { margin-top: 0.02em; }
 .fib-heroCard {
   position: relative;
-  width: min(46vh, 400px);
+  width: clamp(220px, 27vw, 380px);   /* narrow like the reference — the type must stay readable around it */
   aspect-ratio: 3 / 4;
-  margin: calc(-1 * clamp(2.2rem, 8vw, 4.4rem)) auto 0;
+  margin: calc(-1 * clamp(1.6rem, 4.5vw, 3.2rem)) auto 0;
   background: #101408;
   overflow: hidden;
   z-index: 2;
