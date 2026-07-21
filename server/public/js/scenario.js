@@ -36,9 +36,12 @@ function descentHTML() {
           <img src="/img/scenario-${esc(sc.archetype)}.jpg" alt="" onerror="this.remove()">
         </figure>
         <div class="descent-index" id="descentIndex">Layer I / IV</div>
-        <div class="descent-rail" id="descentRail">
-          ${RAIL.map((r, i) => `<span data-l="${i}">L${i + 1} ${r}</span>`).join("")}
-        </div>
+        <svg class="descent-pyramid" id="descentPyramid" viewBox="0 0 240 190" role="group" aria-label="Causal Layered Analysis pyramid — four clickable layers">
+          <g class="tier" data-l="0"><polygon points="120,8 150,52 90,52"/><text x="120" y="44">LITANY</text></g>
+          <g class="tier" data-l="1"><polygon points="88,56 152,56 165,100 75,100"/><text x="120" y="86">SYSTEMIC</text></g>
+          <g class="tier" data-l="2"><polygon points="73,104 167,104 180,141 60,141"/><text x="120" y="129">WORLDVIEW</text></g>
+          <g class="tier" data-l="3"><polygon points="58,145 182,145 196,184 44,184"/><text x="120" y="170">MYTH</text></g>
+        </svg>
         ${LAYERS.map(([key, name, , hint], i) => `
           <div class="dlayer ${key === "myth" ? "dlayer-myth" : ""}" data-layer="${i}">
             <span class="dl-label">${name}</span>
@@ -56,7 +59,12 @@ function attachDescent() {
   if (!descent || reduced) return;
   const stage = document.getElementById("descentStage");
   const layers = [...stage.querySelectorAll(".dlayer")];
-  const rail = [...stage.querySelectorAll(".descent-rail span")];
+  const rail = [...stage.querySelectorAll(".descent-pyramid .tier")];
+  rail.forEach((tier, i) => tier.addEventListener("click", () => {
+    // centre of layer i within the pinned track
+    const track = descent.offsetHeight - innerHeight;
+    scrollTo({ top: descent.offsetTop + Math.round(((i + 0.42) / 4) * track), behavior: reduced ? "auto" : "smooth" });
+  }));
   const index = document.getElementById("descentIndex");
   let ticking = false;
   function update() {

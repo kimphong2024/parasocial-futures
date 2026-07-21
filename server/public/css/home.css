@@ -75,15 +75,22 @@ html.js .rise.in { opacity: 1; transform: none; }
   font-family: var(--font-display);
   font-weight: 400;
   font-size: clamp(3.2rem, 8.6vw, 6rem);
-}
-.fib-display.headline {
-  font-size: clamp(2.1rem, 5.2vw, 3.9rem);   /* longer headline, same optical weight */
-  line-height: 0.98;
   line-height: 0.94;
   letter-spacing: 0.2px;
   color: var(--ink);
   text-align: left;
   display: flex; flex-direction: column;
+}
+.fib-display.headline {
+  font-size: clamp(2.1rem, 5.2vw, 3.9rem);   /* longer headline, same optical weight */
+  line-height: 0.98;
+}
+/* the same CTA, sized for the hero — one line, words spaced */
+.fib-display.hero-cta {
+  font-size: clamp(1.25rem, 2.1vw, 1.7rem);
+  flex-direction: row; gap: 0.32em;
+  margin-top: 30px;
+  align-self: flex-start;
 }
 .fib-heroCard {
   position: relative;

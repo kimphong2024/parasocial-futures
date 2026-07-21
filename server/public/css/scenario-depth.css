@@ -174,3 +174,33 @@
   .descent-glow, .descent-index { display: none; }
   .descent-rail { display: none; }
 }
+
+
+/* ---------- CLA pyramid: the depth rail as a real diagram ---------- */
+.descent-pyramid {
+  position: absolute;
+  right: max(var(--s-6, 24px), calc((100% - 1240px) / 2 + var(--s-6, 24px)));
+  bottom: clamp(28px, 6vh, 64px);
+  width: clamp(150px, 15vw, 220px);
+  height: auto;
+  z-index: 3;
+}
+.descent-pyramid .tier { cursor: pointer; }
+.descent-pyramid polygon {
+  fill: #E7E1CB;
+  stroke: var(--paperWhite, #FFFEF9);
+  stroke-width: 2;
+  transition: fill 0.3s var(--ease-epoch, ease);
+}
+.descent-pyramid text {
+  font-family: var(--font-mono, monospace);
+  font-size: 9px; letter-spacing: 1px;
+  text-anchor: middle;
+  fill: var(--chart-mid, #6B6852);
+  pointer-events: none;
+  transition: fill 0.3s var(--ease-epoch, ease);
+}
+.descent-pyramid .tier:hover polygon { fill: #DAD2B4; }
+.descent-pyramid .tier.now polygon { fill: var(--gold, #E1B83B); }
+.descent-pyramid .tier.now text { fill: var(--ink, #131309); font-weight: 700; }
+@media (max-width: 900px) { .descent-pyramid { display: none; } }

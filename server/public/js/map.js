@@ -24,6 +24,7 @@ let nodes = [], edges = [], byId = new Map();
 let mode = "all", highlightCluster = "", query = "";
 let hoverNode = null, selected = null;
 const degree = new Map();
+const neighbours = new Map();   // id -> Set(ids) for hover isolation
 
 // ---- camera ----
 const cam = { yaw: 0.4, pitch: 0.25, zoom: 0.48, fov: 1250 };
@@ -42,7 +43,7 @@ function screenToWorld(px, py, depth = 0) {
   const ry = (py - ch / 2) / (s * cam.zoom);
   const y = ry * cp + depth * sp;
   const rz0 = -ry * sp + depth * cp;
-  return { x: rx * cy - rz0 * sy, y, z: rx * sy + rz0 * cy };
+  return { x: rx * cy - rz0 * sy + cx0, y: y + cy0, z: rx * sy + rz0 * cy + cz0 };
 }
 
 // The cursor as a force source: nodes inside the bubble are pushed away,
@@ -85,6 +86,8 @@ const edgeVisible = (e) =>
   : e.source.c === e.target.c;
 
 const nodeLit = (n) => {
+  // hovering isolates a signal's own neighbourhood
+  if (hoverNode) return n === hoverNode || neighbours.get(hoverNode.id)?.has(n.id) === true;
   if (query) return n.t.toLowerCase().includes(query) || n.c.toLowerCase().includes(query);
   if (highlightCluster) return n.c === highlightCluster;
   return true;
@@ -95,7 +98,7 @@ function project(n, t, cw, ch) {
   // per-particle drift: tiny circular float so the field never dies
   const dx = reduced ? 0 : Math.sin(t * 0.00037 + n.phase) * 2.2;
   const dy = reduced ? 0 : Math.cos(t * 0.00031 + n.phase * 1.7) * 2.2;
-  const x = n.x + dx, y = n.y + dy, z = n.z || 0;
+  const x = n.x + dx - cx0, y = n.y + dy - cy0, z = (n.z || 0) - cz0;
   const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
   const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
   let rx = x * cy + z * sy;
@@ -110,19 +113,25 @@ function project(n, t, cw, ch) {
 }
 
 let lastDraw = 0;
+let cx0 = 0, cy0 = 0, cz0 = 0;   // running centroid — the field stays framed as it drifts
 function draw(t = 0) {
   const cw = canvas.width / devicePixelRatio, ch = canvas.height / devicePixelRatio;
+  let mx = 0, my = 0, mz = 0;
+  for (const n of nodes) { mx += n.x; my += n.y; mz += n.z || 0; }
+  if (nodes.length) { cx0 = mx / nodes.length; cy0 = my / nodes.length; cz0 = mz / nodes.length; }
   ctx.save();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.scale(devicePixelRatio, devicePixelRatio);
 
   for (const n of nodes) project(n, t, cw, ch);
 
-  const anyFocus = !!(query || highlightCluster);
+  const anyFocus = !!(query || highlightCluster || hoverNode);
   // edges first, depth-faded
   for (const e of edges) {
     if (!edgeVisible(e)) continue;
-    const lit = nodeLit(e.source) && nodeLit(e.target);
+    const lit = hoverNode
+      ? (e.source === hoverNode || e.target === hoverNode)
+      : nodeLit(e.source) && nodeLit(e.target);
     const depth = Math.min(e.source.ss, e.target.ss);           // 0..1-ish
     const base = anyFocus ? (lit ? 0.34 : 0.03) : 0.1;
     ctx.strokeStyle = lit && anyFocus
@@ -209,6 +218,10 @@ async function boot() {
   for (const e of edges) {
     degree.set(e.source.id, (degree.get(e.source.id) || 0) + 1);
     degree.set(e.target.id, (degree.get(e.target.id) || 0) + 1);
+    if (!neighbours.has(e.source.id)) neighbours.set(e.source.id, new Set());
+    if (!neighbours.has(e.target.id)) neighbours.set(e.target.id, new Set());
+    neighbours.get(e.source.id).add(e.target.id);
+    neighbours.get(e.target.id).add(e.source.id);
   }
   $("mapStats").textContent = `${nodes.length} signals · ${edges.length} connections · 3D`;
   $("clusterSel").insertAdjacentHTML("beforeend",
