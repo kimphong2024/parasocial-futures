@@ -1,8 +1,11 @@
-// Artifact imagery, second generation — Gemini 2.5 Flash Image ("nano banana").
-// Unlike the Leonardo pass, this model renders legible text, so each object is
-// asked to carry its own specimen words. The exact composed prompt is written
-// back into server/seed/artifacts.json as `image_prompt_used` and shown on the
-// /artifacts page, so what produced each photograph stays inspectable.
+// Artifact imagery, second generation — Gemini 2.5 Flash Image ("nano banana"),
+// reached through Leonardo's v2 generations API (same key as the rest of the
+// image pipeline; no separate Google credential).
+//
+// Unlike the first Phoenix pass, this model renders legible text, so each
+// object is asked to carry its own authored specimen words. The exact composed
+// prompt is written back into server/seed/artifacts.json as `image_prompt_used`
+// and disclosed on the /artifacts page.
 //
 //   node --env-file=.env scripts/gen-artifacts-nb.mjs [--force] [--only=archetype]
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
@@ -15,42 +18,63 @@ const OUT = join(ROOT, "server", "public", "img", "artifacts");
 const DATA = join(ROOT, "server", "seed", "artifacts.json");
 mkdirSync(OUT, { recursive: true });
 
-const KEY = (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "").trim();
-if (!KEY) {
-  console.error("GEMINI_API_KEY (or GOOGLE_API_KEY) is not set — add it to .env");
-  process.exit(1);
-}
-const MODEL = process.env.NB_MODEL || "gemini-2.5-flash-image";
+const KEY = (process.env.LEONARDO_API_KEY || "").trim();
+if (!KEY) { console.error("LEONARDO_API_KEY is not set"); process.exit(1); }
+const MODEL = "gemini-2.5-flash-image";
 const FORCE = process.argv.includes("--force");
 const ONLY = (process.argv.find((a) => a.startsWith("--only=")) || "").split("=")[1];
 
 const log = (...a) => console.log(`[${new Date().toISOString().slice(11, 19)}]`, ...a);
+const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
-// House register + the object's own words, rendered legibly.
+// House register + the object's own words, rendered legibly. Long specimens
+// are abridged for the photograph — dense blocks make the model mis-spell —
+// while the card below the image always carries the full authored text.
+const LINES = 5, WIDTH = 46;
+function abridge(specimen) {
+  return specimen
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .slice(0, LINES)
+    .map((l) => (l.length > WIDTH ? l.slice(0, WIDTH).replace(/[ ,;:.-]+$/, "") + "…" : l))
+    .join("\n");
+}
 function composePrompt(a) {
   return [
     a.image_prompt,
     "",
-    "The object carries printed text. Render it sharply and legibly, exactly as written, in a typeface true to the object (thermal receipt print, ID-card sans, form typewriting, stitched lettering, screen UI — whatever the object implies). Keep the layout plausible for a real document of this kind; do not invent extra text beyond what follows:",
+    "The object carries printed text. Render it sharply and legibly, spelled exactly as written below, in a typeface true to the object (thermal receipt print, ID-card sans, form typewriting, stitched lettering, screen UI — whatever the object implies), laid out plausibly and never crowded. Do not invent, repeat or add any text beyond these lines:",
     "",
-    a.specimen,
+    abridge(a.specimen),
     "",
     "Editorial product photograph, muted olive-cream-gold palette, soft directional light, shallow depth of field, no people, no hands.",
   ].join("\n");
 }
 
 async function generate(prompt) {
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
+  const r = await fetch("https://cloud.leonardo.ai/api/rest/v2/generations", {
     method: "POST",
-    headers: { "x-goog-api-key": KEY, "content-type": "application/json" },
-    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+    headers: { authorization: "Bearer " + KEY, "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify({ model: MODEL, public: false, parameters: { prompt, quantity: 1 } }),
   });
-  if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 220)}`);
   const j = await r.json();
-  const parts = j?.candidates?.[0]?.content?.parts || [];
-  const img = parts.find((p) => p.inlineData?.data);
-  if (!img) throw new Error("no image in response: " + JSON.stringify(j).slice(0, 220));
-  return Buffer.from(img.inlineData.data, "base64");
+  const id = j?.generate?.generationId;
+  if (!id) throw new Error("submit failed: " + JSON.stringify(j).slice(0, 200));
+  for (let i = 0; i < 60; i++) {
+    await sleep(5000);
+    const p = await (await fetch(`https://cloud.leonardo.ai/api/rest/v1/generations/${id}`, {
+      headers: { authorization: "Bearer " + KEY, accept: "application/json" },
+    })).json();
+    const g = p?.generations_by_pk;
+    if (g?.status === "COMPLETE") {
+      const url = g.generated_images?.[0]?.url;
+      if (!url) throw new Error("complete but no image url");
+      return Buffer.from(await (await fetch(url)).arrayBuffer());
+    }
+    if (g?.status === "FAILED") throw new Error("generation FAILED");
+  }
+  throw new Error("timeout");
 }
 
 const scenarios = JSON.parse(readFileSync(DATA, "utf8"));
@@ -66,11 +90,11 @@ for (const sc of scenarios) {
       log(`>> ${sc.archetype}/${a.slug} (${a.type})`);
       const buf = await generate(prompt);
       writeFileSync(file, buf);
-      a.image_prompt_used = prompt;      // disclosure follows the image
+      a.image_prompt_used = prompt;
       a.image_model = MODEL;
       made++;
       log(`   saved ${buf.length} bytes`);
-      writeFileSync(DATA, JSON.stringify(scenarios, null, 2));   // checkpoint
+      writeFileSync(DATA, JSON.stringify(scenarios, null, 2));   // checkpoint after each
     } catch (e) {
       failed++;
       log(`   !! ${a.slug}: ${e.message}`);
