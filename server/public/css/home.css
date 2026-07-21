@@ -198,7 +198,12 @@ html.js .rise.in { opacity: 1; transform: none; }
   padding: 8px 18px;
   font-size: 13px; font-weight: 600;
 }
-.fib-card h3 { margin: 14px 0 18px; font-size: clamp(16px, 1.6vw, 19px); font-weight: 500; line-height: 1.35; }
+.fib-card h3 {
+  margin: 14px 0 18px;
+  font-size: clamp(16px, 1.6vw, 19px);
+  font-weight: 500; line-height: 1.35;
+  min-height: 2.7em;            /* two lines — every card's image starts on the same line */
+}
 .fib-card img {
   width: 100%;
   border-radius: 12px 12px 0 0;
