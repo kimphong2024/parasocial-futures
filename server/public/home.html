@@ -16,10 +16,6 @@
   <!-- meta bar: wordmark · live local time · menu pill -->
   <header class="fib-top">
     <a class="fib-wordmark" href="/">FUTURES OF PARASOCIAL AI</a>
-    <div class="fib-meta">
-      <span class="fib-clock"><span class="slash">/</span> Singapore, SG — <span id="clock">22:00</span></span>
-      <a class="fib-menu" href="/signals"><span class="burger" aria-hidden="true"></span>enter</a>
-    </div>
   </header>
 
   <!-- Act 1 — the display hero: heading left, the head right -->
@@ -45,7 +41,7 @@
       <model-viewer id="heroModel" src="/models/hero.glb"
            alt="A two-faced Janus head: a realistic human face and a gold-seamed porcelain face sharing one head, turning as the page scrolls"
            interaction-prompt="none" disable-zoom disable-pan disable-tap
-           loading="eager" reveal="auto" interpolation-decay="50" exposure="1.45"
+           loading="eager" reveal="auto" interpolation-decay="50" exposure="1.45" shadow-intensity="0.55" shadow-softness="1"
            camera-orbit="285deg 80deg 105%" min-camera-orbit="auto auto 30%" max-camera-orbit="auto auto 250%"
            disable-scroll="true"></model-viewer>
     </figure>
@@ -139,8 +135,7 @@
 
   <!-- close -->
   <section class="fib-cta">
-    <h2 class="fib-display small rise"><span class="line">ENTER THE</span><span class="line">OBSERVATORY</span></h2>
-    <a class="fib-menu big rise" href="/signals"><span class="burger" aria-hidden="true"></span>open the platform</a>
+    <a class="fib-display small fib-enterlink rise" href="/signals"><span class="line">ENTER THE</span><span class="line">FUTURES</span></a>
     <div class="fib-foot">
       <span>FORE 6397 · AI-augmented foresight capstone · University of Houston</span>
       <span><a href="/reference">Method</a> · <a href="/transparency">Transparency</a></span>

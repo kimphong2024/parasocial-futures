@@ -7,16 +7,6 @@ const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
 const easeInOutCubic = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
 
-// ---- live Singapore clock (scan-cadence timezone) ----
-const clockEl = document.getElementById("clock");
-function tickClock() {
-  clockEl.textContent = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Asia/Singapore", hour: "2-digit", minute: "2-digit", hour12: false,
-  }).format(new Date());
-}
-tickClock();
-setInterval(tickClock, 20_000);
-
 // ---- the head turns as the hero scrolls by: human face → porcelain face ----
 const heroModel = document.getElementById("heroModel");
 const hero = document.getElementById("hero");
@@ -26,9 +16,13 @@ if (heroModel && !reduced) {
     modelOn = true;
     document.getElementById("heroCard")?.classList.add("model-on");
   });
-  heroModel.addEventListener("error", () => heroModel.remove());
+  heroModel.addEventListener("error", () => {
+    heroModel.remove();
+    document.getElementById("heroCard")?.classList.add("model-fail");
+  });
 } else {
   heroModel?.remove();
+  document.getElementById("heroCard")?.classList.add("model-fail");
 }
 
 const parallaxEls = [...document.querySelectorAll("[data-parallax]")];

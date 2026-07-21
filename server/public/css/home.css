@@ -84,20 +84,21 @@ html.js .rise.in { opacity: 1; transform: none; }
 .fib-heroCard {
   position: relative;
   width: 100%;
-  max-width: 460px;
+  max-width: 500px;
   aspect-ratio: 3 / 4;
   justify-self: end;
-  background: #101408;
-  overflow: hidden;
+  background: transparent;      /* the head floats on the paper */
+  overflow: visible;
 }
 .fib-heroCard img, .fib-heroCard model-viewer {
-  position: absolute; inset: -12%;
-  width: 124%; height: 124%;
+  position: absolute; inset: -10%;
+  width: 120%; height: 120%;
   object-fit: cover;
 }
-.fib-heroCard model-viewer { background: #101408; pointer-events: none; }
-/* the still is only a pre-load / failure stand-in — never behind the model */
-.fib-heroCard.model-on img { display: none; }
+.fib-heroCard model-viewer { background: transparent; pointer-events: none; }
+/* the still is a failure stand-in only — never a dark plate on the paper */
+.fib-heroCard img { display: none; border-radius: 18px; }
+.fib-heroCard.model-fail img { display: block; }
 .fib-tag {
   margin-top: 30px;
   font-size: clamp(15px, 1.6vw, 19px);
@@ -177,8 +178,8 @@ html.js .rise.in { opacity: 1; transform: none; }
   transition: transform 0.45s cubic-bezier(0.17, 0.67, 0, 1.02);
 }
 .fib-card:hover { transform: translateY(-6px); text-decoration: none; }
-.fib-card.green { background: #1D2A14; }
-.fib-card.green h3 { color: #F5F6EE; }        /* 12.9:1 on the green card */
+.fib-card.green { background: var(--cream); }
+.fib-card.green h3 { color: var(--ink); }
 .fib-card .pill {
   display: inline-block;
   background: var(--gold); color: var(--ink);
@@ -196,7 +197,7 @@ html.js .rise.in { opacity: 1; transform: none; }
   object-position: center bottom;
   background: #101408;
 }
-.fib-card.green img { mix-blend-mode: lighten; background: transparent; }
+.fib-card.green img { object-fit: cover; border-radius: 12px; margin-bottom: 22px; }
 
 /* ---------- checkerboard + watermark ---------- */
 .fib-checker {
@@ -271,3 +272,14 @@ html.js .rise.in { opacity: 1; transform: none; }
   .fib-inter img { transform: none; }
   .fib-card, .fib-btn span, .fib-checker .cell.image img { transition: none; }
 }
+
+
+/* closing CTA as clickable display text */
+.fib-enterlink {
+  text-decoration: none;
+  color: var(--ink);
+  transition: color 0.3s var(--ease-epoch), letter-spacing 0.3s var(--ease-epoch);
+}
+.fib-enterlink:hover { color: var(--deepGreen); text-decoration: none; letter-spacing: 2px; }
+.fib-enterlink .line { border-bottom: 4px solid transparent; transition: border-color 0.3s var(--ease-epoch); }
+.fib-enterlink:hover .line:last-child { border-color: var(--gold); }

@@ -5,9 +5,9 @@
    ============================================================ */
 
 .tdoc-head {
-  max-width: calc(1240px + 2 * var(--gutter));
+  max-width: 1240px;
   margin: 0 auto;
-  padding: clamp(48px, 9vh, 110px) var(--gutter) clamp(28px, 5vh, 56px);
+  padding: clamp(48px, 9vh, 110px) var(--s-6, 24px) clamp(28px, 5vh, 56px);
 }
 .tdoc-head .subtitle { max-width: 62ch; }
 .tdoc-meta {
@@ -17,9 +17,9 @@
 .tdoc-meta .reticle .v { font-size: 13px; }
 
 .tdoc-layout {
-  max-width: calc(1240px + 2 * var(--gutter));
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 0 var(--gutter) clamp(80px, 12vh, 140px);
+  padding: 0 var(--s-6, 24px) clamp(80px, 12vh, 140px);
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
   gap: clamp(32px, 5vw, 72px);

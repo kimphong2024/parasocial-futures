@@ -20,6 +20,7 @@
   --font-display: 'Anton', 'Arial Narrow', sans-serif;
   --font-mono: 'Fragment Mono', ui-monospace, monospace;
   --ease-epoch: cubic-bezier(0.5, 0.01, 0.5, 1);
+  --gutter: clamp(24px, 6vw, 96px);   /* stage pages depend on this token */
   /* light chart tokens (validated light palette lives in style.css --arch-*) */
   --chart-ink: #2A2A20;
   --chart-mid: #6B6852;
@@ -32,7 +33,11 @@ body { background: var(--paperWhite); color: var(--ink); }
 
 /* ---------- header: wordmark + pill nav ---------- */
 .triad-bar { background: var(--ink); height: 3px; }
-.site-header { border-bottom: 1px solid var(--creamLine); background: var(--paperWhite); }
+/* one shared left edge: header, sub-nav and .container all resolve to
+   max-width 1240 with the same inline padding */
+.site-header { border-bottom: 1px solid var(--creamLine); background: var(--paperWhite); padding-inline: 0; }
+.site-header-inner { max-width: 1240px; margin: 0 auto; padding-inline: var(--s-6, 24px); }
+.site-subnav-inner { max-width: 1240px; margin: 0 auto; padding-inline: var(--s-6, 24px); }
 .brand .label { color: var(--chart-mid); }
 .brand-title {
   font-family: var(--font-display);

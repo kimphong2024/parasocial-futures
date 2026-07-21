@@ -12,7 +12,7 @@ const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // horizon trio from the validated dark palette; identity also carried by
 // legend labels and tooltips, never color alone
-const HCOLOR = { H1: [126, 148, 64], H2: [192, 132, 48], H3: [61, 158, 212] };
+const HCOLOR = { H1: [78, 90, 43], H2: [211, 150, 62], H3: [91, 138, 154] };  // validated light trio
 const HLABEL = { H1: "H1 · now–2029", H2: "H2 · 2030–2035", H3: "H3 · 2036–2040+" };
 
 const canvas = $("mapCanvas");
@@ -127,7 +127,7 @@ function draw(t = 0) {
     const base = anyFocus ? (lit ? 0.34 : 0.03) : 0.1;
     ctx.strokeStyle = lit && anyFocus
       ? `rgba(225,184,59,${(base * depth).toFixed(3)})`
-      : `rgba(185,191,173,${(base * depth).toFixed(3)})`;
+      : `rgba(19,19,9,${(base * depth).toFixed(3)})`;
     ctx.lineWidth = 0.6 * depth;
     ctx.beginPath();
     ctx.moveTo(e.source.sx, e.source.sy);
@@ -151,11 +151,11 @@ function draw(t = 0) {
     }
     ctx.beginPath();
     ctx.arc(n.sx, n.sy, Math.max(0.6, size), 0, Math.PI * 2);
-    ctx.fillStyle = lit ? `rgba(${r},${g},${b},${alpha.toFixed(3)})` : "rgba(120,128,107,0.18)";
+    ctx.fillStyle = lit ? `rgba(${r},${g},${b},${alpha.toFixed(3)})` : "rgba(107,104,82,0.16)";
     ctx.fill();
     if (n === hoverNode || n === selected) {
       ctx.lineWidth = 1.6;
-      ctx.strokeStyle = "#F5F6F0";
+      ctx.strokeStyle = "#131309";
       ctx.stroke();
     }
   }
@@ -183,10 +183,10 @@ async function openPanel(n) {
     </div>
     <h4>${esc(s.title)}</h4>
     <p class="caption" style="line-height:1.6">${esc(s.summary)}</p>
-    ${s.horizon_reasoning ? `<p class="caption mt-2" style="color:#8A927B">${esc(s.horizon_reasoning)}</p>` : ""}
+    ${s.horizon_reasoning ? `<p class="caption mt-2" style="color:#6B6852">${esc(s.horizon_reasoning)}</p>` : ""}
     <p class="mt-2"><a href="${esc(s.url)}" target="_blank" rel="noopener" class="caption">${esc(s.source || "source")} ↗</a></p>
     ${s.similar?.length ? `<p class="caption mt-4"><strong>Nearest in the field</strong></p>` +
-      s.similar.map((x) => `<p class="caption" style="margin-top:6px"><a data-jump="${x.id}" style="cursor:pointer">${esc(x.title)}</a> <span style="color:#8A927B">cos ${x.score}</span></p>`).join("") : ""}`;
+      s.similar.map((x) => `<p class="caption" style="margin-top:6px"><a data-jump="${x.id}" style="cursor:pointer">${esc(x.title)}</a> <span style="color:#6B6852">cos ${x.score}</span></p>`).join("") : ""}`;
   panel.style.display = "block";
 }
 panel.addEventListener("click", (e) => {
@@ -325,7 +325,7 @@ async function boot() {
       tip.style.display = "block";
       tip.style.left = (mx + 14) + "px";
       tip.style.top = (my + 10) + "px";
-      tip.innerHTML = `<strong>${esc(n.t)}</strong><br><span style="color:#8A927B">${esc(n.c)} · ${esc(HLABEL[n.h] || n.h)}</span>`;
+      tip.innerHTML = `<strong>${esc(n.t)}</strong><br><span style="color:#6B6852">${esc(n.c)} · ${esc(HLABEL[n.h] || n.h)}</span>`;
     } else {
       tip.style.display = "none";
     }
