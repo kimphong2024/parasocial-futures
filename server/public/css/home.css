@@ -65,7 +65,7 @@ html.js .rise.in { opacity: 1; transform: none; }
 .fib-hero {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 1fr);
+  grid-template-columns: minmax(0, 1.45fr) minmax(240px, 0.85fr);
   gap: clamp(24px, 4vw, 64px);
   align-items: center;
   padding: clamp(110px, 16vh, 160px) var(--gutter) clamp(56px, 9vh, 100px);
@@ -82,12 +82,13 @@ html.js .rise.in { opacity: 1; transform: none; }
   display: flex; flex-direction: column;
 }
 .fib-display.headline {
-  font-size: clamp(2.1rem, 5.2vw, 3.9rem);   /* longer headline, same optical weight */
-  line-height: 0.98;
+  /* sized so the longest line fills its column at every width */
+  font-size: clamp(2.4rem, 7vw, 6.6rem);
+  line-height: 0.9;
 }
 /* the subject of the sentence, struck through with a marker */
 .fib-display.headline .line:nth-child(-n+2) {
-  font-size: 1.3em;
+  font-size: 1.34em;
   align-self: flex-start;                    /* the band hugs the words, not the column */
   background: linear-gradient(transparent 50%, var(--gold) 50%);
   padding-inline: 0.06em;
