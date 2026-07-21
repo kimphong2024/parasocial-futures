@@ -8,8 +8,8 @@
    ============================================================ */
 
 .scen-head {
-  padding: clamp(40px, 8vh, 90px) var(--gutter, clamp(24px, 6vw, 96px)) clamp(20px, 4vh, 40px);
-  max-width: calc(1240px + 2 * var(--gutter, 96px));
+  padding: clamp(40px, 8vh, 90px) var(--s-6, 24px) clamp(20px, 4vh, 40px);
+  max-width: 1240px;
   margin: 0 auto;
 }
 .scen-head .subtitle { max-width: 56ch; }
@@ -28,7 +28,7 @@
   position: sticky; top: 0;
   height: 100vh;
   overflow: hidden;
-  background: var(--void, #101408);
+  background: var(--paperWhite, #FFFEF9);
 }
 .strata-glow {
   position: absolute; inset: 0;
@@ -44,17 +44,17 @@
   z-index: 46;
   font-family: var(--font-mono);
   font-size: 11px; letter-spacing: 3px;
-  color: #8A927B;
+  color: var(--chart-mid, #6B6852);
 }
 .strata-rail {
   position: absolute;
-  right: max(var(--gutter, 24px), calc((100% - 1240px) / 2));
+  right: max(var(--s-6, 24px), calc((100% - 1240px) / 2 + var(--s-6, 24px)));
   bottom: clamp(36px, 7vh, 72px);
   z-index: 46;
   display: flex; flex-direction: column; gap: 10px;
   font-family: var(--font-mono);
   font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
-  color: #8A927B;
+  color: var(--chart-mid, #6B6852);
 }
 .strata-rail span { display: flex; align-items: center; gap: 8px; transition: color 0.3s var(--ease-epoch, ease); }
 .strata-rail span::before {
@@ -74,7 +74,7 @@
 .stratum-figure {
   position: absolute;
   top: 0; bottom: 0;
-  right: max(var(--gutter, 24px), calc((100% - 1240px) / 2));
+  right: max(var(--s-6, 24px), calc((100% - 1240px) / 2 + var(--s-6, 24px)));
   width: min(56vmin, 540px);
   display: grid;
   place-items: center;
@@ -82,17 +82,15 @@
 .stratum-figure img, .stratum-figure .empty-orb {
   transform: translate3d(var(--fx, 0px), var(--y, 0px), 0) scale(var(--s, 1));
   transform-origin: 50% 42%;
-  filter: brightness(var(--br, 1)) blur(var(--bl, 0px));
+  filter: blur(var(--bl, 0px));
   opacity: var(--o, 1);
   will-change: transform, filter, opacity;
 }
 .stratum-figure img {
   width: 100%; aspect-ratio: 1;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
-  mix-blend-mode: lighten;                 /* black photo bg dissolves into the void */
-  -webkit-mask-image: radial-gradient(ellipse 68% 66% at 50% 50%, #000 42%, transparent 72%);
-  mask-image: radial-gradient(ellipse 68% 66% at 50% 50%, #000 42%, transparent 72%);
+  border-radius: 18px;
 }
 .stratum-figure .empty-orb {
   width: 62%; aspect-ratio: 1; border-radius: 50%;
@@ -101,7 +99,7 @@
 
 .stratum-panel {
   position: absolute;
-  left: max(var(--gutter, 24px), calc((100% - 1240px) / 2));
+  left: max(var(--s-6, 24px), calc((100% - 1240px) / 2 + var(--s-6, 24px)));
   top: 50%;
   translate: 0 -50%;
   max-width: 46ch;
@@ -112,7 +110,7 @@
 .chamber-arch {
   font-family: var(--font-mono);
   font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
-  color: #8A927B;
+  color: var(--chart-mid, #6B6852);
 }
 .stratum-title {
   margin-top: 10px;
@@ -120,7 +118,7 @@
   font-weight: 800;
   line-height: 1.06;
   letter-spacing: -0.03em;
-  color: #F5F6EE;
+  color: var(--ink, #131309);
   text-wrap: balance;
 }
 .stratum-summary {
@@ -128,12 +126,12 @@
   max-width: 44ch;
   font-size: 13.5px;
   line-height: 1.75;
-  color: #B9BFAD;
+  color: var(--chart-mid, #6B6852);
 }
 .stratum-myth {
   margin-top: 14px;
   font-size: 13px; font-style: italic; line-height: 1.7;
-  color: #B9BFAD;
+  color: var(--chart-mid, #6B6852);
   border-left: none;
   padding-left: 14px;
   position: relative;
@@ -150,7 +148,7 @@
   max-width: 1240px;
   /* centered at full width, never closer to the edge than the page gutter */
   margin-block: clamp(48px, 8vh, 90px);
-  margin-inline: max(var(--gutter, 24px), calc((100% - 1240px) / 2));
+  margin-inline: max(var(--s-6, 24px), calc((100% - 1240px) / 2 + var(--s-6, 24px)));
   padding: clamp(24px, 4vh, 40px) clamp(24px, 4vw, 48px);
 }
 .draft-strip .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
@@ -172,7 +170,7 @@
     translate: 0 0;
     max-width: none;
     padding-top: 40px;
-    background: linear-gradient(transparent, rgba(16, 20, 8, 0.85) 30%);
+    background: linear-gradient(transparent, rgba(255, 254, 249, 0.92) 30%);
   }
 }
 

@@ -67,24 +67,26 @@ function attachEngine() {
       if (d >= 0) {
         // ahead: smaller, dimmer, softer, cascading up-left — a visible stack
         s = 1 / (1 + 0.42 * d);
-        o = clamp01((2.6 - d) / 1.0);
-        br = Math.max(0.16, 1 - 0.42 * Math.min(d, 1) - 0.15 * Math.max(0, d - 1));
-        bl = Math.min(5, 1.8 * d);
+        o = clamp01((1.15 - d) / 0.6);
+        br = 1;
+        bl = Math.min(6, 2.6 * d);
         y = -120 * d;
         fx = -150 * d;
         px = 0;
-        pv = easeOutExpo(clamp01(1 - d / 0.8));
+        pv = easeOutExpo(clamp01(1 - d / 0.34));
       } else {
         // passed: flies apart past the camera — image right, words left
-        const a = clamp01(-d / 0.55);
+        // hold the current layer fully legible through its quarter, then let
+        // it fly apart — text clears first, the image lingers a beat longer
+        const a = clamp01(-d / 0.9);
         s = 1 + 0.95 * a;
-        o = 1 - a;
+        o = clamp01(1 - (a - 0.3) / 0.55);
         br = 1;
-        bl = 3.5 * a;
+        bl = 5 * a;
         y = 0;
-        fx = 130 * a;
-        px = -110 * a;
-        pv = clamp01(1 - a * 1.25);
+        fx = 150 * a;
+        px = -130 * a;
+        pv = clamp01(1 - (a - 0.45) / 0.3);
       }
       el.style.setProperty("--s", s.toFixed(4));
       el.style.setProperty("--o", o.toFixed(4));

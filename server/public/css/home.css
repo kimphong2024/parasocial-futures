@@ -75,6 +75,10 @@ html.js .rise.in { opacity: 1; transform: none; }
   font-family: var(--font-display);
   font-weight: 400;
   font-size: clamp(3.2rem, 8.6vw, 6rem);
+}
+.fib-display.headline {
+  font-size: clamp(2.1rem, 5.2vw, 3.9rem);   /* longer headline, same optical weight */
+  line-height: 0.98;
   line-height: 0.94;
   letter-spacing: 0.2px;
   color: var(--ink);
@@ -192,12 +196,12 @@ html.js .rise.in { opacity: 1; transform: none; }
   width: 100%;
   border-radius: 12px 12px 0 0;
   display: block;
-  aspect-ratio: 4 / 3.4;
-  object-fit: contain;                        /* whole frame visible, never cropped */
-  object-position: center bottom;
-  background: #101408;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;                          /* fills the card; screenshots read from the top */
+  object-position: center top;
+  background: var(--cream);
 }
-.fib-card.green img { object-fit: cover; border-radius: 12px; margin-bottom: 22px; }
+.fib-card.green img { aspect-ratio: 1; border-radius: 12px; margin-bottom: 22px; object-position: center; }
 
 /* ---------- checkerboard + watermark ---------- */
 .fib-checker {
