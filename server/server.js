@@ -2,6 +2,7 @@
 // Signal library + live scanning + CLA scenarios + Monte Carlo + RAG chat.
 import express from "express";
 import { dirname, join } from "node:path";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import * as d from "./db.js";
 import { seedIfEmpty } from "../scripts/seed.js";
@@ -257,6 +258,22 @@ app.put("/api/scan/settings", (req, res) => {
   res.json({ ok: true, ...scanSettings() });
 });
 
+// ---------- artifacts from the future ----------
+// Objects extrapolated from each published scenario. The set (including the
+// verbatim image prompts) ships as a seed file so provenance is auditable.
+let artifactCache = null;
+app.get("/api/artifacts", (_req, res) => {
+  if (!artifactCache) {
+    try {
+      artifactCache = JSON.parse(readFileSync(join(HERE, "seed", "artifacts.json"), "utf8"));
+    } catch (e) {
+      return res.status(503).json({ error: "artifact set unavailable" });
+    }
+  }
+  const live = new Set(d.publishedScenarios.all().map((s) => s.archetype));
+  res.json({ scenarios: artifactCache.filter((s) => live.has(s.archetype)) });
+});
+
 // ---------- scenarios ----------
 app.get("/api/scenarios", (req, res) => {
   let rows = d.listScenarios.all();
@@ -384,7 +401,7 @@ app.post("/api/chat", chatHandler);
 // ---------- static frontend ----------
 app.use(express.static(join(HERE, "public")));
 app.get("/signals", (_req, res) => res.sendFile(join(HERE, "public", "index.html")));
-["review", "scenarios", "scenario", "scenario-config", "simulation", "chat", "sources", "drivers", "driver-config", "map"].forEach((p) =>
+["review", "scenarios", "scenario", "scenario-config", "simulation", "chat", "sources", "drivers", "driver-config", "map", "artifacts"].forEach((p) =>
   app.get("/" + p, (_req, res) => res.sendFile(join(HERE, "public", p + ".html"))));
 
 // ---------- boot ----------

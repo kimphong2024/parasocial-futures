@@ -1,0 +1,79 @@
+/* ============================================================
+   Artifacts from the future — a specimen catalogue. Object
+   photograph on top, the words printed on it set as a real
+   specimen block, then what it assumes and where it came from.
+   ============================================================ */
+
+.art-group { margin-bottom: clamp(40px, 7vh, 78px); }
+.art-grouphead {
+  display: flex; flex-direction: column; gap: 4px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--ink, #131309);
+  margin-bottom: 22px;
+}
+.art-grouphead h3 {
+  font-family: var(--font-display, sans-serif);
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  font-weight: 400; letter-spacing: 0.5px; text-transform: uppercase;
+  color: var(--ink, #131309);
+}
+.art-grouphead .label { display: flex; align-items: center; gap: 8px; }
+.art-grouphead .label::before { content: ""; width: 8px; height: 8px; background: var(--gold, #E1B83B); }
+.art-grouphead a { align-self: flex-start; margin-top: 4px; }
+
+.art-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 20px;
+}
+.artifact {
+  background: var(--cream, #F2E9D4);
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  transition: transform 0.45s cubic-bezier(0.17, 0.67, 0, 1.02);
+}
+.artifact:hover { transform: translateY(-4px); }
+
+.art-shot { position: relative; background: #E7E1CB; }
+.art-shot img {
+  width: 100%; aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+}
+.art-shot.missing img { display: none; }
+.art-shot.missing { min-height: 120px; }
+.art-type {
+  position: absolute; left: 12px; bottom: 12px;
+  background: var(--paperWhite, #FFFEF9);
+  color: var(--ink, #131309);
+  border-radius: 999px;
+  padding: 5px 13px;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+}
+
+.art-body { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 10px; }
+.art-body h3 { font-size: 16px; font-weight: 600; line-height: 1.35; }
+
+/* the words that appear on the object itself */
+.art-specimen {
+  font-family: var(--font-mono, monospace);
+  font-size: 11.5px; line-height: 1.65;
+  color: var(--ink, #131309);
+  background: var(--paperWhite, #FFFEF9);
+  border-left: 2px solid var(--gold, #E1B83B);
+  border-radius: 0 10px 10px 0;
+  padding: 12px 14px;
+  margin: 2px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.art-blurb { font-size: 13.5px; line-height: 1.7; color: var(--chart-mid, #6B6852); }
+.art-evidence { color: var(--chart-dim, #93906F); }
+.art-evidence strong { color: var(--chart-mid, #6B6852); }
+.art-prompt summary { cursor: pointer; color: var(--chart-mid, #6B6852); }
+.art-prompt summary:hover { color: var(--ink, #131309); }
+.art-prompt p { margin-top: 8px; line-height: 1.65; color: var(--chart-dim, #93906F); }
+
+@media (prefers-reduced-motion: reduce) { .artifact { transition: none; } }

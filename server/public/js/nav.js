@@ -8,6 +8,7 @@ const SECTIONS = [
   { path: "/signals", label: "Signals", children: [["/map", "Signal map"], ["/review", "Signal review"], ["/sources", "Scan settings"]] },
   { path: "/drivers", label: "Drivers", children: [["/driver-config", "Driver configure"]] },
   { path: "/scenarios", label: "Scenarios", children: [["/scenario-config", "Scenario configure"], ["/simulation", "Scenario simulation"]] },
+  { path: "/artifacts", label: "Artifacts", children: [] },
   { path: "/chat", label: "Chat", children: [] },
   { path: "/reference", label: "Method", children: [] },
 ];
