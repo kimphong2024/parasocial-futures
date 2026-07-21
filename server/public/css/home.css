@@ -85,6 +85,15 @@ html.js .rise.in { opacity: 1; transform: none; }
   font-size: clamp(2.1rem, 5.2vw, 3.9rem);   /* longer headline, same optical weight */
   line-height: 0.98;
 }
+/* the subject of the sentence, struck through with a marker */
+.fib-display.headline .line:nth-child(-n+2) {
+  font-size: 1.3em;
+  align-self: flex-start;                    /* the band hugs the words, not the column */
+  background: linear-gradient(transparent 50%, var(--gold) 50%);
+  padding-inline: 0.06em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
 /* the same CTA, sized for the hero — one line, words spaced */
 .fib-display.hero-cta {
   font-size: clamp(1.25rem, 2.1vw, 1.7rem);
