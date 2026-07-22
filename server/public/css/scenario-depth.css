@@ -6,10 +6,29 @@
    Same grammar as the home hero and the scenarios chambers.
    ============================================================ */
 
+.scenario-hero {
+  background:
+    linear-gradient(rgba(16, 18, 9, 0.58), rgba(16, 18, 9, 0.74)),
+    var(--hero-img) center 30% / cover no-repeat,
+    var(--paperWhite, #FFFEF9);
+  display: flex; flex-direction: column; justify-content: flex-end;
+  min-height: clamp(380px, 58vh, 620px);
+}
+/* the write-up speaks in paper over its own myth-image */
+.scenario-hero h2 { color: var(--paperWhite, #FFFEF9); }
+.scenario-hero .subtitle { color: rgba(255, 254, 249, 0.85); max-width: 72ch; }
+.scenario-hero .caption { color: rgba(242, 233, 212, 0.7); }
+.scenario-hero .scroll-hint { color: rgba(242, 233, 212, 0.75); }
+.scenario-hero .scroll-hint .tick { background: rgba(242, 233, 212, 0.75); }
+.scenario-hero .divider { border-color: rgba(242, 233, 212, 0.25); background: rgba(242, 233, 212, 0.25); }
+.scenario-hero .btn-secondary { background: transparent; color: var(--paperWhite, #FFFEF9); border-color: rgba(242, 233, 212, 0.45); }
+.scenario-hero .btn-secondary:hover { background: rgba(242, 233, 212, 0.16); }
+.scenario-hero .btn-danger { background: transparent; color: #F2A79A; border: 1px solid rgba(242, 167, 154, 0.55); }
+.scenario-hero .btn-danger:hover { background: rgba(196, 69, 54, 0.28); color: #FFD9D1; }
 .scenario-bar {
   max-width: 1240px;
   margin-inline: max(var(--s-6, 24px), calc((100% - 1240px) / 2 + var(--s-6, 24px)));
-  padding-block: clamp(20px, 4vh, 40px) 0;
+  padding-block: clamp(20px, 4vh, 40px) clamp(20px, 4vh, 36px);
 }
 .scenario-bar .divider { margin-top: 18px; }
 .scroll-hint {
@@ -26,11 +45,7 @@
   position: sticky; top: 0;
   height: 100vh;
   overflow: hidden;
-  background:
-    linear-gradient(100deg, rgba(16, 18, 9, 0) 42%, rgba(16, 18, 9, 0.5) 60%),
-    linear-gradient(rgba(16, 18, 9, 0.66), rgba(16, 18, 9, 0.78)),
-    var(--descent-img) center / cover no-repeat,
-    var(--paperWhite, #FFFEF9);
+  background: var(--paperWhite, #FFFEF9);
 }
 
 /* right column: the archetype image above, layer text revealing beneath */
@@ -51,13 +66,6 @@
   pointer-events: none;
 }
 
-/* over the myth-image, text speaks in paper */
-.descent .dl-label { color: rgba(242, 233, 212, 0.75) !important; }
-.descent .dlayer h3 { color: var(--paperWhite, #FFFEF9) !important; }
-.descent .dl-text { color: rgba(255, 254, 249, 0.86) !important; }
-.descent .dl-hint { color: rgba(242, 233, 212, 0.6) !important; }
-.descent .dlayer-myth .dl-text { color: var(--paperWhite, #FFFEF9) !important; }
-
 /* depth counter, top center — a real ordered descent */
 .descent-index {
   position: absolute;
@@ -65,7 +73,7 @@
   transform: translateX(-50%);
   font-family: var(--font-mono);
   font-size: 11px; letter-spacing: 3px;
-  color: rgba(242, 233, 212, 0.7);
+  color: var(--chart-mid, #6B6852);
 }
 
 /* depth rail: the four strata, present position lit */
@@ -161,7 +169,7 @@
   .descent-panels { min-height: 300px; }
   .dlayer {
     padding-top: 40px;
-    background: linear-gradient(transparent, rgba(16, 18, 9, 0.88) 30%);
+    background: linear-gradient(transparent, rgba(255, 254, 249, 0.94) 30%);
   }
   .dlayer .dl-text { font-size: 14px; line-height: 1.75; }
 }
@@ -170,7 +178,6 @@
 @media (prefers-reduced-motion: reduce) {
   .descent { height: auto; }
   .descent-stage { position: static; height: auto; overflow: visible; padding: 40px 0; }
-  .descent-stage { background: linear-gradient(rgba(16, 18, 9, 0.82), rgba(16, 18, 9, 0.88)), var(--descent-img) center / cover no-repeat; }
   .descent-right { position: static; width: auto; display: block; }
   .descent-pyramid { position: static; translate: none; display: block; margin: 0 auto 40px; width: min(80vw, 420px); }
     .dlayer {
@@ -228,7 +235,7 @@
     justify-content: flex-start;
     padding-bottom: 0;
   }
-  .descent .dlayer { background: none; padding-top: 0; }
+  .descent .dlayer { padding-top: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .descent-pyramid { position: static; translate: none; margin: 0 auto 40px; width: min(80vw, 420px); }

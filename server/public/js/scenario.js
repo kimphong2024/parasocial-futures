@@ -30,7 +30,7 @@ const RAIL = ["Litany", "Systemic", "Worldview", "Myth"];
 function descentHTML() {
   return `
     <section class="descent" id="descent">
-      <div class="descent-stage" id="descentStage" style="--descent-img:url('/img/scenario-${esc(sc.archetype)}.jpg')">
+      <div class="descent-stage" id="descentStage">
         <div class="descent-glow" aria-hidden="true"></div>
         <div class="descent-index" id="descentIndex">Layer I / IV</div>
         <svg class="descent-pyramid" id="descentPyramid" viewBox="0 0 420 470" role="group" aria-label="Causal Layered Analysis pyramid — four clickable layers">
@@ -188,7 +188,9 @@ function render() {
     // then the narrative and evidence back in normal flow.
     main.className = "";
     main.innerHTML = `
-      <div class="scenario-bar">${headerHTML()}<div id="err"></div></div>
+      <div class="scenario-hero" style="--hero-img:url('/img/scenario-${esc(sc.archetype)}.jpg')">
+        <div class="scenario-bar">${headerHTML()}<div id="err"></div></div>
+      </div>
       ${descentHTML()}
       <div class="container">${belowHTML(conds)}</div>`;
     attachDescent();
