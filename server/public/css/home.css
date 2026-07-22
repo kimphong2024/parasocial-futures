@@ -95,13 +95,27 @@ html.js .rise.in { opacity: 1; transform: none; }
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
-/* the same CTA, sized for the hero — one line, words spaced */
-.fib-display.hero-cta {
-  font-size: clamp(1.25rem, 2.1vw, 1.7rem);
-  flex-direction: row; gap: 0.32em;
-  margin-top: 30px;
-  align-self: flex-start;
+/* the CTA is a solid mustard rectangle — square corners, ink text */
+.fib-enterbtn {
+  display: inline-block;
+  background: var(--gold);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.05rem, 1.6vw, 1.35rem);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 16px 34px;
+  border-radius: 0;
+  text-decoration: none;
+  transition: background 0.25s var(--ease-epoch, ease), transform 0.25s var(--ease-epoch, ease);
 }
+.fib-enterbtn:hover { background: var(--ink); color: var(--gold); }
+.fib-enterbtn:active { transform: translateY(1px); }
+.fib-enterbtn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.fib-enterbtn.hero-cta { margin-top: 30px; align-self: flex-start; }
+.fib-enterbtn.big { font-size: clamp(1.5rem, 2.6vw, 2.1rem); padding: 22px 52px; }
+@media (prefers-reduced-motion: reduce) { .fib-enterbtn { transition: none; } }
 .fib-heroCard {
   position: relative;
   width: 100%;

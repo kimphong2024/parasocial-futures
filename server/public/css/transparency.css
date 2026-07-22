@@ -25,16 +25,17 @@
   gap: clamp(32px, 5vw, 72px);
   align-items: start;
 }
-@media (max-width: 940px) {
-  .tdoc-layout { grid-template-columns: 1fr; }
-  .tdoc-toc { display: none; }
-}
-
 /* ---------- table of contents ---------- */
 .tdoc-toc {
   position: sticky; top: 32px;
   display: flex; flex-direction: column; gap: 2px;
   border-left: 1px solid var(--borderLight);
+}
+/* below the sidebar breakpoint the toc is gone entirely — this rule
+   must sit after the base rule above, or its display loses the cascade */
+@media (max-width: 940px) {
+  .tdoc-layout { grid-template-columns: 1fr; }
+  .tdoc-toc { display: none; }
 }
 .tdoc-toc a {
   font-family: var(--font-mono);
