@@ -29,19 +29,26 @@
   background: var(--paperWhite, #FFFEF9);
 }
 
+/* right column: the archetype image above, layer text revealing beneath */
+.descent-right {
+  position: absolute;
+  top: 0; bottom: 0;
+  right: max(var(--s-6, 24px), calc((100% - 1240px) / 2 + var(--s-6, 24px)));
+  width: min(46%, 560px);
+  display: flex; flex-direction: column; justify-content: center;
+  gap: clamp(18px, 3vh, 30px);
+  z-index: 2;
+}
 /* archetype myth-image: the destination, approached across the descent */
 .descent-figure {
-  position: absolute;
-  right: max(var(--s-6, 24px), calc((100% - 1240px) / 2 + var(--s-6, 24px)));
-  top: 50%;
-  translate: 0 -50%;
-  width: min(52vmin, 520px);
-  height: min(52vmin, 520px);
+  width: 100%;
+  height: clamp(180px, 30vh, 300px);
+  margin: 0;
   pointer-events: none;
 }
 .descent-figure img {
   width: 100%; height: 100%;
-  object-fit: cover;
+  object-fit: cover; object-position: center 35%;
   display: block;
   border-radius: 18px;
   opacity: var(--breveal, 0.1);
@@ -51,7 +58,7 @@
 }
 .descent-glow {
   position: absolute; inset: 0;
-  background: radial-gradient(circle at 68% 50%, rgba(225, 184, 59, 0.45), rgba(211, 150, 62, 0.14) 34%, rgba(16, 20, 8, 0) 62%);
+  background: radial-gradient(circle at 28% 55%, rgba(225, 184, 59, 0.4), rgba(211, 150, 62, 0.12) 34%, rgba(16, 20, 8, 0) 62%);
   opacity: var(--glow, 0);
   pointer-events: none;
 }
@@ -89,11 +96,11 @@
 .descent-rail span.now::before { transform: scaleX(1); }
 
 /* the four layer panels, passed through in turn */
+.descent-panels { position: relative; min-height: clamp(240px, 40vh, 380px); }
 .dlayer {
   position: absolute;
-  left: max(var(--s-6, 24px), calc((100% - 1240px) / 2 + var(--s-6, 24px)));
-  top: 50%;
-  translate: 0 -50%;
+  left: 0; right: 0;
+  top: 0;
   max-width: 52ch;
   z-index: 2;
   opacity: calc(var(--e, 0) * (1 - var(--x, 0)));
@@ -113,7 +120,7 @@
 }
 .dlayer h3 {
   margin-top: 10px;
-  font-size: clamp(1.6rem, 3.4vw, 2.8rem);
+  font-size: clamp(1.4rem, 2.4vw, 2.1rem);
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.02em;
@@ -141,20 +148,18 @@
 
 /* ---------- responsive ---------- */
 @media (max-width: 900px) {
-  .descent-figure {
-    right: 50%; translate: 50% 0; top: 8vh;
-    width: min(56vmin, 340px); height: min(56vmin, 340px);
-    opacity: 0.85;
-  }
+  .descent-figure { display: none; }
   .descent-rail { display: none; }
+  .descent-right {
+    right: 0; left: 0; width: auto;
+    padding-inline: var(--gutter, 24px);
+    justify-content: flex-end;
+    padding-bottom: clamp(28px, 6vh, 60px);
+  }
+  .descent-panels { min-height: 300px; }
   .dlayer {
-    left: var(--gutter, 24px);
-    right: var(--gutter, 24px);
-    top: auto; bottom: clamp(28px, 6vh, 60px);
-    translate: 0 0;
-    max-width: none;
     padding-top: 40px;
-    background: linear-gradient(transparent, rgba(255, 254, 249, 0.92) 30%);
+    background: linear-gradient(transparent, rgba(255, 254, 249, 0.94) 30%);
   }
   .dlayer .dl-text { font-size: 14px; line-height: 1.75; }
 }
@@ -163,7 +168,9 @@
 @media (prefers-reduced-motion: reduce) {
   .descent { height: auto; }
   .descent-stage { position: static; height: auto; overflow: visible; padding: 40px 0; }
-  .descent-figure { position: static; translate: none; margin: 0 auto 30px; }
+  .descent-right { position: static; width: auto; display: block; }
+  .descent-figure { position: static; translate: none; margin: 0 auto 30px; max-width: 60ch; }
+  .descent-pyramid { position: static; translate: none; display: block; margin: 0 auto 40px; width: min(80vw, 420px); }
   .descent-figure img { filter: none; transform: none; }
   .dlayer {
     position: static; translate: none;
@@ -177,25 +184,25 @@
 }
 
 
-/* ---------- CLA pyramid: the depth rail as a real diagram ---------- */
+/* ---------- CLA pyramid: the main left figure of the descent ---------- */
 .descent-pyramid {
   position: absolute;
-  right: max(var(--s-6, 24px), calc((100% - 1240px) / 2 + var(--s-6, 24px)));
-  bottom: clamp(28px, 6vh, 64px);
-  width: clamp(150px, 15vw, 220px);
+  left: max(var(--s-6, 24px), calc((100% - 1240px) / 2 + var(--s-6, 24px)));
+  top: 50%;
+  translate: 0 -50%;
+  width: min(42vw, 540px);
+  max-height: 84vh;
   height: auto;
-  z-index: 3;
+  z-index: 2;
 }
 .descent-pyramid .tier { cursor: pointer; }
 .descent-pyramid polygon {
   fill: #E7E1CB;
-  stroke: var(--paperWhite, #FFFEF9);
-  stroke-width: 2;
   transition: fill 0.3s var(--ease-epoch, ease);
 }
 .descent-pyramid text {
   font-family: var(--font-mono, monospace);
-  font-size: 9px; letter-spacing: 1px;
+  font-size: 17px; letter-spacing: 3px;
   text-anchor: middle;
   fill: var(--chart-mid, #6B6852);
   pointer-events: none;
@@ -204,4 +211,16 @@
 .descent-pyramid .tier:hover polygon { fill: #DAD2B4; }
 .descent-pyramid .tier.now polygon { fill: var(--gold, #E1B83B); }
 .descent-pyramid .tier.now text { fill: var(--ink, #131309); font-weight: 700; }
-@media (max-width: 900px) { .descent-pyramid { display: none; } }
+
+
+/* mobile pyramid override — must follow the base block above to win the cascade */
+@media (max-width: 900px) {
+  .descent-pyramid {
+    left: 50%; translate: -50% 0; top: 6vh;
+    width: min(66vw, 320px);
+  }
+  .descent-pyramid text { font-size: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .descent-pyramid { position: static; translate: none; margin: 0 auto 40px; width: min(80vw, 420px); }
+}

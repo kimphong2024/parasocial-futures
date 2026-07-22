@@ -32,23 +32,27 @@ function descentHTML() {
     <section class="descent" id="descent">
       <div class="descent-stage" id="descentStage">
         <div class="descent-glow" aria-hidden="true"></div>
-        <figure class="descent-figure" aria-hidden="true">
-          <img src="/img/scenario-${esc(sc.archetype)}.jpg" alt="" onerror="this.remove()">
-        </figure>
         <div class="descent-index" id="descentIndex">Layer I / IV</div>
-        <svg class="descent-pyramid" id="descentPyramid" viewBox="0 0 240 190" role="group" aria-label="Causal Layered Analysis pyramid — four clickable layers">
-          <g class="tier" data-l="0"><polygon points="120,8 150,52 90,52"/><text x="120" y="44">LITANY</text></g>
-          <g class="tier" data-l="1"><polygon points="88,56 152,56 165,100 75,100"/><text x="120" y="86">SYSTEMIC</text></g>
-          <g class="tier" data-l="2"><polygon points="73,104 167,104 180,141 60,141"/><text x="120" y="129">WORLDVIEW</text></g>
-          <g class="tier" data-l="3"><polygon points="58,145 182,145 196,184 44,184"/><text x="120" y="170">MYTH</text></g>
+        <svg class="descent-pyramid" id="descentPyramid" viewBox="0 0 420 470" role="group" aria-label="Causal Layered Analysis pyramid — four clickable layers">
+          <g class="tier" data-l="0"><polygon points="210,6 302,112 118,112"/><text x="210" y="92">LITANY</text></g>
+          <g class="tier" data-l="1"><polygon points="108,124 312,124 358,230 62,230"/><text x="210" y="184">SYSTEMIC</text></g>
+          <g class="tier" data-l="2"><polygon points="56,242 364,242 400,348 20,348"/><text x="210" y="302">WORLDVIEW</text></g>
+          <g class="tier" data-l="3"><polygon points="14,360 406,360 418,466 2,466"/><text x="210" y="420">MYTH</text></g>
         </svg>
-        ${LAYERS.map(([key, name, , hint], i) => `
-          <div class="dlayer ${key === "myth" ? "dlayer-myth" : ""}" data-layer="${i}">
-            <span class="dl-label">${name}</span>
-            <h3>${esc(RAIL[i])}</h3>
-            <p class="dl-text">${esc(sc[key])}</p>
-            <p class="dl-hint">${hint}</p>
-          </div>`).join("")}
+        <div class="descent-right">
+          <figure class="descent-figure" aria-hidden="true">
+            <img src="/img/scenario-${esc(sc.archetype)}.jpg" alt="" onerror="this.remove()">
+          </figure>
+          <div class="descent-panels">
+            ${LAYERS.map(([key, name, , hint], i) => `
+              <div class="dlayer ${key === "myth" ? "dlayer-myth" : ""}" data-layer="${i}">
+                <span class="dl-label">${name}</span>
+                <h3>${esc(RAIL[i])}</h3>
+                <p class="dl-text">${esc(sc[key])}</p>
+                <p class="dl-hint">${hint}</p>
+              </div>`).join("")}
+          </div>
+        </div>
       </div>
     </section>`;
 }
