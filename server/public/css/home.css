@@ -83,7 +83,7 @@ html.js .rise.in { opacity: 1; transform: none; }
 }
 .fib-display.headline {
   /* sized so the longest line fills its column at every width */
-  font-size: clamp(2.4rem, 7vw, 6.6rem);
+  font-size: clamp(2.1rem, 6vw, 5.7rem);
   line-height: 0.9;
 }
 /* the subject of the sentence, struck through with a marker */
