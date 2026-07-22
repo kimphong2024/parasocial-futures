@@ -141,3 +141,33 @@ input:focus, select:focus, textarea:focus { border-color: var(--deepGreen); }
 .hbar .hbar-fill { background: var(--chart-series); }
 .hbar.alt .hbar-fill { background: var(--goldenBrown, #D3963E); }
 .chamber-arch { color: var(--chart-mid); }
+
+
+/* ---------- mobile: nav rows scroll, never stack ---------- */
+@media (max-width: 700px) {
+  .site-nav,
+  .site-subnav-inner {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* the pill row sits inside the padded header — bleed it to the edge
+     so the row hints it scrolls; the subnav row owns its padding already */
+  .site-nav {
+    margin-inline: calc(-1 * var(--s-6, 24px));
+    padding-inline: var(--s-6, 24px);
+  }
+  .site-nav::-webkit-scrollbar,
+  .site-subnav-inner::-webkit-scrollbar { display: none; }
+  .site-nav a,
+  .site-subnav a { flex: 0 0 auto; white-space: nowrap; }
+}
+
+
+/* wide data tables scroll inside their own box on small screens */
+@media (max-width: 700px) {
+  table.data { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* long cluster tags wrap instead of widening the page */
+  .tag { white-space: normal; overflow-wrap: anywhere; }
+}

@@ -272,9 +272,18 @@ table.data td { padding: 9px 10px; border-bottom: 1px solid var(--borderLight); 
 /* ---------- simulation ---------- */
 .sim-layout { display: grid; grid-template-columns: minmax(320px, 420px) 1fr; gap: var(--s-6); align-items: start; }
 @media (max-width: 980px) { .sim-layout { grid-template-columns: 1fr; } }
+/* grid items must be allowed to shrink below their content's min width;
+   wide tables then scroll inside their card instead of widening the page */
+.sim-layout > * { min-width: 0; }
+.card:has(> table.data), .card:has(.data) { overflow-x: auto; }
 .driver-card { padding: var(--s-4); margin-bottom: var(--s-3); }
 .driver-card .params { display: flex; gap: 8px; margin: var(--s-3) 0; }
 .driver-card .params input { width: 30%; padding: 6px 8px; font-size: 12px; }
+@media (max-width: 700px) {
+  .driver-card .params { flex-wrap: wrap; }
+  .driver-card .params select { flex: 1 1 100%; }
+  .driver-card .params input { flex: 1 1 0; width: auto; min-width: 0; }
+}
 .driver-card select { font-size: 12px; padding: 6px 8px; }
 .chart-block { padding: var(--s-5); margin-bottom: var(--s-4); }
 .chart-block h4 { margin-bottom: var(--s-4); }

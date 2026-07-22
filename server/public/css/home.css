@@ -152,6 +152,7 @@ html.js .rise.in { opacity: 1; transform: none; }
 }
 .fib-wipes::before { left: 12%; width: 10%; clip-path: polygon(20% 0, 80% 0, 50% 100%); }
 .fib-wipes::after { right: 18%; width: 8%; clip-path: polygon(15% 0, 85% 0, 50% 88%); }
+@media (max-width: 700px) { .fib-inter-caption { font-size: 12px; } }
 .fib-inter-caption {
   position: absolute; left: var(--gutter); bottom: 26px;
   color: var(--paperWhite);
@@ -309,3 +310,5 @@ html.js .rise.in { opacity: 1; transform: none; }
 .fib-enterlink:hover { color: var(--deepGreen); text-decoration: none; letter-spacing: 2px; }
 .fib-enterlink .line { border-bottom: 4px solid transparent; transition: border-color 0.3s var(--ease-epoch); }
 .fib-enterlink:hover .line:last-child { border-color: var(--gold); }
+
+model-viewer { max-width: 100%; }
