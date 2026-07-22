@@ -199,8 +199,8 @@ html.js .rise.in { opacity: 1; transform: none; }
 /* cream cards with mustard pills */
 .fib-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(min(215px, 100%), 1fr));
+  gap: 18px;
 }
 .fib-card {
   display: block;
