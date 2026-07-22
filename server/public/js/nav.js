@@ -24,10 +24,10 @@ export async function renderNav(active) {
     <div class="triad-bar"></div>
     <header class="site-header">
       <div class="site-header-inner">
-        <a href="/signals" style="text-decoration:none">
+        <a href="/" style="text-decoration:none">
           <div class="brand">
             <span class="label">Foresight Capstone · 2040</span>
-            <span class="brand-title">Futures of Parasocial AI</span>
+            <span class="brand-title">Throuple with AI</span>
           </div>
         </a>
         <nav class="site-nav">
