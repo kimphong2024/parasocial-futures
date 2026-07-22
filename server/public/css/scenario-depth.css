@@ -235,7 +235,7 @@
     justify-content: flex-start;
     padding-bottom: 0;
   }
-  .descent .dlayer { padding-top: 0; }
+  .descent .dlayer { padding-top: 0; margin-inline: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   .descent-pyramid { position: static; translate: none; margin: 0 auto 40px; width: min(80vw, 420px); }

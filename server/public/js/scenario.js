@@ -90,8 +90,8 @@ function attachDescent() {
     const nowIdx = Math.min(3, Math.floor(p * 4));
     layers.forEach((el, i) => {
       const s = clamp01(p * 4 - i);
-      const e = easeOutExpo(clamp01(s / 0.35));
-      const x = i === 3 ? 0 : easeInCubic(clamp01((s - 0.72) / 0.28));
+      const e = easeOutExpo(clamp01(s / 0.22));
+      const x = i === 3 ? 0 : easeInCubic(clamp01((s - 0.78) / 0.22));
       // a layer taller than its window glides through it mid-segment
       const glide = overflows[i] * clamp01((s - 0.38) / (i === 3 ? 0.55 : 0.3));
       el.style.setProperty("--e", e.toFixed(4));

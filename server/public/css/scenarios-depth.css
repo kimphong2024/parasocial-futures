@@ -161,9 +161,12 @@
   .stratum-myth { display: none; }
   .stratum-figure {
     right: 50%; translate: 50% 0;
-    top: 4vh; bottom: auto;
-    width: min(54vmin, 320px); height: min(54vmin, 320px);
+    top: 9vh; bottom: auto;
+    /* larger on tablets so the stage has no dead middle */
+    width: min(58vw, 460px); height: min(58vw, 460px);
+    max-height: 46vh;
   }
+  .stratum-figure img { height: 100%; }
   .stratum-panel {
     left: var(--gutter, 24px);
     right: var(--gutter, 24px);
