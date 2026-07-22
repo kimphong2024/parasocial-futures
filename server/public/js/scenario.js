@@ -70,6 +70,16 @@ function attachDescent() {
     scrollTo({ top: descent.offsetTop + Math.round(((i + 0.42) / 4) * track), behavior: reduced ? "auto" : "smooth" });
   }));
   const index = document.getElementById("descentIndex");
+  const panels = stage.querySelector(".descent-panels");
+  // how far each layer's text overflows its window — re-measured on resize
+  let overflows = layers.map(() => 0);
+  const measure = () => {
+    // pad past the bottom fade so the last line lands fully readable
+    const pad = panels.clientHeight * 0.16;
+    overflows = layers.map((el) => { const o = el.scrollHeight - panels.clientHeight; return o > 0 ? o + pad : 0; });
+  };
+  measure();
+  addEventListener("resize", measure, { passive: true });
   let ticking = false;
   function update() {
     ticking = false;
@@ -85,8 +95,11 @@ function attachDescent() {
       const s = clamp01(p * 4 - i);
       const e = easeOutExpo(clamp01(s / 0.35));
       const x = i === 3 ? 0 : easeInCubic(clamp01((s - 0.72) / 0.28));
+      // a layer taller than its window glides through it mid-segment
+      const glide = overflows[i] * clamp01((s - 0.38) / (i === 3 ? 0.55 : 0.3));
       el.style.setProperty("--e", e.toFixed(4));
       el.style.setProperty("--x", x.toFixed(4));
+      el.style.setProperty("--ty", glide.toFixed(1) + "px");
       el.classList.toggle("now", i === nowIdx);
     });
     rail.forEach((el, i) => el.classList.toggle("now", i === nowIdx));
