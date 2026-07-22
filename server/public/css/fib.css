@@ -17,6 +17,7 @@
   --cream: #F2E9D4;
   --creamLine: #E2DBC2;
   --gold: #E1B83B;
+  --gold-text: #7E6721;   /* mustard hue at 4.5:1 — for text; marks keep --gold */
   --font-display: 'Anton', 'Arial Narrow', sans-serif;
   --font-mono: 'Fragment Mono', ui-monospace, monospace;
   --ease-epoch: cubic-bezier(0.5, 0.01, 0.5, 1);
@@ -24,7 +25,7 @@
   /* light chart tokens (validated light palette lives in style.css --arch-*) */
   --chart-ink: #2A2A20;
   --chart-mid: #6B6852;
-  --chart-dim: #93906F;
+  --chart-dim: #67654D;   /* 4.8:1 on cream */
   --chart-grid: #E7E1CB;
   --chart-series: #4E5A2B;
 }

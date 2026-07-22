@@ -14,12 +14,12 @@ function driverCard(d) {
     </div>
     <p class="caption">${esc(d.description)} <em>(${esc(d.unit)})</em></p>
     <div class="params">
-      <select data-p="dist_type">
+      <select data-p="dist_type" aria-label="Distribution type for ${esc(d.name)}">
         ${["pert", "triangular", "uniform"].map((t) => `<option ${t === d.dist_type ? "selected" : ""}>${t}</option>`).join("")}
       </select>
-      <input type="number" step="any" data-p="min" value="${p.min}" title="min">
-      <input type="number" step="any" data-p="mode" value="${p.mode ?? ""}" title="mode" ${d.dist_type === "uniform" ? "disabled" : ""}>
-      <input type="number" step="any" data-p="max" value="${p.max}" title="max">
+      <input type="number" step="any" data-p="min" value="${p.min}" title="min" aria-label="${esc(d.name)} minimum">
+      <input type="number" step="any" data-p="mode" value="${p.mode ?? ""}" aria-label="${esc(d.name)} mode" title="mode" ${d.dist_type === "uniform" ? "disabled" : ""}>
+      <input type="number" step="any" data-p="max" value="${p.max}" title="max" aria-label="${esc(d.name)} maximum">
     </div>
     <div class="preview" data-preview></div>
     <p class="caption mt-2" style="font-size:11px">${esc(d.rationale)}</p>
@@ -86,7 +86,7 @@ function renderResults(r) {
     <div class="card chart-block">
       <div class="flex-between mb-4">
         <h4>Driver sensitivity</h4>
-        <select id="tornadoPick">${r.scenarios.map((s) => `<option value="${esc(s.slug)}">${esc(s.title)}</option>`).join("")}</select>
+        <select id="tornadoPick" aria-label="Scenario for sensitivity chart">${r.scenarios.map((s) => `<option value="${esc(s.slug)}">${esc(s.title)}</option>`).join("")}</select>
       </div>
       <p class="caption mb-4">How the scenario's probability shifts between the bottom and top third of each driver's sampled range.</p>
       <div id="tornadoChart"></div>

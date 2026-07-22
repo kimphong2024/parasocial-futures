@@ -55,7 +55,7 @@
 .tsec-head .num {
   font-family: var(--font-mono);
   font-size: 12px; letter-spacing: 2px;
-  color: var(--goldenBrown);
+  color: var(--gold-text, #896128);
 }
 .tsec-head h2 { font-size: clamp(20px, 2.4vw, 30px); letter-spacing: -0.5px; }
 .tdoc-body p { max-width: 72ch; font-size: 14px; line-height: 1.85; margin-bottom: 14px; }
@@ -101,7 +101,7 @@
 .tstep { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; margin-bottom: 18px; max-width: 76ch; }
 .tstep .n {
   font-family: var(--font-mono); font-size: 15px;
-  color: var(--goldenBrown);
+  color: var(--gold-text, #896128);
   border: 1px solid var(--borderLight); border-radius: var(--r-sm);
   width: 36px; height: 36px; display: grid; place-items: center;
 }
@@ -138,7 +138,7 @@
   white-space: pre-wrap;
   max-width: none;
 }
-.tprompt .inj { color: var(--goldenBrown); font-style: italic; }
+.tprompt .inj { color: var(--gold-text, #896128); font-style: italic; }
 
 /* imagery provenance grid */
 .tgallery {

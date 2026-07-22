@@ -6,9 +6,9 @@ const $ = (id) => document.getElementById(id);
 function row(s) {
   return `<tr data-id="${s.id}">
     <td><strong style="font-weight:600;color:var(--charcoal)">${esc(s.name)}</strong><br><a href="${esc(s.url)}" target="_blank" rel="noopener" class="caption">${esc(s.url)}</a></td>
-    <td><select data-p="kind"><option ${s.kind === "scrape" ? "selected" : ""}>scrape</option><option ${s.kind === "crawl" ? "selected" : ""}>crawl</option></select></td>
-    <td><input type="number" data-p="crawl_limit" value="${s.crawl_limit}" min="1" max="20" style="width:60px;padding:6px"></td>
-    <td><label class="toggle"><input type="checkbox" data-p="enabled" ${s.enabled ? "checked" : ""}></label></td>
+    <td><select data-p="kind" aria-label="Fetch mode for ${esc(s.url)}"><option ${s.kind === "scrape" ? "selected" : ""}>scrape</option><option ${s.kind === "crawl" ? "selected" : ""}>crawl</option></select></td>
+    <td><input type="number" data-p="crawl_limit" value="${s.crawl_limit}" aria-label="Crawl page limit" min="1" max="20" style="width:60px;padding:6px"></td>
+    <td><label class="toggle"><input type="checkbox" data-p="enabled" ${s.enabled ? "checked" : ""} aria-label="Source enabled"></label></td>
     <td class="caption">${s.last_run_at ? fmtDate(s.last_run_at) + "<br>" + esc(s.last_status || "") : "never run"}</td>
     <td><button class="btn-danger btn btn-sm" data-del>Remove</button></td>
   </tr>`;
@@ -17,8 +17,8 @@ function row(s) {
 function themeRow(t) {
   return `<tr data-tid="${t.id}">
     <td class="caption" style="white-space:nowrap">${esc(t.key)}</td>
-    <td><textarea data-p="query" rows="3" style="width:100%;font-size:13px;line-height:1.5;resize:vertical">${esc(t.query)}</textarea></td>
-    <td><label class="toggle"><input type="checkbox" data-p="enabled" ${t.enabled ? "checked" : ""}></label></td>
+    <td><textarea data-p="query" rows="3" aria-label="Theme query: ${esc(t.name)}" style="width:100%;font-size:13px;line-height:1.5;resize:vertical">${esc(t.query)}</textarea></td>
+    <td><label class="toggle"><input type="checkbox" data-p="enabled" ${t.enabled ? "checked" : ""} aria-label="Theme enabled"></label></td>
     <td><button class="btn-danger btn btn-sm" data-tdel>Remove</button></td>
   </tr>`;
 }

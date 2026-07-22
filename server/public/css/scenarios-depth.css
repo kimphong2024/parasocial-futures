@@ -59,12 +59,13 @@
 .strata-rail span { display: flex; align-items: center; gap: 8px; transition: color 0.3s var(--ease-epoch, ease); }
 .strata-rail span::before {
   content: "";
-  width: 18px; height: 1px;
+  width: 34px; height: 1px;
   background: currentColor;
-  transition: width 0.3s var(--ease-epoch, ease);
+  transform: scaleX(0.53); transform-origin: left center;
+  transition: transform 0.3s var(--ease-epoch, ease);
 }
-.strata-rail span.now { color: var(--mustard, #E1B83B); }
-.strata-rail span.now::before { width: 34px; }
+.strata-rail span.now { color: var(--gold-text, #7E6721); }
+.strata-rail span.now::before { transform: scaleX(1); }
 
 /* one layer of the stack — all four exist simultaneously.
    The wrapper carries NO transform/filter (the img must blend against the

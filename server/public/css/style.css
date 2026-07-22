@@ -11,8 +11,8 @@
   --mustard: #E1B83B;
   --goldenBrown: #D3963E;
   --charcoal: #282E2A;
-  --textMid: #6B7264;
-  --textDim: #9A9A8A;
+  --textMid: #656B5E;   /* 4.55:1 on cream, 5.45:1 on paper */
+  --textDim: #6A6A5F;   /* 4.53:1 on cream — dim by weight, not by failing contrast */
   --oliveDark: #3A4320;
   --warmWhite: #FFFEF9;
   --cream: #FAF7F2;
@@ -91,7 +91,7 @@ a:hover { text-decoration: underline; }
 .card:hover { border-color: var(--olive); box-shadow: var(--shadow-card-hover); }
 
 .citation {
-  background: var(--brownLight); border-left: 3px solid var(--brown);
+  background: var(--brownLight); border: 1px solid var(--brown);
   border-radius: 0 var(--r-box) var(--r-box) 0; padding: 14px 18px;
 }
 .citation .quote { font-size: 12px; font-style: italic; color: var(--textMid); line-height: 1.6; }
@@ -266,7 +266,7 @@ table.data td { padding: 9px 10px; border-bottom: 1px solid var(--borderLight); 
 .cla-litany { background: var(--warmWhite); }
 .cla-systemic { background: var(--cream); }
 .cla-worldview { background: var(--oliveLight); }
-.cla-myth { background: var(--brownLight); border-left: 3px solid var(--brown); }
+.cla-myth { background: var(--brownLight); border: 1px solid var(--brown); }
 .cla-band p { white-space: pre-wrap; }
 
 /* ---------- simulation ---------- */
