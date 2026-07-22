@@ -30,7 +30,7 @@ const RAIL = ["Litany", "Systemic", "Worldview", "Myth"];
 function descentHTML() {
   return `
     <section class="descent" id="descent">
-      <div class="descent-stage" id="descentStage">
+      <div class="descent-stage" id="descentStage" style="--descent-img:url('/img/scenario-${esc(sc.archetype)}.jpg')">
         <div class="descent-glow" aria-hidden="true"></div>
         <div class="descent-index" id="descentIndex">Layer I / IV</div>
         <svg class="descent-pyramid" id="descentPyramid" viewBox="0 0 420 470" role="group" aria-label="Causal Layered Analysis pyramid — four clickable layers">
@@ -40,9 +40,6 @@ function descentHTML() {
           <g class="tier" data-l="3"><polygon points="14,360 406,360 418,466 2,466"/><text x="210" y="420">MYTH</text></g>
         </svg>
         <div class="descent-right">
-          <figure class="descent-figure" aria-hidden="true">
-            <img src="/img/scenario-${esc(sc.archetype)}.jpg" alt="" onerror="this.remove()">
-          </figure>
           <div class="descent-panels">
             ${LAYERS.map(([key, name, , hint], i) => `
               <div class="dlayer ${key === "myth" ? "dlayer-myth" : ""}" data-layer="${i}">

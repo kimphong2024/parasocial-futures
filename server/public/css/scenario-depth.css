@@ -26,7 +26,11 @@
   position: sticky; top: 0;
   height: 100vh;
   overflow: hidden;
-  background: var(--paperWhite, #FFFEF9);
+  background:
+    linear-gradient(100deg, rgba(16, 18, 9, 0) 42%, rgba(16, 18, 9, 0.5) 60%),
+    linear-gradient(rgba(16, 18, 9, 0.66), rgba(16, 18, 9, 0.78)),
+    var(--descent-img) center / cover no-repeat,
+    var(--paperWhite, #FFFEF9);
 }
 
 /* right column: the archetype image above, layer text revealing beneath */
@@ -39,29 +43,20 @@
   gap: clamp(18px, 3vh, 30px);
   z-index: 2;
 }
-/* archetype myth-image: the destination, approached across the descent */
-.descent-figure {
-  width: 100%;
-  height: clamp(180px, 30vh, 300px);
-  margin: 0;
-  pointer-events: none;
-}
-.descent-figure img {
-  width: 100%; height: 100%;
-  object-fit: cover; object-position: center 35%;
-  display: block;
-  border-radius: 18px;
-  opacity: var(--breveal, 0.1);
-  transform: scale(var(--bscale, 1));
-  transform-origin: 50% 50%;
-  will-change: filter, transform;
-}
+
 .descent-glow {
   position: absolute; inset: 0;
   background: radial-gradient(circle at 28% 55%, rgba(225, 184, 59, 0.4), rgba(211, 150, 62, 0.12) 34%, rgba(16, 20, 8, 0) 62%);
   opacity: var(--glow, 0);
   pointer-events: none;
 }
+
+/* over the myth-image, text speaks in paper */
+.descent .dl-label { color: rgba(242, 233, 212, 0.75) !important; }
+.descent .dlayer h3 { color: var(--paperWhite, #FFFEF9) !important; }
+.descent .dl-text { color: rgba(255, 254, 249, 0.86) !important; }
+.descent .dl-hint { color: rgba(242, 233, 212, 0.6) !important; }
+.descent .dlayer-myth .dl-text { color: var(--paperWhite, #FFFEF9) !important; }
 
 /* depth counter, top center — a real ordered descent */
 .descent-index {
@@ -70,7 +65,7 @@
   transform: translateX(-50%);
   font-family: var(--font-mono);
   font-size: 11px; letter-spacing: 3px;
-  color: var(--chart-mid, #6B6852);
+  color: rgba(242, 233, 212, 0.7);
 }
 
 /* depth rail: the four strata, present position lit */
@@ -156,7 +151,6 @@
 
 /* ---------- responsive ---------- */
 @media (max-width: 900px) {
-  .descent-figure { display: none; }
   .descent-rail { display: none; }
   .descent-right {
     right: 0; left: 0; width: auto;
@@ -167,7 +161,7 @@
   .descent-panels { min-height: 300px; }
   .dlayer {
     padding-top: 40px;
-    background: linear-gradient(transparent, rgba(255, 254, 249, 0.94) 30%);
+    background: linear-gradient(transparent, rgba(16, 18, 9, 0.88) 30%);
   }
   .dlayer .dl-text { font-size: 14px; line-height: 1.75; }
 }
@@ -176,11 +170,10 @@
 @media (prefers-reduced-motion: reduce) {
   .descent { height: auto; }
   .descent-stage { position: static; height: auto; overflow: visible; padding: 40px 0; }
+  .descent-stage { background: linear-gradient(rgba(16, 18, 9, 0.82), rgba(16, 18, 9, 0.88)), var(--descent-img) center / cover no-repeat; }
   .descent-right { position: static; width: auto; display: block; }
-  .descent-figure { position: static; translate: none; margin: 0 auto 30px; max-width: 60ch; }
   .descent-pyramid { position: static; translate: none; display: block; margin: 0 auto 40px; width: min(80vw, 420px); }
-  .descent-figure img { filter: none; transform: none; }
-  .dlayer {
+    .dlayer {
     position: static; translate: none;
     opacity: 1; transform: none; filter: none;
     margin: 0 auto 48px;
@@ -224,10 +217,18 @@
 /* mobile pyramid override — must follow the base block above to win the cascade */
 @media (max-width: 900px) {
   .descent-pyramid {
-    left: 50%; translate: -50% 0; top: 6vh;
-    width: min(66vw, 320px);
+    left: 50%; translate: -50% 0; top: 5vh;
+    width: min(56vw, 250px);
   }
-  .descent-pyramid text { font-size: 20px; }
+  .descent-pyramid text { font-size: 22px; }
+  /* the pyramid owns the top band; the writeup gets everything below it */
+  .descent-right {
+    top: calc(5vh + min(56vw, 250px) * 1.12 + 18px);
+    bottom: 16px;
+    justify-content: flex-start;
+    padding-bottom: 0;
+  }
+  .descent .dlayer { background: none; padding-top: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .descent-pyramid { position: static; translate: none; margin: 0 auto 40px; width: min(80vw, 420px); }
