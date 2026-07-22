@@ -33,9 +33,10 @@ function update() {
   topBar?.classList.toggle("scrolled", scrollY > innerHeight * 0.6);
   if (modelOn && hero) {
     const p = clamp01(scrollY / (hero.offsetHeight * 0.9));
-    // v4 mesh frame: human face 285° → porcelain face 85°, avoiding the weak side
-    const theta = 285 - 200 * easeInOutCubic(p);
-    heroModel.cameraOrbit = `${theta.toFixed(1)}deg 80deg 105%`;
+    // two-faced mesh frame: human face frontal at 355°, synthetic at 175° —
+    // the first fold travels the full half-turn between them
+    const theta = 355 - 180 * easeInOutCubic(p);
+    heroModel.cameraOrbit = `${theta.toFixed(1)}deg 85deg 105%`;
   }
   const mid = innerHeight / 2;
   for (const el of parallaxEls) {
