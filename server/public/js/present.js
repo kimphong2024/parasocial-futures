@@ -100,9 +100,9 @@ pyr?.addEventListener("click", (e) => {
 const artTable = document.getElementById("artTable");
 const artCaption = document.getElementById("artCaption");
 let artList = [
-  { src: "/img/artifacts/growth-companion-continuity-receipt.jpg", cap: "Receipt · The Warm Layer" },
-  { src: "/img/artifacts/collapse-befriend-something-alive.jpg", cap: "Embroidered patch · Forgetting How to Say Thou" },
-  { src: "/img/artifacts/growth-companion-disclosure-card.jpg", cap: "Identity card · The Warm Layer" },
+  { src: "/img/artifacts/growth-companion-continuity-receipt.jpg", cap: "Receipt · Tuned Tool" },
+  { src: "/img/artifacts/collapse-befriend-something-alive.jpg", cap: "Embroidered patch · Reality Break" },
+  { src: "/img/artifacts/growth-companion-disclosure-card.jpg", cap: "Identity card · Tuned Tool" },
 ];
 let artIdx = 0;
 const ROTS = [-7, 5, -2, 8, -5];
