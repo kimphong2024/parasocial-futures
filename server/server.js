@@ -28,7 +28,7 @@ app.use(express.json({ limit: "2mb" }));
 // Old /login links land on the app.
 app.get("/login", (_req, res) => res.redirect("/signals"));
 app.get("/", (_req, res) => res.sendFile(join(HERE, "public", "home.html")));
-app.get("/transparency", (_req, res) => res.sendFile(join(HERE, "public", "transparency.html")));
+app.get("/transparency", (_req, res) => res.redirect(301, "/reference#transparency"));
 app.get("/reference", (_req, res) => res.sendFile(join(HERE, "public", "reference.html")));
 
 // Public counts for the home page annotations — numbers only, no content.

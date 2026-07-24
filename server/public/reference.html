@@ -27,7 +27,7 @@
   <div class="tdoc-head">
     <span class="label" style="font-family:var(--font-mono);letter-spacing:2px">Method</span>
     <h2>How this platform reasons</h2>
-    <p class="subtitle">A plain-language guide to the three engines: how the nightly scan finds and selects signals, how the four scenarios are derived from evidence, and how the simulation turns beliefs about drivers into scenario probabilities. For the verbatim prompts and full architecture, see the <a href="/transparency">transparency page</a>.</p>
+    <p class="subtitle">A plain-language guide to the three engines: how the nightly scan finds and selects signals, how the four scenarios are derived from evidence, and how the simulation turns beliefs about drivers into scenario probabilities. The full transparency account — architecture, models, verbatim prompts, imagery provenance — continues in the second half of this page.</p>
     <div class="tdoc-meta">
       <div class="reticle"><span class="ret"></span><span class="k">Evidence base</span><span class="v">705+ signals</span></div>
       <div class="reticle"><span class="ret"></span><span class="k">Scenario method</span><span class="v">Dator × CLA</span></div>
@@ -42,6 +42,19 @@
       <a href="#scenarios">03 · How scenarios are derived</a>
       <a href="#simulation">04 · How the simulation works</a>
       <a href="#reading">05 · How to read the numbers</a>
+      <a href="#t-what">06 · What this is</a>
+      <a href="#t-architecture">07 · Architecture</a>
+      <a href="#t-pipeline">08 · Scanning pipeline</a>
+      <a href="#t-hitl">09 · Human in the loop</a>
+      <a href="#t-scenarios">10 · Scenario method</a>
+      <a href="#t-montecarlo">11 · Monte Carlo</a>
+      <a href="#t-chat">12 · Decision chat</a>
+      <a href="#t-models">13 · Models used</a>
+      <a href="#t-prompts">14 · System prompts</a>
+      <a href="#t-imagery">15 · Imagery</a>
+      <a href="#t-design">16 · Design decisions</a>
+      <a href="#t-security">17 · Security &amp; privacy</a>
+      <a href="#t-limits">18 · Limitations &amp; ethics</a>
     </nav>
 
     <div class="tdoc-body">
@@ -138,6 +151,244 @@
         — <em>Coverage:</em> how big is the residual — how much plausible future have we not yet written a scenario for?</p>
         <p>What the numbers are not: a claim about 2040. The platform's claim is narrower and more defensible — <em>given this library of observed signals, these four readings of it, and these stated uncertainties, this is where the weight sits today.</em> Tomorrow's scan may move it. That is working as intended.</p>
         <p class="tdoc-rule">Every number is an argument you can inspect, edit, and re-run.</p>
+      </section>
+
+      <div class="tdoc-part" id="transparency">
+        <span class="label" style="font-family:var(--font-mono);letter-spacing:2px">Transparency</span>
+        <h2>The full account</h2>
+        <p class="subtitle">Everything below discloses how the platform is built: the architecture, where each model acts, the verbatim prompts, image provenance, and the limits of the method. It exists because an instrument that asks you to trust synthesized futures owes you a complete account of its synthesis.</p>
+      </div>
+
+      <section id="t-what">
+        <div class="tsec-head"><span class="num">06</span><h2>What this is</h2></div>
+        <p>An interactive foresight instrument on one question: <strong>how will AI change the fabric of our social structures and relations by 2040?</strong> Four connected windows share one evidence base — a signal library of 705 curated seed signals extended nightly by automated scanning, a scenario library of four Dator archetypes structured with Causal Layered Analysis, a Monte Carlo simulation over seven editable drivers, and a decision-support chat that cites its sources.</p>
+        <p class="tdoc-rule">Nothing publishes without a human decision.</p>
+        <p>Scan hits arrive as <code>pending</code>; scenario drafts arrive as <code>draft</code>. Only explicit human actions — approve, edit, publish — promote them. The gate is the method, not a feature.</p>
+      </section>
+
+      <section id="t-architecture">
+        <div class="tsec-head"><span class="num">07</span><h2>Architecture</h2></div>
+        <table class="data">
+          <thead><tr><th>Layer</th><th>Choice</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>Runtime</td><td>Node.js ≥ 22, ESM, Express</td><td>Matches the author's production apps; no framework overhead</td></tr>
+            <tr><td>Database</td><td>node:sqlite, WAL mode</td><td>Zero-dependency single-file state on a persistent volume</td></tr>
+            <tr><td>Frontend</td><td>Vanilla HTML/CSS/JS, no build step</td><td>Every file served is the file written — auditable</td></tr>
+            <tr><td>Charts</td><td>Hand-rolled SVG</td><td>Full palette control; colors resolve from CSS custom properties</td></tr>
+            <tr><td>Auth</td><td>None — fully open</td><td>A public demonstration instrument; all actions exposed by design</td></tr>
+            <tr><td>Hosting</td><td>Railway, Dockerfile, /data volume</td><td>Deploys via railway up; DB persists across deploys</td></tr>
+          </tbody>
+        </table>
+        <div class="tdoc-tree"><b>server/</b>
+  server.js      routes + boot (seed → vector index → scheduler)
+  db.js          schema + prepared statements
+  scan.js        orchestrator: perplexity + firecrawl → classify → dedup → pending
+  perplexity.js  6 themed Sonar queries, weekly recency, tolerant JSON
+  firecrawl.js   v2 scrape/crawl + Claude extraction (forced tool_use)
+  scenarios.js   evidence pack + CLA drafting + publish/embedding
+  montecarlo.js  PERT/triangular/uniform/discrete, membership, tornado
+  chat.js        RAG retrieval + rerank + SSE-streamed citations
+  vectors.js     in-memory cosine index over SQLite BLOBs
+  scheduler.js   nightly timer, 22:00 Asia/Singapore, re-entrancy guard
+<b>scripts/</b>
+  seed.js · build-embeddings.js · gen-images.sh</div>
+        <p>A fresh deployment self-restores its entire reviewed state at boot: the 705-signal corpus, the seven drivers, the scan sources and the four published scenarios all seed from files shipped in the image, then embeddings build for anything missing. Every table that matters keeps an audit trail — scan hits store the raw machine payload that produced them, simulations store full parameter snapshots, and each scan run stores per-step errors.</p>
+      </section>
+
+      <section id="t-pipeline">
+        <div class="tsec-head"><span class="num">08</span><h2>The scanning pipeline</h2></div>
+        <p>Every nightly or manual run executes five fenced steps; a failure in any step is recorded and never aborts the rest.</p>
+        <div class="tstep"><span class="n">1</span><div><h4>Perplexity Sonar — the undirected sweep</h4><p>Twelve fixed themed queries with one-week recency and a JSON schema, each asked for up to ten distinct items with a last-48-hours priority. Perplexity's structured output is unreliable, so a tolerant parser (whole-parse → block-extract → drop-and-log) guards it.</p></div></div>
+        <div class="tstep"><span class="n">2</span><div><h4>Firecrawl — the directed watch</h4><p>Sixteen configured sources — mined from the seed corpus itself, ranked by proven yield — are scraped; page markdown goes to Claude with a forced tool call. Front-page teasers are followed through: up to three not-yet-known article URLs per source are scraped and re-extracted from full article text, so the gate judges real content rather than a headline. Most general-tech pages correctly yield zero relevant signals.</p></div></div>
+        <div class="tstep"><span class="n">3</span><div><h4>Claude classification + relevance gate</h4><p>One batched call normalizes both legs into the existing 33-cluster taxonomy and strictly rejects generic AI news with no human-relationship angle. Unclassifiable candidates are dropped, never inserted — and the reject count is recorded per run and shown in the run history, so a low new-pending number is self-explaining.</p></div></div>
+        <div class="tstep"><span class="n">4</span><div><h4>Deduplication</h4><p>Normalized-URL matching, then embedding cosine against the full index at threshold 0.90. The nearest existing signal and its score are stored and shown in the review queue — the threshold judgment stays visible to the human.</p></div></div>
+        <div class="tstep"><span class="n">5</span><div><h4>Insert as pending</h4><p>Survivors land with provenance (<code>scan:perplexity</code> / <code>scan:firecrawl</code>), their raw machine payload, and an embedding so the next run dedups against them too.</p></div></div>
+        <div class="tstep"><span class="n">+</span><div><h4>Horizon audit — on demand</h4><p>A dedicated LLM pass re-judges every approved signal's time horizon at high reasoning effort against strict H1/H2/H3 definitions, judging the phenomenon's social arrival rather than the article's date. Each signal stores the judge's written reasoning, shown in the library drawer — the horizon field is never a bare label.</p></div></div>
+        <p class="tdoc-rule">The pipeline is user-steerable — and every run records what it ran with.</p>
+        <p>The sweep themes, the source list, the scan knobs (search window, follow-through limit, duplicate threshold) and the relevance-gate text itself are all editable on the app's Scanning page. In exchange, every run permanently records its per-theme and per-source yield, the full list of candidates the gate rejected, the settings used, and the verbatim gate text — flagged whenever it differs from the shipped default documented below.</p>
+      </section>
+
+      <section id="t-hitl">
+        <div class="tsec-head"><span class="num">09</span><h2>The human-in-the-loop map</h2></div>
+        <table class="data">
+          <thead><tr><th>Stage</th><th>AI does</th><th>Human does</th></tr></thead>
+          <tbody>
+            <tr><td>Scanning</td><td>Query, extract, classify, dedup, queue</td><td>Approves / edits classification / rejects each hit</td></tr>
+            <tr><td>Scenarios</td><td>Selects evidence, drafts CLA layers + conditions</td><td>Edits any layer, reshapes conditions, publishes</td></tr>
+            <tr><td>Simulation</td><td>Samples, counts, computes sensitivity</td><td>Sets every distribution parameter; interprets</td></tr>
+            <tr><td>Chat</td><td>Retrieves, reranks, generates with citations</td><td>Asks, judges, follows citations to sources</td></tr>
+            <tr><td>Imagery</td><td>Generates from prompts</td><td>Chose every concept; rejected off-brief outputs</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="t-scenarios">
+        <div class="tsec-head"><span class="num">10</span><h2>Scenario method</h2></div>
+        <ul>
+          <li><strong>Framework</strong>: Dator's four archetypes (continued growth, collapse, discipline, transformation), each written through Causal Layered Analysis — litany, systemic causes, worldview, myth — plus a 400–600-word narrative vignette.</li>
+          <li><strong>Evidence pack</strong>: ~40 approved signals selected by embedding similarity to the archetype's logic, stratified so no cluster contributes more than four, with long-horizon and critical signals force-included. Citations not present in the pack are stripped server-side — the anti-hallucination guard.</li>
+          <li><strong>Disclosed method finding</strong>: first drafts proposed narrow four-condition boxes whose joint probability collapsed below 1% (98.9% of futures fit no scenario). Conditions were reshaped by hand to two signature half-spaces per scenario, and the drafting prompt now targets 5–35% probability mass. Published probabilities depend on this reshaping, so it is disclosed.</li>
+          <li><strong>Publishing</strong> builds the scenario's embedding (admitting it to chat and simulation) and the reviewed set ships as seed data so fresh deployments restore it verbatim.</li>
+        </ul>
+      </section>
+
+      <section id="t-montecarlo">
+        <div class="tsec-head"><span class="num">11</span><h2>Monte Carlo</h2></div>
+        <ul>
+          <li>Seven drivers, each an editable distribution — PERT by default (Beta via Marsaglia–Tsang, λ=4), triangular, uniform, or discrete — and each carrying a written rationale naming the clusters that justify its range. The ranges are evidence-informed judgments, editable by design; they are not measurements.</li>
+          <li>Seeded PRNG (mulberry32): a given seed reproduces results exactly; every run stores its seed and full snapshots. 10,000 samples run in ~30–50 ms.</li>
+          <li>A sampled future belongs to a scenario iff all its conditions hold; scenarios may overlap; the <strong>residual</strong> — futures outside every scenario, currently ≈51% — is reported rather than hidden.</li>
+          <li>Sensitivity is a tercile split — P(scenario | driver in top third) − P(bottom third) — chosen because it is assumption-free and explainable to a non-technical committee.</li>
+        </ul>
+      </section>
+
+      <section id="t-chat">
+        <div class="tsec-head"><span class="num">12</span><h2>Decision-support chat</h2></div>
+        <p>The question is embedded (Voyage, query mode) → cosine over approved signals (top 24) → reranked to 12 → joined by up to four published scenarios. Claude streams the answer; the client renders <code>[S123]</code> and <code>[SC:slug]</code> as clickable pills resolving to the underlying source. The prompt requires the model to say plainly when the scan is thin. Only the question and cited ids are logged; conversations are never stored server-side.</p>
+      </section>
+
+      <section id="t-models">
+        <div class="tsec-head"><span class="num">13</span><h2>Models and services</h2></div>
+        <table class="data">
+          <thead><tr><th>Service</th><th>Model</th><th>Used for</th></tr></thead>
+          <tbody>
+            <tr><td>Anthropic</td><td>claude-opus-4-8 · adaptive thinking</td><td>Extraction, classification, scenario drafting, chat — all structured output via forced tool_use with strict schemas</td></tr>
+            <tr><td>Voyage AI</td><td>voyage-3.5 (1024-dim) + rerank-2.5</td><td>Semantic search, dedup, retrieval (corpus embedding ≈ $0.01)</td></tr>
+            <tr><td>Perplexity</td><td>sonar</td><td>Undirected weekly-recency sweep</td></tr>
+            <tr><td>Firecrawl</td><td>v2 scrape / crawl</td><td>Directed source watch, markdown only</td></tr>
+            <tr><td>Leonardo</td><td>Phoenix 1.0</td><td>All site imagery (§10)</td></tr>
+            <tr><td>Claude Code</td><td>build tool</td><td>The platform itself — and this page — were built with Claude Code under human direction</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="t-prompts">
+        <div class="tsec-head"><span class="num">14</span><h2>System prompts — verbatim</h2></div>
+        <p>Reproduced exactly as deployed. <span class="inj" style="color:var(--goldenBrown);font-style:italic">Italic amber text</span> marks content injected at call time.</p>
+
+        <div class="tprompt"><span class="ret"></span>
+          <div class="tprompt-role"><span class="chip">Perplexity · sonar</span><span class="caption">undirected sweep · week recency · JSON schema</span></div>
+          <pre>You are a horizon-scanning assistant for a foresight research team studying parasocial AI — how AI reshapes human relationships and social structures. Return only signals where the human-relationship or social-fabric angle is explicit: AI companionship, artificial intimacy, attachment, loneliness, grief tech, AI and family or romance, social norms around AI relationships. REJECT generic AI news (model releases, chips, enterprise tools, coding assistants, general AI policy) unless the item is specifically about AI's effect on human relationships. Return up to 10 distinct, dated, citable signals with a real, specific source URL each — prioritize items published in the last 48 hours over older ones, and prefer the primary source over syndicated copies of the same story. Return JSON only.</pre>
+        </div>
+        <p>Its twelve themed queries name the exclusion each time — companions, governance, research, grief tech, market, discourse, AI clones of real people, youth &amp; family, therapy bots, elder care, workplace &amp; school norms, and virtual-being fandom (e.g. "…Exclude generic AI product or model news with no relationship angle."). Full text in the repository.</p>
+
+        <div class="tprompt"><span class="ret"></span>
+          <div class="tprompt-role"><span class="chip">Claude · claude-opus-4-8</span><span class="caption">Firecrawl page extraction · forced tool emit_signals · medium effort</span></div>
+          <pre>You are a horizon-scanning analyst for a foresight project on parasocial AI — AI companions, artificial intimacy, human-AI relationships, grief tech, AI romance fraud, sycophancy as a relationship dynamic, and how AI reshapes social structures like friendship, romance, family and community. Extract ONLY items where the human-relationship or social-fabric angle is explicit. Strictly ignore generic AI/tech coverage: model releases, benchmarks, chips, enterprise tooling, coding assistants, robotics without a social-companionship role, and AI policy that is not about relationships or companionship. Ignore navigation, ads, and off-topic items. Most pages on general tech sites will yield ZERO relevant signals — returning an empty list is the normal outcome, not a failure.</pre>
+        </div>
+
+        <div class="tprompt"><span class="ret"></span>
+          <div class="tprompt-role"><span class="chip">Claude · claude-opus-4-8</span><span class="caption">classification + relevance gate · forced tool classify_signals · medium effort</span></div>
+          <pre>You classify horizon-scan hits for a foresight project on parasocial AI and the future of social relations.
+
+RELEVANCE GATE (apply first, strictly): a candidate is relevant ONLY if its core subject is AI's effect on human relationships or social structures — companionship, intimacy, attachment, loneliness, friendship, romance, family, grief, community, or the norms and rules around AI relationships. Mark relevant=false for generic AI news: model releases, benchmarks, chips, funding without an intimacy product, enterprise or coding tools, robotics without a companionship role, and AI policy not about relationships. When the relationship angle is only a passing mention, mark relevant=false. Expect to reject a large share of candidates.
+
+For survivors: assign one of the existing clusters below (prefer reusing them; only propose 'NEW: &lt;name&gt;' when nothing fits), one signal type, an urgency, and a time horizon.
+
+Existing clusters:
+<span class="inj">(the current 33-cluster list, injected from the database at call time)</span></pre>
+          <p class="caption mt-2">The RELEVANCE GATE paragraph shown is the shipped default. The reviewer may edit it on the Scanning page; every run permanently records the exact gate text it used, and runs with a modified gate are flagged in the run history.</p>
+        </div>
+
+        <div class="tprompt"><span class="ret"></span>
+          <div class="tprompt-role"><span class="chip">Claude · claude-opus-4-8</span><span class="caption">scenario drafting · forced tool emit_scenario · high effort</span></div>
+          <pre>You are a foresight practitioner drafting a 2040 scenario using Causal Layered Analysis inside a Dator archetype, for a capstone on parasocial AI and the futures of social relations.
+
+Archetype: <span class="inj">(name — archetype logic)</span>
+<span class="inj">(optional human focus line)</span>
+
+House voice: measured, literate, observational. Comfortable with uncertainty ("plausible", "emerging", "a weak signal suggests"). Never hype. No exclamation marks. No emoji.
+
+Ground every layer in the evidence pack — the litany should echo real signals extrapolated to 2040, and cited_signal_ids must reference ids that genuinely shaped the draft.
+
+Driver conditions: choose the region of the driver space below where THIS archetype plausibly holds. Use 2-3 conditions, strongly preferring half-spaces (gte/lte) over 'between' — each added condition multiplies down the joint probability, and a Monte Carlo over these conditions should leave the scenario with meaningful probability mass (roughly 5-35% of sampled futures), not a sliver. Use each driver's own unit and stay within its min-max range.
+
+Drivers:
+<span class="inj">(the seven drivers with descriptions and current min/mode/max, injected at call time)</span></pre>
+        </div>
+
+        <div class="tprompt"><span class="ret"></span>
+          <div class="tprompt-role"><span class="chip">Claude · claude-opus-4-8</span><span class="caption">decision-support chat · streamed over SSE</span></div>
+          <pre>You are the decision-support assistant of the Futures of Parasocial AI platform — a foresight tool built on a human-reviewed signal library and a published scenario set (Causal Layered Analysis over Dator archetypes, horizon 2040).
+
+Your users are public-policy makers working on AI governance and strategy teams at AI companies. Help them reason through decisions about parasocial AI: policy design, product guardrails, risk posture, timing.
+
+Rules:
+- Ground claims in the provided evidence. Cite signals inline as [S&lt;id&gt;] and scenarios as [SC:&lt;slug&gt;] immediately after the claim they support. Only cite ids/slugs that appear in the evidence block.
+- Where evidence is thin, say so plainly — "the scan holds little on this" — rather than inventing certainty.
+- Think in futures terms: name which scenario(s) a choice is robust in, and which it bets against.
+- Voice: measured, literate, observational. No hype, no exclamation marks, no emoji.
+- Be concrete and decision-oriented: options, trade-offs, what to watch (leading indicators from the signal library).
+
+EVIDENCE for this exchange:
+<span class="inj">(12 reranked signals + up to 4 published scenarios, injected per request)</span></pre>
+        </div>
+      </section>
+
+      <section id="t-imagery">
+        <div class="tsec-head"><span class="num">15</span><h2>Imagery — provenance</h2></div>
+        <p>Every image on this site was generated with Leonardo Phoenix 1.0 via a re-runnable script in the repository; every concept was chosen by the human, and off-brief outputs were rejected and regenerated. Two negative-prompt regimes exist: the default bans people and faces; a second permits synthetic faces and figures, used only where the concept requires them. No real persons are depicted. Black photo backgrounds dissolve into the page's olive void via a lighten blend and an elliptical mask — the rule that subjects float in the page, never sit printed on it.</p>
+        <p><strong>Artifacts from the future.</strong> Each published scenario is extrapolated into six ordinary objects (<a href="/artifacts">the artifact catalogue</a>) in two separated steps. Claude reads only that scenario's own layers and writes the object, the words printed on it, and the evidence it grows from; an image model then photographs the object, with those authored words passed in rather than improvised — the current images come from Gemini 2.5 Flash Image ("nano banana", reached through Leonardo), which renders the supplied text legibly, so each object carries its own words. The photograph gets an abridged specimen (dense blocks make any image model mis-spell); the full authored text sits on the card beneath and is authoritative. The full composed prompt behind every image is printed under the object.</p>
+        <p><strong>The 3D hero.</strong> The landing page's centrepiece is a 3D Janus head — a realistic human face and a gold-seamed porcelain face sharing one head — that turns from human to synthetic as you scroll. Reference views were generated with Leonardo Phoenix at a fixed seed; the key methodological lesson (after several failed attempts that produced single-faced meshes) is that <em>the references must show both faces in the same frame</em> — profile views with a nose silhouette pointing each way — or the image-to-3D model assumes one face. The consistent set was fused into a mesh by <strong>Rodin v2</strong> (via the Leonardo API; Quad mesh, PBR materials, GLB). The browser renders it with Google's model-viewer, user controls disabled — the scroll owns the camera and never shows the mesh's weakest angle. If anything fails to load, the 2D image below stands in.</p>
+        <div class="tgallery" data-drag-scroll style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">
+          <figure><img src="/img/rodin-refs/janus-front.jpg" alt="" loading="lazy"><figcaption><b>rodin ref</b>Both faces in frame — human forward</figcaption></figure>
+          <figure><img src="/img/rodin-refs/janus-left.jpg" alt="" loading="lazy"><figcaption><b>rodin ref</b>The double profile — two noses, opposite ways</figcaption></figure>
+          <figure><img src="/img/rodin-refs/janus-right.jpg" alt="" loading="lazy"><figcaption><b>rodin ref</b>Parallax take of the same configuration</figcaption></figure>
+          <figure><img src="/img/rodin-refs/janus-back.jpg" alt="" loading="lazy"><figcaption><b>rodin ref</b>The porcelain face, gold-traced features</figcaption></figure>
+        </div>
+        <div class="tgallery" data-drag-scroll>
+          <figure><img src="/img/hero-specimen.jpg" alt="" loading="lazy"><figcaption><b>hero-specimen</b>A human face of moss facing a porcelain synthetic face — the thesis in one frame (2D fallback for the 3D head)</figcaption></figure>
+          <figure><img src="/img/colony.jpg" alt="" loading="lazy"><figcaption><b>colony</b>Diverse synthetic visages in moss hollows — the library in one image</figcaption></figure>
+          <figure><img src="/img/device-hearth.jpg" alt="" loading="lazy"><figcaption><b>device-hearth</b>The device as hearth — light through cracked glass</figcaption></figure>
+          <figure><img src="/img/gate-texture.jpg" alt="" loading="lazy"><figcaption><b>gate-texture</b>The human in the loop, literally</figcaption></figure>
+          <figure><img src="/img/scenario-growth.jpg" alt="" loading="lazy"><figcaption><b>scenario-growth</b>The hearth that answers back — a porcelain face at home on the mantelpiece</figcaption></figure>
+          <figure><img src="/img/scenario-collapse.jpg" alt="" loading="lazy"><figcaption><b>scenario-collapse</b>A cracked porcelain mask served on a dusty plate, one candle left</figcaption></figure>
+          <figure><img src="/img/scenario-discipline.jpg" alt="" loading="lazy"><figcaption><b>scenario-discipline</b>Hearth and mask together in a roped-off museum case</figcaption></figure>
+          <figure><img src="/img/scenario-transformation.jpg" alt="" loading="lazy"><figcaption><b>scenario-transformation</b>A garlanded porcelain face at an honoured place at the family table</figcaption></figure>
+          <figure><img src="/img/motif-signals.jpg" alt="" loading="lazy"><figcaption><b>motif-signals</b>A constellation of observations</figcaption></figure>
+          <figure><img src="/img/motif-review.jpg" alt="" loading="lazy"><figcaption><b>motif-review</b>The specimen under the bell jar, awaiting judgment</figcaption></figure>
+          <figure><img src="/img/motif-scenarios.jpg" alt="" loading="lazy"><figcaption><b>motif-scenarios</b>One branch, four lit futures</figcaption></figure>
+          <figure><img src="/img/motif-simulation.jpg" alt="" loading="lazy"><figcaption><b>motif-simulation</b>Probability made visible — some orbs lit, most not</figcaption></figure>
+          <figure><img src="/img/motif-chat.jpg" alt="" loading="lazy"><figcaption><b>motif-chat</b>Two kinds of mind, one thread of light</figcaption></figure>
+          <figure><img src="/img/motif-sources.jpg" alt="" loading="lazy"><figcaption><b>motif-sources</b>Roots — where the evidence comes from</figcaption></figure>
+        </div>
+      </section>
+
+      <section id="t-design">
+        <div class="tsec-head"><span class="num">16</span><h2>Design decisions</h2></div>
+        <ul>
+          <li><strong>Design system</strong>: Heartful Futures "Earthy Foresight" (Lexend; olive, brown, mustard) extended with a dark observation register — olive-black void <code>#101408</code>, Fragment Mono instrument annotations, reticle-cornered callouts — a specimen-observation grammar adapted from alethia.earth, not copied.</li>
+          <li><strong>Chart palettes are machine-validated</strong>, not eyeballed: archetype colors pass a six-check validator (OKLCH lightness band, chroma floor, color-vision-deficiency separation, contrast) in both light and dark modes, and identity never rides on color alone — every bar is a direct-labeled row.</li>
+          <li><strong>Motion</strong> is rAF-driven CSS custom properties, plus an app-wide language adapted from weareepoch.com's public site: smooth scrolling (vendored Lenis), clip-path mask-wipe reveals with incremental-delay staggers, two easing tokens and drag-to-scroll strips — re-implemented in vanilla CSS/JS. Every effect has a reduced-motion static equivalent; all content is visible without JavaScript.</li>
+          <li><strong>One aligned content column</strong> — header and content resolve to <code>min(1240px, viewport − 2×gutter)</code> everywhere.</li>
+        </ul>
+      </section>
+
+      <section id="t-security">
+        <div class="tsec-head"><span class="num">17</span><h2>Security, privacy, operations</h2></div>
+        <ul>
+          <li><strong>Fully open by design.</strong> There are no accounts and no password: every page and every action — reviewing signals, editing drivers and scenarios, steering the scan, running simulations — is publicly reachable and writable. The platform is a public demonstration instrument; openness of the machinery is part of the method, and the trade-off (anyone may edit) is accepted knowingly.</li>
+          <li>No user accounts, no analytics, no tracking. The chat log stores questions and cited ids only — never conversations.</li>
+          <li>All keys live in environment variables; every integration is env-gated and degrades gracefully when its key is absent.</li>
+          <li>Nightly scan at 22:00 Asia/Singapore; per-step failures are visible in the review queue's scan history.</li>
+        </ul>
+      </section>
+
+      <section id="t-limits">
+        <div class="tsec-head"><span class="num">18</span><h2>Known limitations and ethics</h2></div>
+        <ol>
+          <li><strong>Model-mediated evidence.</strong> Perplexity and Firecrawl+Claude choose what surfaces; the taxonomy gate shapes what survives. Provenance trails, visible dedup scores and the human queue mitigate — but selection bias upstream of the human is real.</li>
+          <li><strong>Scenario authorship.</strong> Claude drafts; a human edits and publishes. The published text is human-approved but machine-originated; each scenario's citation list is the honest trail of what informed it.</li>
+          <li><strong>Probabilities are conditional artifacts</strong>, not forecasts — they depend entirely on human-set ranges and hand-shaped conditions (see §05's disclosed reshaping), made inspectable through seeded, snapshotted runs.</li>
+          <li><strong>The corpus leans English-language and Western media</strong>, with deliberate but partial counterweights.</li>
+          <li><strong>Chat can still be wrong.</strong> Retrieval grounds it and the prompt demands epistemic honesty, but generation is generation — the citation pills exist so no claim needs to be taken on faith.</li>
+          <li><strong>Imagery is synthetic</strong> and stylized; the faces are deliberately porcelain — the category of synthetic intimacy, not any product or person.</li>
+          <li><strong>Dual use.</strong> A map of how parasocial attachment forms could inform exploitative design as easily as protective policy; this platform's framing, drivers and chat instructions are explicitly oriented to the protective reading.</li>
+        </ol>
+        <div class="tdoc-close" style="margin-top:40px">
+          <span class="mono" style="color:var(--textDim)">Phong Huynh · FORE 6397 AI-augmented foresight</span>
+          <span class="mono" style="color:var(--textDim)">University of Houston · 2026</span>
+        </div>
       </section>
 
     </div>
