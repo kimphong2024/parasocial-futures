@@ -26,8 +26,7 @@ export async function renderNav(active) {
       <div class="site-header-inner">
         <a href="/" style="text-decoration:none">
           <div class="brand">
-            <span class="label">Foresight Capstone · 2040</span>
-            <span class="brand-title">Throuple with AI</span>
+            <span class="brand-title"><span class="mark">Throuple with AI</span></span>
           </div>
         </a>
         <nav class="site-nav">

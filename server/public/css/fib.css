@@ -40,9 +40,16 @@ body { background: var(--paperWhite); color: var(--ink); }
 .site-header-inner { max-width: 1240px; margin: 0 auto; padding-inline: var(--s-6, 24px); }
 .site-subnav-inner { max-width: 1240px; margin: 0 auto; padding-inline: var(--s-6, 24px); }
 .brand .label { color: var(--chart-mid); }
+/* the wordmark stands alone as the main title, carrying the hero's marker */
+.brand-title .mark {
+  background: linear-gradient(transparent 52%, var(--gold) 52%);
+  padding-inline: 0.08em;
+}
 .brand-title {
   font-family: var(--font-display);
   font-weight: 400;
+  font-size: 26px;
+  line-height: 1.1;
   letter-spacing: 0.5px;
   color: var(--ink);
   text-transform: uppercase;
