@@ -326,3 +326,7 @@ html.js .rise.in { opacity: 1; transform: none; }
 .fib-enterlink:hover .line:last-child { border-color: var(--gold); }
 
 model-viewer { max-width: 100%; }
+
+/* Human Machine Collaboration mark — drawn in currentColor, sits in the ground */
+.fib-hmc { display: inline-flex; align-items: center; gap: 10px; }
+.fib-hmc .hmc-badge { width: 40px; height: 40px; color: var(--ink, #131309); opacity: 0.82; flex: 0 0 auto; }

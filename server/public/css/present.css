@@ -526,3 +526,9 @@
 }
 .learn-text { font-size: 19px; line-height: 1.75; color: var(--textMid, #656B5E); max-width: 58ch; margin: 0; }
 @media (prefers-reduced-motion: reduce) { .learn-panel > * { animation: none; } .learn-nums .ln { transition: none; } }
+
+/* HMC mark in the deck footer */
+.deck-hmc { display: inline-flex; align-items: center; gap: 10px; }
+.deck-hmc .hmc-badge { width: 30px; height: 30px; color: var(--paperWhite, #FFFEF9); opacity: 0.9; flex: 0 0 auto; }
+.deck-hmc a { color: var(--paperWhite, #FFFEF9); text-decoration: underline; text-underline-offset: 3px; }
+.deck-hmc a:hover { color: var(--gold, #E1B83B); }
