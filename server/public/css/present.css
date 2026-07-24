@@ -414,6 +414,8 @@
 .s-shots2 figcaption { font-size: 13.5px; line-height: 1.55; color: var(--textMid, #656B5E); margin-top: 12px; }
 
 /* ---------- close CTA ---------- */
+/* clear air between the marked wordmark and the gold button */
+.s-close .fib-enterbtn-deck { margin-top: 34px; }
 .fib-enterbtn-deck {
   display: inline-block;
   background: var(--gold, #E1B83B);
