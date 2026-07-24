@@ -1,5 +1,6 @@
-// /present — deck engine: 16:9 stage scaling, slide navigation
-// (keys, chevrons, dots, swipe, hash deep-links), live-data hydration.
+// /present — deck engine: 16:9 stage scaling, navigation (keys, chevrons,
+// dots, swipe, hash deep-links), live hydration, and per-slide interactions:
+// count-ups, animated cluster bars, the live map embed, the artifact table.
 import { api, esc } from "./api.js";
 
 const stage = document.getElementById("stage");
@@ -7,6 +8,7 @@ const slides = [...stage.querySelectorAll(".slide")];
 const dots = document.getElementById("dots");
 const counter = document.getElementById("counter");
 const N = slides.length;
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 let i = 0;
 
 // ---------- 16:9 scaling ----------
@@ -17,23 +19,42 @@ function fit() {
 addEventListener("resize", fit, { passive: true });
 fit();
 
+// ---------- count-up numerals ----------
+function countUp(el) {
+  const target = Number(el.dataset.n || el.textContent.replace(/\D/g, "")) || 0;
+  if (reduced) { el.textContent = target.toLocaleString(); return; }
+  const t0 = performance.now(), dur = 1100;
+  const tick = (t) => {
+    const p = Math.min(1, (t - t0) / dur);
+    const eased = 1 - Math.pow(1 - p, 4);
+    el.textContent = Math.round(target * eased).toLocaleString();
+    if (p < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
 // ---------- navigation ----------
 dots.innerHTML = slides.map((_, k) => `<button role="tab" aria-label="Slide ${k + 1}" data-k="${k}"></button>`).join("");
 const dotEls = [...dots.children];
+
+function enter(slide) {
+  // per-slide entry behaviours
+  slide.querySelectorAll(".lib-count, .hz-n").forEach(countUp);
+  // the live map iframe loads only when its slide first shows
+  const frame = slide.querySelector("#mapFrame");
+  if (frame && !frame.src) frame.src = "/map";
+}
 
 function go(k, pushHash = true) {
   i = Math.max(0, Math.min(N - 1, k));
   slides.forEach((s, k2) => {
     const on = k2 === i;
-    if (on && !s.classList.contains("now")) {
-      // restart the entry animation
-      s.classList.remove("now");
-      void s.offsetWidth;
-    }
+    if (on && !s.classList.contains("now")) { s.classList.remove("now"); void s.offsetWidth; }
     s.classList.toggle("now", on);
   });
   dotEls.forEach((d, k2) => d.classList.toggle("on", k2 === i));
   counter.textContent = `${String(i + 1).padStart(2, "0")} / ${String(N).padStart(2, "0")}`;
+  enter(slides[i]);
   if (pushHash) history.replaceState(null, "", "#" + (i + 1));
 }
 
@@ -52,7 +73,6 @@ addEventListener("keydown", (e) => {
   }
 });
 
-// swipe
 let x0 = null;
 addEventListener("pointerdown", (e) => { x0 = e.clientX; }, { passive: true });
 addEventListener("pointerup", (e) => {
@@ -66,14 +86,65 @@ addEventListener("hashchange", () => {
   if (k >= 1 && k <= N) go(k - 1, false);
 });
 
+// ---------- slide 9: the pyramid ----------
+const pyr = document.getElementById("claPyr");
+const claNote = document.getElementById("claNote");
+pyr?.addEventListener("click", (e) => {
+  const tier = e.target.closest(".tier");
+  if (!tier) return;
+  pyr.querySelectorAll(".tier").forEach((t) => t.classList.toggle("now", t === tier));
+  claNote.textContent = tier.dataset.note;
+});
+
+// ---------- slide 14: the artifact table ----------
+const artTable = document.getElementById("artTable");
+const artCaption = document.getElementById("artCaption");
+let artList = [
+  { src: "/img/artifacts/growth-companion-continuity-receipt.jpg", cap: "Receipt · The Warm Layer" },
+  { src: "/img/artifacts/collapse-befriend-something-alive.jpg", cap: "Embroidered patch · Forgetting How to Say Thou" },
+  { src: "/img/artifacts/growth-companion-disclosure-card.jpg", cap: "Identity card · The Warm Layer" },
+];
+let artIdx = 0;
+const ROTS = [-7, 5, -2, 8, -5];
+function dealArtifacts() {
+  if (!artTable) return;
+  // the top card plus two beneath, strewn like objects on a table
+  const shown = [0, 1, 2].map((k) => artList[(artIdx + k) % artList.length]);
+  artTable.innerHTML = shown.map((a, k) => `
+    <img src="${esc(a.src)}" alt="${esc(a.cap)}" loading="lazy" style="
+      z-index: ${3 - k};
+      left: ${[70, 10, 150][k]}px; top: ${[60, 190, 230][k]}px;
+      transform: rotate(${ROTS[(artIdx + k) % ROTS.length]}deg) scale(${k === 0 ? 1.12 : 0.94});
+      opacity: ${k === 0 ? 1 : 0.75};">`).join("");
+  artCaption.textContent = shown[0].cap;
+}
+document.getElementById("artNext")?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  artIdx = (artIdx + 1) % artList.length;
+  dealArtifacts();
+});
+
 // ---------- live hydration (baked fallbacks stay if anything fails) ----------
 async function hydrate() {
-  const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.textContent = Number(v).toLocaleString(); };
+  const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) { el.textContent = Number(v).toLocaleString(); el.dataset.n = v; } };
   try {
     const o = await api("/api/signals/overview");
-    set("stat-signals", o.total);
+    const lib = document.getElementById("libCount");
+    if (lib && o.total) lib.dataset.n = o.total;
     set("stat-clusters", o.clusters?.length);
     set("stat-sources", o.sources?.distinct);
+    // top clusters as animated bars
+    const bars = document.getElementById("libBars");
+    if (bars && o.clusters?.length) {
+      const top = o.clusters.slice(0, 9);
+      const max = top[0].n;
+      bars.innerHTML = top.map((c) => `
+        <div class="lib-bar">
+          <span class="nm">${esc(c.v)}</span>
+          <span class="tr"><span class="fl" style="width:${((c.n / max) * 100).toFixed(1)}%"></span></span>
+          <span class="n">${c.n}</span>
+        </div>`).join("");
+    }
   } catch {}
   try {
     const f = await api("/api/signals/facets");
@@ -86,15 +157,24 @@ async function hydrate() {
       const slide = stage.querySelector(`.scen[data-arch="${CSS.escape(sc.archetype)}"]`);
       if (!slide) continue;
       slide.querySelector(".scen-title").textContent = sc.title;
-      const sum = (sc.summary || "").split(/(?<=\.)\s+/).slice(0, 2).join(" ");
-      slide.querySelector(".scen-summary").textContent = sum;
+      slide.querySelector(".scen-summary").textContent = (sc.summary || "").split(/(?<=\.)\s+/).slice(0, 2).join(" ");
       const myth = (sc.myth || "").split(/(?<=\.)\s+/)[0].replace(/^["“]|["”]$/g, "");
       slide.querySelector(".scen-myth").textContent = myth ? "“" + myth.replace(/\.$/, "") + ".”" : "";
     }
   } catch {}
+  try {
+    const j = await api("/api/artifacts");
+    const all = (j.scenarios || []).flatMap((s) => s.artifacts.map((a) => ({
+      src: `/img/artifacts/${s.archetype}-${a.slug}.jpg`,
+      cap: `${a.type} · ${s.title}`,
+    })));
+    if (all.length) { artList = all; artIdx = 0; }
+  } catch {}
+  dealArtifacts();
+  // re-run count-ups on the current slide with hydrated numbers
+  enter(slides[i]);
 }
 hydrate();
 
-// start at the deep-linked slide
 const k0 = parseInt(location.hash.slice(1), 10);
 go(k0 >= 1 && k0 <= N ? k0 - 1 : 0, false);

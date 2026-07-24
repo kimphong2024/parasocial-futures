@@ -7,6 +7,7 @@
   <meta name="description" content="A 16:9 walkthrough of the Futures of Parasocial AI capstone platform.">
   <link rel="icon" href="/favicon.svg">
   <meta name="pinterest" content="nopin">
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.1.0/dist/model-viewer.min.js"></script>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/fib.css">
   <link rel="stylesheet" href="/css/present.css">
@@ -14,128 +15,147 @@
 <body class="deck-body">
   <div class="deck-stage" id="stage">
 
-    <!-- 1 · title -->
-    <section class="slide dark" style="--bg:url('/img/colony.jpg')">
-      <div class="s-center">
+    <!-- 1 · title: the two-faced head, turning -->
+    <section class="slide dark s-model">
+      <div class="model-glow" aria-hidden="true"></div>
+      <model-viewer class="deck-model" src="/models/hero.glb" alt="A two-faced head: human on one side, synthetic on the other"
+        auto-rotate auto-rotate-delay="0" rotation-per-second="14deg"
+        camera-orbit="355deg 85deg 105%" interaction-prompt="none" disable-zoom
+        exposure="1.45" shadow-intensity="0.4"></model-viewer>
+      <div class="s-body s-left">
         <p class="s-kicker">FORE 6397 · AI-Augmented Foresight · University of Houston</p>
-        <h1 class="s-display"><span class="mark">THROUPLE</span> <span class="mark">WITH AI</span></h1>
-        <p class="s-sub">Love, faith, robots and uncanny futures — a foresight instrument on the parasocial age, horizon 2040.</p>
+        <h1 class="s-display"><span class="mark">THROUPLE</span><br><span class="mark">WITH AI</span></h1>
+        <p class="s-sub">Love, faith, robots and uncanny futures —<br>a foresight instrument on the parasocial age, horizon 2040.</p>
         <p class="s-byline">Phong Huynh · Summer 2026</p>
       </div>
     </section>
 
-    <!-- 2 · the question -->
-    <section class="slide">
-      <div class="s-body">
+    <!-- 2 · the question, with 2040 as a ghost monument -->
+    <section class="slide s-question">
+      <div class="ghost-year" aria-hidden="true">2040</div>
+      <div class="s-body s-left">
         <p class="s-label">The question</p>
-        <h2 class="s-big">How will AI reshape the fabric of our social relations by 2040?</h2>
-        <p class="s-text">Focused on the parasocial slice: companions, AI romance, grief tech, virtual beings, therapy bots — the places where a relationship with software starts doing the work a human bond used to do.</p>
+        <h2 class="s-big q-big">How will AI reshape<br>the fabric of our<br>social relations?</h2>
+      </div>
+      <div class="q-tags">
+        <span>companions</span><span>AI romance</span><span>grief tech</span><span>virtual beings</span><span>therapy bots</span><span>elder care</span><span>the parasocial slice</span>
       </div>
     </section>
 
-    <!-- 3 · the instrument -->
-    <section class="slide">
-      <div class="s-body">
-        <p class="s-label">The instrument</p>
-        <h2 class="s-head">Five windows over one evidence base</h2>
-        <div class="s-flow">
-          <span class="pill gold">Signals</span><span class="arrow">→</span>
-          <span class="pill gold">Drivers</span><span class="arrow">→</span>
-          <span class="pill gold">Scenarios</span><span class="arrow">→</span>
-          <span class="pill gold">Artifacts</span><span class="arrow">→</span>
-          <span class="pill gold">Decision support</span>
-        </div>
-        <p class="s-text s-rule">The binding rule across all five: <strong>nothing publishes without a human decision.</strong> Scan hits arrive pending; scenario drafts arrive as drafts; only explicit approval promotes them. The gate is the method, not a feature.</p>
+    <!-- 3 · the instrument: five doors, hover to open -->
+    <section class="slide s-doors">
+      <p class="s-label doors-label">The instrument · hover a window</p>
+      <div class="doors">
+        <a class="door" href="/signals" tabindex="-1">
+          <span class="door-n">01</span><span class="door-name">Signals</span>
+          <span class="door-note">A 938-signal library, refreshed nightly by a two-leg scan and reviewed by a human before anything enters.</span>
+        </a>
+        <a class="door" href="/drivers" tabindex="-1">
+          <span class="door-n">02</span><span class="door-name">Drivers</span>
+          <span class="door-note">Eight forces recomposed from the library — each a belief stated as a range, justified by named clusters.</span>
+        </a>
+        <a class="door" href="/scenarios" tabindex="-1">
+          <span class="door-n">03</span><span class="door-name">Scenarios</span>
+          <span class="door-note">Four 2040s on Dator archetypes, argued in Causal Layered Analysis, published with countable conditions.</span>
+        </a>
+        <a class="door" href="/artifacts" tabindex="-1">
+          <span class="door-n">04</span><span class="door-name">Artifacts</span>
+          <span class="door-note">Twenty-four ordinary objects from four futures — receipts, patches, ID cards — words authored, prompts disclosed.</span>
+        </a>
+        <a class="door" href="/chat" tabindex="-1">
+          <span class="door-n">05</span><span class="door-name">Decision support</span>
+          <span class="door-note">Monte Carlo odds over the drivers, and a chat that cites the signals it stands on.</span>
+        </a>
       </div>
+      <p class="s-text doors-rule"><strong>Nothing publishes without a human decision.</strong> The gate is the method, not a feature.</p>
     </section>
 
-    <!-- 4 · how signals arrive -->
-    <section class="slide">
-      <div class="s-body">
+    <!-- 4 · the pipeline: a candidate travels the gates -->
+    <section class="slide s-pipe">
+      <div class="s-body s-top">
         <p class="s-label">How signals arrive · nightly at 22:00 SGT</p>
-        <h2 class="s-head">A candidate survives five steps to reach the review queue</h2>
-        <ol class="s-steps">
-          <li><strong>Undirected sweep</strong> — twelve themed questions to a search model, last-week recency</li>
-          <li><strong>Directed watch</strong> — sixteen configured sources, full articles read, never just headlines</li>
-          <li><strong>Classification + relevance gate</strong> — strict test: is the core subject AI's effect on human relationships?</li>
-          <li><strong>Deduplication</strong> — normalized URLs, then embedding similarity at 0.90 cosine</li>
-          <li><strong>Pending → human review</strong> — approve, reject, or edit; nothing enters the library by itself</li>
-        </ol>
-        <p class="s-text">Every knob is editable in the UI; every run records the exact settings and gate text it used.</p>
+        <h2 class="s-head">A candidate survives five gates</h2>
       </div>
-    </section>
-
-    <!-- 5 · the library -->
-    <section class="slide">
-      <div class="s-split">
-        <div class="s-body">
-          <p class="s-label">The library</p>
-          <h2 class="s-head">A library that refreshes itself</h2>
-          <div class="s-stats">
-            <div><b id="stat-signals">938</b><span>approved signals</span></div>
-            <div><b id="stat-clusters">33</b><span>clusters</span></div>
-            <div><b id="stat-sources">579</b><span>distinct sources</span></div>
-          </div>
-          <p class="s-text">Seeded with the curated capstone corpus, extended nightly by the scan — every signal carries its cluster, type, horizon, provenance and the raw machine output it came from.</p>
+      <div class="pipe">
+        <div class="pipe-track"><span class="pipe-dot" aria-hidden="true"></span></div>
+        <div class="pipe-gates">
+          <div class="gate"><b>1</b><span>Undirected sweep</span><em>twelve themed questions to a search model, last-week recency</em></div>
+          <div class="gate"><b>2</b><span>Directed watch</span><em>sixteen sources, full articles read — never just headlines</em></div>
+          <div class="gate"><b>3</b><span>Relevance gate</span><em>strict test: is the core subject AI's effect on human relationships?</em></div>
+          <div class="gate"><b>4</b><span>Deduplication</span><em>normalized URLs, then embedding similarity at 0.90 cosine</em></div>
+          <div class="gate gold"><b>5</b><span>Human review</span><em>approve, reject or edit — nothing enters the library by itself</em></div>
         </div>
-        <figure class="s-shot"><img src="/img/shot-signals.png" alt="The signal library dashboard"></figure>
+      </div>
+      <p class="s-text pipe-note">Every knob is editable in the UI; every run records the exact settings and gate text it used.</p>
+    </section>
+
+    <!-- 5 · the library: counted, not claimed -->
+    <section class="slide s-lib">
+      <div class="lib-left">
+        <p class="s-label">The library</p>
+        <div class="lib-count" id="libCount" data-n="938">0</div>
+        <p class="lib-caption">approved signals · <b id="stat-clusters">33</b> clusters · <b id="stat-sources">579</b> distinct sources</p>
+        <p class="s-text">Seeded with the capstone corpus, extended nightly by the scan. Every signal keeps its cluster, type, horizon, provenance and the raw machine output it arrived as.</p>
+      </div>
+      <div class="lib-bars" id="libBars" aria-label="Largest clusters"></div>
+    </section>
+
+    <!-- 6 · the map, live -->
+    <section class="slide dark s-live">
+      <div class="live-crop">
+        <iframe id="mapFrame" title="The live signal map" loading="lazy" scrolling="no"></iframe>
+        <img src="/img/shot-map.png" alt="" class="live-fallback">
+      </div>
+      <div class="live-plate">
+        <p class="s-label light"><span class="live-dot"></span>Live · the library as one field</p>
+        <h2 class="s-head light-head">Clusters emerge — they are not drawn</h2>
+        <p class="s-text">Every signal connected to its nearest semantic neighbours, settled by a 3D physics simulation. Drag it.</p>
       </div>
     </section>
 
-    <!-- 6 · the map -->
-    <section class="slide">
-      <div class="s-split">
-        <div class="s-body">
-          <p class="s-label">The library as one field</p>
-          <h2 class="s-head">Clusters emerge — they are not drawn</h2>
-          <p class="s-text">Every approved signal, connected to its nearest semantic neighbours by embedding similarity and settled by a 3D physics simulation. Hovering a signal isolates its neighbourhood; dragging pins it against the field.</p>
-        </div>
-        <figure class="s-shot"><img src="/img/shot-map.png" alt="The 3D signal map"></figure>
-      </div>
-    </section>
-
-    <!-- 7 · horizon rigor -->
-    <section class="slide">
-      <div class="s-body">
+    <!-- 7 · horizons: judged claims on a spine -->
+    <section class="slide s-hz">
+      <div class="s-body s-top">
         <p class="s-label">Horizon rigor</p>
         <h2 class="s-head">Every horizon is a judged claim, not a label</h2>
-        <div class="s-hrow">
-          <div><span class="pill">H1 · now–2029</span><p>already unfolding before 2030</p><b id="stat-h1">616</b></div>
-          <div><span class="pill">H2 · 2030–2035</span><p>requires named developments to occur</p><b id="stat-h2">150</b></div>
-          <div><span class="pill">H3 · 2036–2040+</span><p>stacked slow preconditions</p><b id="stat-h3">32</b></div>
-        </div>
-        <p class="s-text">A dedicated LLM audit re-judged the whole library at high reasoning effort — each signal stores two to four sentences of written justification, shown in the drawer beside the label.</p>
       </div>
+      <div class="hz-spine">
+        <div class="hz-stop"><b class="hz-n" data-n="616" id="stat-h1">0</b><span class="pill">H1 · now–2029</span><p>already unfolding before 2030</p></div>
+        <div class="hz-stop"><b class="hz-n" data-n="150" id="stat-h2">0</b><span class="pill">H2 · 2030–2035</span><p>requires named developments to occur</p></div>
+        <div class="hz-stop"><b class="hz-n" data-n="32" id="stat-h3">0</b><span class="pill">H3 · 2036–2040+</span><p>stacked slow preconditions</p></div>
+      </div>
+      <p class="s-text">A dedicated LLM audit re-judged the whole library at high reasoning effort — each signal stores two to four sentences of written justification, read in the drawer beside the label.</p>
     </section>
 
     <!-- 8 · drivers -->
-    <section class="slide">
-      <div class="s-split">
-        <div class="s-body">
-          <p class="s-label">Drivers</p>
-          <h2 class="s-head">Eight forces that move 2040</h2>
-          <p class="s-text">Recomposed from the library itself: each driver is a belief stated as a range — adoption, governance restrictiveness, prosocial design maturity, embodiment, legitimacy, displacement, harm accumulation, market concentration — justified by named signal clusters.</p>
-        </div>
-        <figure class="s-shot"><img src="/img/shot-drivers.png" alt="The driver write-ups"></figure>
-      </div>
-    </section>
-
-    <!-- 9 · scenario method -->
-    <section class="slide">
-      <div class="s-body">
-        <p class="s-label">Scenarios</p>
-        <h2 class="s-head">Four futures, one method</h2>
-        <p class="s-text s-mt">Dator's four archetypes — growth, collapse, discipline, transformation — each structured with <strong>Causal Layered Analysis</strong>: litany, systemic causes, worldview, myth. Drafted from the evidence, human-edited, and published with driver conditions the simulation can count.</p>
-        <div class="s-flow s-mt">
-          <span class="pill">Litany</span><span class="arrow">↓</span>
-          <span class="pill">Systemic</span><span class="arrow">↓</span>
-          <span class="pill">Worldview</span><span class="arrow">↓</span>
-          <span class="pill gold">Myth</span>
+    <section class="slide s-drv">
+      <div class="s-body s-left drv-copy">
+        <p class="s-label">Drivers</p>
+        <h2 class="s-head">Eight forces that move 2040</h2>
+        <p class="s-text">Recomposed from the library itself — each a belief stated as a range, justified by named signal clusters, feeding the simulation directly.</p>
+        <div class="drv-grid">
+          <span>companion adoption</span><span>regulation stringency</span><span>prosocial design</span><span>embodiment</span><span>social legitimacy</span><span>displacement</span><span>harm accumulation</span><span>market concentration</span>
         </div>
       </div>
+      <figure class="s-shot drv-shot"><img src="/img/shot-drivers.png" alt="The driver write-ups"></figure>
     </section>
 
-    <!-- 10-13 · scenarios (hydrated) -->
+    <!-- 9 · CLA: the pyramid itself, clickable -->
+    <section class="slide s-cla">
+      <div class="s-body s-left cla-copy">
+        <p class="s-label">Scenarios · Dator × CLA</p>
+        <h2 class="s-head">Four futures,<br>argued in layers</h2>
+        <p class="s-text cla-note" id="claNote">Click a layer. Each scenario descends from its headlines to the myth that holds it together.</p>
+      </div>
+      <svg class="cla-pyramid" id="claPyr" viewBox="0 0 420 470" role="group" aria-label="Causal Layered Analysis pyramid">
+        <g class="tier now" data-note="Litany — the visible surface of 2040: headlines, statistics, everyday observations."><polygon points="210,6 302,112 118,112"/><text x="210" y="92">LITANY</text></g>
+        <g class="tier" data-note="Systemic — the structures producing the surface: economics, technology, regulation, demography."><polygon points="108,124 312,124 358,230 62,230"/><text x="210" y="184">SYSTEMIC</text></g>
+        <g class="tier" data-note="Worldview — the shared beliefs that make this world coherent to the people living in it."><polygon points="56,242 364,242 400,348 20,348"/><text x="210" y="302">WORLDVIEW</text></g>
+        <g class="tier" data-note="Myth — the deep story underneath; the image the whole future rests on."><polygon points="14,360 406,360 418,466 2,466"/><text x="210" y="420">MYTH</text></g>
+      </svg>
+    </section>
+
+    <!-- 10-13 · the four futures -->
     <section class="slide dark scen" data-arch="growth" style="--bg:url('/img/scenario-growth.jpg')">
       <div class="s-body s-low">
         <p class="s-label light">Continued growth</p>
@@ -169,39 +189,41 @@
       </div>
     </section>
 
-    <!-- 14 · artifacts -->
-    <section class="slide">
-      <div class="s-body">
+    <!-- 14 · artifacts: a strewn table, click for the next object -->
+    <section class="slide s-art">
+      <div class="s-body s-left art-copy">
         <p class="s-label">Artifacts from the future</p>
-        <h2 class="s-head">A future arrives as ordinary things</h2>
-        <div class="s-artrow">
-          <img src="/img/artifacts/growth-companion-continuity-receipt.jpg" alt="A companion subscription receipt">
-          <img src="/img/artifacts/collapse-befriend-something-alive.jpg" alt="An embroidered counter-movement patch">
-          <img src="/img/artifacts/growth-companion-disclosure-card.jpg" alt="A relational AI disclosure card">
-        </div>
-        <p class="s-text">Six objects per scenario, twenty-four in all. The words on every object are authored from that scenario's own layers and passed to the image model — never improvised by it. The full prompt sits under each object on the site.</p>
+        <h2 class="s-head">A future arrives<br>as ordinary things</h2>
+        <p class="s-text">Twenty-four objects across the four scenarios. The words on every object are authored from that scenario's own layers and passed to the image model — never improvised by it.</p>
+        <button class="art-next" id="artNext">Next object →</button>
+        <p class="art-caption" id="artCaption"></p>
       </div>
+      <div class="art-table" id="artTable" aria-label="Artifact photographs"></div>
     </section>
 
     <!-- 15 · odds & advice -->
-    <section class="slide">
-      <div class="s-body">
+    <section class="slide s-two">
+      <div class="s-body s-top">
         <p class="s-label">Decision support</p>
         <h2 class="s-head">Odds, not opinions · advice that shows its sources</h2>
-        <div class="s-shots2">
-          <figure><img src="/img/shot-simulation.png" alt="Scenario simulation"><figcaption>Monte Carlo over the eight drivers — each run reports every scenario's odds and which drivers move them</figcaption></figure>
-          <figure><img src="/img/shot-chat.png" alt="Decision chat"><figcaption>Retrieval-grounded chat — answers cite the signals they stand on, and say so when the evidence is thin</figcaption></figure>
-        </div>
+      </div>
+      <div class="s-shots2">
+        <figure><img src="/img/shot-simulation.png" alt="Scenario simulation"><figcaption>Monte Carlo over the eight drivers — every run reports each scenario's odds and which drivers move them</figcaption></figure>
+        <figure><img src="/img/shot-chat.png" alt="Decision chat"><figcaption>Retrieval-grounded chat — answers cite the signals they stand on, and say so when the evidence is thin</figcaption></figure>
       </div>
     </section>
 
-    <!-- 16 · close -->
-    <section class="slide dark" style="--bg:url('/img/colony.jpg')">
-      <div class="s-center">
+    <!-- 16 · close: the head again -->
+    <section class="slide dark s-model s-close">
+      <div class="model-glow" aria-hidden="true"></div>
+      <model-viewer class="deck-model" src="/models/hero.glb" alt=""
+        auto-rotate auto-rotate-delay="0" rotation-per-second="14deg"
+        camera-orbit="175deg 85deg 105%" interaction-prompt="none" disable-zoom
+        exposure="1.45" shadow-intensity="0.4"></model-viewer>
+      <div class="s-body s-left">
         <p class="s-kicker">Every prompt disclosed · every run recorded · every publish a human decision</p>
-        <h2 class="s-display small-display">parasocial-futures<br>-production.up.railway.app</h2>
+        <h2 class="s-display"><span class="mark">THROUPLE</span><br><span class="mark">WITH AI</span></h2>
         <a class="fib-enterbtn-deck" href="/">Enter the futures</a>
-        <p class="s-byline">Built by Phong Huynh</p>
       </div>
     </section>
 
@@ -211,7 +233,8 @@
   <button class="deck-nav prev" id="prev" aria-label="Previous slide">‹</button>
   <button class="deck-nav next" id="next" aria-label="Next slide">›</button>
   <div class="deck-dots" id="dots" role="tablist" aria-label="Slides"></div>
-  <div class="deck-counter" id="counter">01 / 16</div>
+  <div class="deck-foot left">Phong Huynh</div>
+  <div class="deck-foot right">AI in Foresight · <span id="counter">01 / 16</span></div>
 
   <script type="module" src="/js/present.js"></script>
 </body>
