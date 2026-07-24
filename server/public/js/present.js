@@ -96,6 +96,31 @@ pyr?.addEventListener("click", (e) => {
   claNote.textContent = tier.dataset.note;
 });
 
+// ---------- learnings: click through the five lessons ----------
+const LEARNINGS = [
+  { t: "Breadth has a price", who: "machine", x: "Machines add breadth and rigour — hundreds of candidates a night, judged consistently. They also produce confident false positives, which is why every automated judgment ends at a gate." },
+  { t: "Suggest, then refine", who: "both", x: "Machines can suggest; humans can refine. The best drafts on this platform were machine-first and human-finished — never the reverse, never machine-only." },
+  { t: "Make it teach you", who: "machine", x: "Ask the machine to show you what it does — the prompts, the gate text, the written reasoning behind every horizon call. A tool you can interrogate is a tool you can trust." },
+  { t: "No single tool", who: "both", x: "Each tool has its use: one searches wide, one reads deep, one judges, one embeds. The best tool turned out to be the combination — a pipeline, not a product." },
+  { t: "Humans bring the what-if", who: "human", x: "Storytelling and imagination stayed human all term. The more colorful, provocative what-ifs — the throuple, the fire code, the third at the table — came from us." },
+];
+const learnPanel = document.getElementById("learnPanel");
+const learnNums = document.getElementById("learnNums");
+function showLearning(k) {
+  const L = LEARNINGS[k];
+  learnNums?.querySelectorAll(".ln").forEach((b) => b.classList.toggle("now", Number(b.dataset.k) === k));
+  if (!learnPanel) return;
+  learnPanel.innerHTML = `
+    <span class="learn-who ${L.who}">${L.who === "both" ? "machine + human" : L.who}</span>
+    <h2 class="learn-title">${esc(L.t)}</h2>
+    <p class="learn-text">${esc(L.x)}</p>`;
+}
+learnNums?.addEventListener("click", (e) => {
+  const b = e.target.closest(".ln");
+  if (b) showLearning(Number(b.dataset.k));
+});
+showLearning(0);
+
 // ---------- slide 14: the artifact table ----------
 const artTable = document.getElementById("artTable");
 const artCaption = document.getElementById("artCaption");

@@ -480,3 +480,49 @@
   .lib-bar .fl { transition: none; transform: scaleX(1); }
   .door, .door-note, .gate, .art-table img, .s-shots2 img { transition: none; }
 }
+
+/* ---------- 16 · learnings ---------- */
+.s-learn.now { display: grid; grid-template-columns: 250px 1fr; gap: 56px; align-items: center; }
+.learn-nums { display: flex; flex-direction: column; gap: 6px; }
+.learn-nums .ln {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 72px; line-height: 1.04;
+  letter-spacing: 2px;
+  text-align: left;
+  color: #D8D2BC;
+  background: none; border: none; padding: 0 10px;
+  cursor: pointer;
+  transition: color 0.25s ease, background 0.25s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.learn-nums .ln:hover { color: var(--gold-text, #7E6721); transform: translateX(8px); }
+.learn-nums .ln.now {
+  color: var(--ink, #131309);
+  background: linear-gradient(transparent 52%, var(--gold, #E1B83B) 52%);
+  transform: translateX(8px);
+}
+.learn-body { display: flex; flex-direction: column; gap: 22px; }
+.learn-panel { display: flex; flex-direction: column; gap: 16px; min-height: 300px; justify-content: flex-start; }
+.learn-panel > * { animation: deck-rise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.learn-who {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 11.5px; letter-spacing: 2px; text-transform: uppercase;
+  border-radius: 999px;
+  padding: 6px 14px;
+  border: 1px solid var(--ink, #131309);
+  color: var(--ink, #131309);
+}
+.learn-who.machine { background: var(--cream, #F2E9D4); border-color: transparent; }
+.learn-who.human { background: var(--gold, #E1B83B); border-color: transparent; }
+.learn-who.both { background: linear-gradient(90deg, var(--cream, #F2E9D4) 50%, var(--gold, #E1B83B) 50%); border-color: transparent; }
+.learn-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 62px; line-height: 1.04;
+  letter-spacing: 0.5px; text-transform: uppercase;
+  color: var(--ink, #131309);
+  margin: 0;
+}
+.learn-text { font-size: 19px; line-height: 1.75; color: var(--textMid, #656B5E); max-width: 58ch; margin: 0; }
+@media (prefers-reduced-motion: reduce) { .learn-panel > * { animation: none; } .learn-nums .ln { transition: none; } }
