@@ -73,7 +73,10 @@ async function extractSignals(sourceName, pageUrl, markdown) {
     schema: EXTRACT_SCHEMA,
     effort: "medium",
   });
-  return (signals || []).filter((s) => s.title && /^https?:\/\//.test(s.url || ""));
+  // The model occasionally returns a non-array here (e.g. a keyed object);
+  // coerce rather than throw — a fenced source error costs the whole page.
+  const list = Array.isArray(signals) ? signals : Object.values(signals || {}).find(Array.isArray) || [];
+  return list.filter((s) => s && s.title && /^https?:\/\//.test(s.url || ""));
 }
 
 // Follow front-page teasers into their articles: scrape up to FOLLOW_LIMIT
