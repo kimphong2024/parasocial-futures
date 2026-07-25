@@ -196,6 +196,11 @@ app.post("/api/scan/run", (_req, res) => {
   res.json({ ok: true, started: true });
 });
 app.get("/api/scan/runs", (_req, res) => res.json({ runs: d.listScanRuns.all() }));
+// Remove a run's record (aborted/failed housekeeping); in-flight runs refuse.
+app.delete("/api/scan/runs/:id", (req, res) => {
+  const n = d.deleteScanRun.run(+req.params.id).changes;
+  res.status(n ? 200 : 409).json({ ok: !!n });
+});
 app.get("/api/scan/runs/:id", (req, res) => {
   const r = d.getScanRun.get(+req.params.id);
   if (!r) return res.status(404).json({ error: "not found" });

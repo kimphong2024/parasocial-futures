@@ -243,6 +243,7 @@ export const setSetting = (key, value) => settingPut.run(key, String(value), now
 export const insertScanRun = db.prepare("INSERT INTO scan_runs (started_at, trigger) VALUES (?,?)");
 export const finishScanRun = db.prepare("UPDATE scan_runs SET finished_at = ?, status = ?, perplexity_candidates = ?, firecrawl_candidates = ?, new_pending = ?, dup_url = ?, dup_embedding = ?, rejected_relevance = ?, errors_json = ?, detail_json = ? WHERE id = ?");
 export const listScanRuns = db.prepare("SELECT * FROM scan_runs ORDER BY id DESC LIMIT 30");
+export const deleteScanRun = db.prepare("DELETE FROM scan_runs WHERE id = ? AND status != 'running'");
 export const getScanRun = db.prepare("SELECT * FROM scan_runs WHERE id = ?");
 export const lastScanRun = db.prepare("SELECT * FROM scan_runs ORDER BY id DESC LIMIT 1");
 
