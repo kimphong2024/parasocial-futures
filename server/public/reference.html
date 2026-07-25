@@ -216,7 +216,7 @@
         <table class="data">
           <thead><tr><th>Service</th><th>Model</th><th>Used for</th></tr></thead>
           <tbody>
-            <tr><td>Anthropic</td><td>claude-opus-4-8 · adaptive thinking</td><td>Extraction, classification, scenario drafting, chat — all structured output via forced tool_use with strict schemas</td></tr>
+            <tr><td>Anthropic</td><td>claude-sonnet-5 · adaptive thinking</td><td>Extraction, classification, scenario drafting, chat — all structured output via forced tool_use with strict schemas</td></tr>
             <tr><td>Voyage AI</td><td>voyage-3.5 (1024-dim) + rerank-2.5</td><td>Semantic search, dedup, retrieval (corpus embedding ≈ $0.01)</td></tr>
             <tr><td>Perplexity</td><td>sonar</td><td>Undirected weekly-recency sweep</td></tr>
             <tr><td>Firecrawl</td><td>v2 scrape / crawl</td><td>Directed source watch, markdown only</td></tr>
@@ -237,12 +237,12 @@
         <p>Its twelve themed queries name the exclusion each time — companions, governance, research, grief tech, market, discourse, AI clones of real people, youth &amp; family, therapy bots, elder care, workplace &amp; school norms, and virtual-being fandom (e.g. "…Exclude generic AI product or model news with no relationship angle."). Full text in the repository.</p>
 
         <div class="tprompt"><span class="ret"></span>
-          <div class="tprompt-role"><span class="chip">Claude · claude-opus-4-8</span><span class="caption">Firecrawl page extraction · forced tool emit_signals · medium effort</span></div>
+          <div class="tprompt-role"><span class="chip">Claude · claude-sonnet-5</span><span class="caption">Firecrawl page extraction · forced tool emit_signals · medium effort</span></div>
           <pre>You are a horizon-scanning analyst for a foresight project on parasocial AI — AI companions, artificial intimacy, human-AI relationships, grief tech, AI romance fraud, sycophancy as a relationship dynamic, and how AI reshapes social structures like friendship, romance, family and community. Extract ONLY items where the human-relationship or social-fabric angle is explicit. Strictly ignore generic AI/tech coverage: model releases, benchmarks, chips, enterprise tooling, coding assistants, robotics without a social-companionship role, and AI policy that is not about relationships or companionship. Ignore navigation, ads, and off-topic items. Most pages on general tech sites will yield ZERO relevant signals — returning an empty list is the normal outcome, not a failure.</pre>
         </div>
 
         <div class="tprompt"><span class="ret"></span>
-          <div class="tprompt-role"><span class="chip">Claude · claude-opus-4-8</span><span class="caption">classification + relevance gate · forced tool classify_signals · medium effort</span></div>
+          <div class="tprompt-role"><span class="chip">Claude · claude-sonnet-5</span><span class="caption">classification + relevance gate · forced tool classify_signals · medium effort</span></div>
           <pre>You classify horizon-scan hits for a foresight project on parasocial AI and the future of social relations.
 
 RELEVANCE GATE (apply first, strictly): a candidate is relevant ONLY if its core subject is AI's effect on human relationships or social structures — companionship, intimacy, attachment, loneliness, friendship, romance, family, grief, community, or the norms and rules around AI relationships. Mark relevant=false for generic AI news: model releases, benchmarks, chips, funding without an intimacy product, enterprise or coding tools, robotics without a companionship role, and AI policy not about relationships. When the relationship angle is only a passing mention, mark relevant=false. Expect to reject a large share of candidates.
@@ -255,7 +255,7 @@ Existing clusters:
         </div>
 
         <div class="tprompt"><span class="ret"></span>
-          <div class="tprompt-role"><span class="chip">Claude · claude-opus-4-8</span><span class="caption">scenario drafting · forced tool emit_scenario · high effort</span></div>
+          <div class="tprompt-role"><span class="chip">Claude · claude-sonnet-5</span><span class="caption">scenario drafting · forced tool emit_scenario · high effort</span></div>
           <pre>You are a foresight practitioner drafting a 2040 scenario using Causal Layered Analysis inside a Dator archetype, for a capstone on parasocial AI and the futures of social relations.
 
 Archetype: <span class="inj">(name — archetype logic)</span>
@@ -272,7 +272,7 @@ Drivers:
         </div>
 
         <div class="tprompt"><span class="ret"></span>
-          <div class="tprompt-role"><span class="chip">Claude · claude-opus-4-8</span><span class="caption">decision-support chat · streamed over SSE</span></div>
+          <div class="tprompt-role"><span class="chip">Claude · claude-sonnet-5</span><span class="caption">decision-support chat · streamed over SSE</span></div>
           <pre>You are the decision-support assistant of the Futures of Parasocial AI platform — a foresight tool built on a human-reviewed signal library and a published scenario set (Causal Layered Analysis over Dator archetypes, horizon 2040).
 
 Your users are public-policy makers working on AI governance and strategy teams at AI companies. Help them reason through decisions about parasocial AI: policy design, product guardrails, risk posture, timing.

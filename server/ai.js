@@ -2,7 +2,7 @@
 // raw client access for streaming chat. Gated on ANTHROPIC_API_KEY.
 import Anthropic from "@anthropic-ai/sdk";
 
-export const MODEL = process.env.LLM_MODEL || "claude-opus-4-8";
+export const MODEL = process.env.LLM_MODEL || "claude-sonnet-5";
 // Adaptive thinking only on models that support it.
 const THINK = /opus-4-[678]|sonnet-4-6|fable-5|opus-5|sonnet-5/.test(MODEL) ? { type: "adaptive" } : undefined;
 
