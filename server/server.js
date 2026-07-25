@@ -406,6 +406,12 @@ app.get("/signals", (_req, res) => res.sendFile(join(HERE, "public", "index.html
 
 // ---------- boot ----------
 seedIfEmpty();
+// Reconcile runs orphaned by a mid-scan deploy: a process that just booted
+// cannot have a scan in flight, so any row still 'running' is aborted.
+try {
+  const n = d.db.prepare("UPDATE scan_runs SET status = 'aborted', finished_at = COALESCE(finished_at, ?), errors_json = '[\"process restarted mid-run (deploy) — marked aborted at boot\"]' WHERE status = 'running'").run(d.now()).changes;
+  if (n) console.log(`[boot] reconciled ${n} orphaned scan run(s) -> aborted`);
+} catch (e) { console.warn("[boot] scan-run reconciliation failed:", e.message); }
 loadIndex();
 ensureEmbeddings().then(() => ensureScenarioEmbeddings()).catch((e) => console.warn("[boot] embeddings incomplete:", e.message));
 startScheduler();
