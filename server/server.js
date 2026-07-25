@@ -417,18 +417,6 @@ try {
   const n = d.db.prepare("UPDATE scan_runs SET status = 'aborted', finished_at = COALESCE(finished_at, ?), errors_json = '[\"process restarted mid-run (deploy) — marked aborted at boot\"]' WHERE status = 'running'").run(d.now()).changes;
   if (n) console.log(`[boot] reconciled ${n} orphaned scan run(s) -> aborted`);
 } catch (e) { console.warn("[boot] scan-run reconciliation failed:", e.message); }
-// One-shot (2026-07-26): renumber run 20 -> 18 for history continuity after
-// the ghost (18) and errored rerun (19) were removed. Remove after one deploy.
-try {
-  const has20 = d.db.prepare("SELECT 1 FROM scan_runs WHERE id = 20").get();
-  const has18 = d.db.prepare("SELECT 1 FROM scan_runs WHERE id = 18").get();
-  if (has20 && !has18) {
-    d.db.exec("UPDATE scan_runs SET id = 18 WHERE id = 20");
-    d.db.exec("UPDATE signals SET scan_run_id = 18 WHERE scan_run_id IN (19, 20)");
-    d.db.exec("UPDATE sqlite_sequence SET seq = 18 WHERE name = 'scan_runs'");
-    console.log("[boot] renumbered scan run 20 -> 18");
-  }
-} catch (e) { console.warn("[boot] run renumber skipped:", e.message); }
 loadIndex();
 ensureEmbeddings().then(() => ensureScenarioEmbeddings()).catch((e) => console.warn("[boot] embeddings incomplete:", e.message));
 startScheduler();
