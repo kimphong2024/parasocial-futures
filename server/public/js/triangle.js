@@ -413,6 +413,15 @@ function drawWriteup() {
   const sentences = (w.tension || "").split(/(?<=\.)\s+/);
   $("wuLede").textContent = sentences[0] || "";
   $("wuRest").textContent = sentences.slice(1).join(" ");
+  // the scoreboard: numerals scaled by mass share
+  const total = Math.max(1, data.counts.pull + data.counts.push + data.counts.weight);
+  const order = [...CORNERS].sort((a, b) => data.counts[b] - data.counts[a]);
+  $("ttForces").innerHTML = order.map((c) => {
+    const share = data.counts[c] / total;
+    const size = Math.round(44 + share * 130);
+    return `<div class="tf-row"><i style="background:rgb(${COLORS[c]})"></i><b style="font-size:${size}px">${data.counts[c]}</b><span>${esc(NAMES[c])}</span></div>`;
+  }).join("");
+  $("ttRatio").textContent = `the balance of forces · ${order.map((c) => `${c} ${Math.round(data.counts[c] / total * 100)}%`).join(" · ")}`;
   const t = new Date(w.updated_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   $("wuMeta").textContent = `synthesized from ${w.signal_count} classified signals · ${t}`;
   $("wuState").textContent = data.writing ? "a fresh synthesis is generating — this text updates when it lands" : "";

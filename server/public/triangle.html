@@ -59,17 +59,28 @@
         <span class="label">The synthesis · <span id="wuMeta">generating…</span></span>
       </div>
       <p class="caption mb-4">Hover a force — its corner label or legend chip — to slide in that force's synthesis.</p>
-      <div class="tri-tension">
-        <h3 class="tri-tension-title"><span class="mark">THE TENSION</span></h3>
-        <p class="tri-lede" id="wuLede">—</p>
-        <p class="tri-rest" id="wuRest"></p>
+    </section>
+  </main>
+    <section class="tri-tension">
+      <div class="tri-tension-inner">
+        <div class="tri-tension-head">
+          <h3 class="tri-tension-title"><span class="mark">THE</span> <span class="mark">TENSION</span></h3>
+          <span class="tri-tension-ratio" id="ttRatio"></span>
+        </div>
+        <div class="tri-tension-grid">
+          <div class="tri-forces" id="ttForces"></div>
+          <div class="tri-prose">
+            <p class="tri-lede" id="wuLede">—</p>
+            <p class="tri-rest" id="wuRest"></p>
+          </div>
+        </div>
         <div class="tri-tension-foot">
           <button class="tri-resynth" id="resynth">Re-synthesize</button>
           <span class="caption" id="wuState"></span>
         </div>
       </div>
     </section>
-  </main>
+
 
   <aside class="tri-panel" id="triPanel" aria-live="polite"></aside>
   <div class="drawer-backdrop" id="backdrop"></div>
