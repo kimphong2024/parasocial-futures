@@ -4,6 +4,7 @@
 // The API self-heals on read and the page polls while work is in flight.
 import { api, esc, fmtDate } from "./api.js";
 import { renderNav } from "./nav.js";
+import { noteCard, wireNoteCard } from "./signal-note.js";
 
 const $ = (id) => document.getElementById(id);
 const CORNERS = ["pull", "push", "weight"];
@@ -311,7 +312,9 @@ async function openSignal(id, sig) {
     <h4 class="mt-4">Why this force</h4>
     <p class="caption" style="line-height:1.7">${esc(sig.triangle_reasoning || "")}</p>
     ${s.url ? `<p class="mt-4"><a href="${esc(s.url)}" target="_blank" rel="noopener">Read the source →</a></p>` : ""}
-    ${s.source || s.date ? `<p class="caption mt-2">${esc(s.source || "")}${s.date ? " · " + esc(fmtDate(s.date)) : ""}</p>` : ""}`;
+    ${s.source || s.date ? `<p class="caption mt-2">${esc(s.source || "")}${s.date ? " · " + esc(fmtDate(s.date)) : ""}</p>` : ""}
+    ${noteCard(s)}`;
+  wireNoteCard($("drawer"));
   document.body.classList.add("drawer-open");
   $("drawerClose").onclick = closeDrawer;
 }

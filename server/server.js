@@ -137,6 +137,16 @@ app.get("/api/search", async (req, res) => {
   }
 });
 
+// Field notes: a free-text card the reviewer can attach to any signal.
+app.patch("/api/signals/:id/note", (req, res) => {
+  const row = d.getSignal.get(+req.params.id);
+  if (!row) return res.status(404).json({ error: "signal not found" });
+  const note = String(req.body?.note ?? "").trim().slice(0, 4000);
+  const ts = note ? d.now() : null;
+  d.setSignalNote.run(note, ts, row.id);
+  res.json({ ok: true, note, note_updated_at: ts });
+});
+
 app.get("/api/signals/:id", (req, res) => {
   const s = d.getSignal.get(+req.params.id);
   if (!s) return res.status(404).json({ error: "not found" });

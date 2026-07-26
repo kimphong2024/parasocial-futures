@@ -6,6 +6,7 @@
 // Canvas-rendered, painter-sorted by depth. Modes: whole / bridges / kinship.
 import { api, esc } from "./api.js";
 import { renderNav } from "./nav.js";
+import { noteCard, wireNoteCard } from "./signal-note.js";
 
 const $ = (id) => document.getElementById(id);
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -193,10 +194,12 @@ async function openPanel(n) {
     <h4>${esc(s.title)}</h4>
     <p class="caption" style="line-height:1.6">${esc(s.summary)}</p>
     ${s.horizon_reasoning ? `<p class="caption mt-2" style="color:#6B6852">${esc(s.horizon_reasoning)}</p>` : ""}
+    ${noteCard(s)}
     <p class="mt-2"><a href="${esc(s.url)}" target="_blank" rel="noopener" class="caption">${esc(s.source || "source")} ↗</a></p>
     ${s.similar?.length ? `<p class="caption mt-4"><strong>Nearest in the field</strong></p>` +
       s.similar.map((x) => `<p class="caption" style="margin-top:6px"><a data-jump="${x.id}" style="cursor:pointer">${esc(x.title)}</a> <span style="color:#6B6852">cos ${x.score}</span></p>`).join("") : ""}`;
   panel.style.display = "block";
+  wireNoteCard(panel);
 }
 panel.addEventListener("click", (e) => {
   if (e.target.closest(".close")) { panel.style.display = "none"; selected = null; return; }

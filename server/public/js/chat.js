@@ -1,5 +1,6 @@
 import { api, esc } from "./api.js";
 import { renderNav } from "./nav.js";
+import { noteCard, wireNoteCard } from "./signal-note.js";
 
 const $ = (id) => document.getElementById(id);
 const messages = []; // client-side history, sent with each request
@@ -93,7 +94,9 @@ document.addEventListener("click", async (e) => {
       <div class="citation mt-4">
         <div class="quote">${esc(s.source || "")} · ${s.year || s.date || ""}</div>
         <div class="source"><a href="${esc(s.url)}" target="_blank" rel="noopener">source link</a></div>
-      </div>`;
+      </div>
+      ${noteCard(s)}`;
+    wireNoteCard($("drawer"));
     document.body.classList.add("drawer-open");
     $("dclose").addEventListener("click", () => document.body.classList.remove("drawer-open"));
     return;

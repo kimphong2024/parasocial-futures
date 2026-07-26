@@ -156,6 +156,8 @@ try { db.exec("ALTER TABLE signals ADD COLUMN horizon_reasoning TEXT NOT NULL DE
 try { db.exec("ALTER TABLE signals ADD COLUMN horizon_judged_at TEXT"); } catch { /* already migrated */ }
 try { db.exec("ALTER TABLE signals ADD COLUMN triangle TEXT"); } catch { /* already migrated */ }
 try { db.exec("ALTER TABLE signals ADD COLUMN triangle_reasoning TEXT NOT NULL DEFAULT ''"); } catch { /* already migrated */ }
+try { db.exec("ALTER TABLE signals ADD COLUMN note TEXT NOT NULL DEFAULT ''"); } catch { /* already migrated */ }
+try { db.exec("ALTER TABLE signals ADD COLUMN note_updated_at TEXT"); } catch { /* already migrated */ }
 
 // One-time data migration: seed the evidence grouping for the shipped drivers
 // from the clusters their rationales already name. Runs only while every
@@ -189,6 +191,7 @@ export const countByStatus = db.prepare("SELECT COUNT(*) AS n FROM signals WHERE
 export const setSignalStatus = db.prepare("UPDATE signals SET status = ?, reviewed_at = ? WHERE id = ?");
 export const setSignalHorizon = db.prepare("UPDATE signals SET horizon = ?, horizon_reasoning = ?, horizon_judged_at = ? WHERE id = ?");
 export const approvedSignals = db.prepare("SELECT id, title, summary, cluster, signal_type, date, year, horizon FROM signals WHERE status = 'approved' ORDER BY id");
+export const setSignalNote = db.prepare("UPDATE signals SET note = ?, note_updated_at = ? WHERE id = ?");
 export const setSignalTriangle = db.prepare("UPDATE signals SET triangle = ?, triangle_reasoning = ? WHERE id = ?");
 export const triangleSignals = db.prepare("SELECT id, title, cluster, signal_type, urgency, horizon, triangle, triangle_reasoning FROM signals WHERE status = 'approved' ORDER BY id");
 export const triangleUnclassified = db.prepare("SELECT id, title, summary, cluster, signal_type FROM signals WHERE status = 'approved' AND (triangle IS NULL OR triangle = '') ORDER BY id");

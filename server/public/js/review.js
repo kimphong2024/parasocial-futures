@@ -1,5 +1,6 @@
 import { api, esc, fmtDate } from "./api.js";
 import { renderNav } from "./nav.js";
+import { noteCard, wireNoteCard } from "./signal-note.js";
 
 const $ = (id) => document.getElementById(id);
 const TYPES = ["discourse", "research", "market", "regulatory", "behavioral", "crisis/legal"];
@@ -33,6 +34,7 @@ function pendingCard(s) {
       <div class="source">${esc(s.source || "unknown source")}</div>
     </div>
     ${s.nearest ? `<p class="caption mt-2">Nearest existing signal (cosine ${s.nearest.score}): &ldquo;${esc(s.nearest.title)}&rdquo; — approve only if this adds something new.</p>` : ""}
+    ${noteCard(s)}
     <div class="review-actions">
       <button class="btn btn-sm" data-act="approve">Approve</button>
       <button class="btn-danger btn btn-sm" data-act="reject">Reject</button>
@@ -102,6 +104,7 @@ async function load() {
   $("tab-signals").innerHTML = queue.signals.length
     ? queue.signals.map(pendingCard).join("")
     : `<div class="empty-note">No scan hits waiting. Run a scan, or rest easy — the library is current.</div>`;
+  $("tab-signals").querySelectorAll(".review-card").forEach(wireNoteCard);
   $("tab-drafts").innerHTML = queue.scenario_drafts.length
     ? queue.scenario_drafts.map(draftCard).join("")
     : `<div class="empty-note">No scenario drafts waiting. Draft one from the Scenarios page.</div>`;
