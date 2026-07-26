@@ -129,14 +129,35 @@ async function openSignal(id) {
   $("drawerClose").onclick = closeDrawer;
 }
 
-// column filters + scroll-end cue
+// column filters + the explicit scroll control
 function updateEndCue(col) {
   const b = col.querySelector(".tcfg-body");
-  col.classList.toggle("at-end", b.scrollTop + b.clientHeight >= b.scrollHeight - 6);
+  const btn = col.querySelector(".tcfg-more");
+  const atEnd = b.scrollTop + b.clientHeight >= b.scrollHeight - 6;
+  col.classList.toggle("at-end", atEnd);
+  if (!btn) return;
+  const rows = b.querySelectorAll(".tcfg-row");
+  if (b.scrollHeight <= b.clientHeight + 6) { btn.hidden = true; return; }
+  btn.hidden = false;
+  if (atEnd) {
+    btn.textContent = "↑ Back to top";
+    btn.setAttribute("aria-label", "Scroll this section back to the top");
+  } else {
+    let below = 0;
+    const cut = b.scrollTop + b.clientHeight;
+    for (const r of rows) if (r.offsetTop >= cut) below++;
+    btn.textContent = `↓ ${below} more below — scroll or click`;
+    btn.setAttribute("aria-label", `${below} more signals below; activate to scroll down`);
+  }
 }
 for (const col of document.querySelectorAll(".tcfg-col")) {
+  const body = col.querySelector(".tcfg-body");
   col.querySelector("input").addEventListener("input", () => renderColumn(col.dataset.corner));
-  col.querySelector(".tcfg-body").addEventListener("scroll", () => updateEndCue(col), { passive: true });
+  body.addEventListener("scroll", () => requestAnimationFrame(() => updateEndCue(col)), { passive: true });
+  col.querySelector(".tcfg-more").addEventListener("click", () => {
+    const atEnd = body.scrollTop + body.clientHeight >= body.scrollHeight - 6;
+    body.scrollTo({ top: atEnd ? 0 : body.scrollTop + body.clientHeight * 0.85, behavior: "smooth" });
+  });
 }
 
 // ---------- load ----------
