@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Futures Triangle — Throuple with AI</title>
+  <meta name="description" content="The signal library read through Inayatullah's Futures Triangle: the pull of the future, the push of the present, the weight of history — classified live, synthesized live.">
+  <link rel="icon" href="/favicon.svg">
+  <meta name="pinterest" content="nopin">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/fib.css">
+  <link rel="stylesheet" href="/css/motion.css">
+  <link rel="stylesheet" href="/css/triangle.css">
+</head>
+<body>
+  <main class="container">
+    <div class="page-head">
+      <span class="label">Foresight framework · Inayatullah 2008</span>
+      <h2>The Futures Triangle</h2>
+      <p class="subtitle">Every approved signal, judged for the force it exerts on 2040: the <strong>pull</strong> of imagined futures, the <strong>push</strong> of measured momentum, or the <strong>weight</strong> of barriers and harms. Classification and synthesis update as the library grows — new signals are judged automatically, and the write-up regenerates when the composition moves.</p>
+      <div class="divider mt-4"></div>
+    </div>
+
+    <div class="tri-status caption" id="triStatus" hidden></div>
+
+    <section class="card chart-block tri-stage">
+      <svg id="triSvg" viewBox="0 0 900 640" role="group" aria-label="The Futures Triangle: signals placed by the force they exert">
+        <polygon class="tri-frame" points="450,60 90,560 810,560"/>
+        <g id="triDots"></g>
+        <g class="tri-corner" data-corner="pull" role="button" tabindex="0" aria-label="Pull of the future — open signal list">
+          <text class="tri-count" x="450" y="40" text-anchor="middle">0</text>
+          <text class="tri-name" x="450" y="88" text-anchor="middle">PULL OF THE FUTURE</text>
+        </g>
+        <g class="tri-corner" data-corner="push" role="button" tabindex="0" aria-label="Push of the present — open signal list">
+          <text class="tri-count" x="90" y="606" text-anchor="middle">0</text>
+          <text class="tri-name" x="90" y="630" text-anchor="middle">PUSH OF THE PRESENT</text>
+        </g>
+        <g class="tri-corner" data-corner="weight" role="button" tabindex="0" aria-label="Weight of history — open signal list">
+          <text class="tri-count" x="810" y="606" text-anchor="middle">0</text>
+          <text class="tri-name" x="810" y="630" text-anchor="middle">WEIGHT OF HISTORY</text>
+        </g>
+      </svg>
+      <div class="tri-tip" id="triTip" hidden></div>
+      <p class="caption tri-hint">Each dot is one approved signal, placed by its judged force. Hover a dot; click a corner to read that force's signals and reasoning.</p>
+    </section>
+
+    <section class="tri-writeup" id="triWriteup">
+      <div class="page-head" style="margin-top:0">
+        <span class="label">The synthesis · <span id="wuMeta">generating…</span></span>
+      </div>
+      <div class="tri-cards">
+        <div class="card tri-card" data-corner="pull"><h4>The pull of the future</h4><p id="wuPull">—</p></div>
+        <div class="card tri-card" data-corner="push"><h4>The push of the present</h4><p id="wuPush">—</p></div>
+        <div class="card tri-card" data-corner="weight"><h4>The weight of history</h4><p id="wuWeight">—</p></div>
+      </div>
+      <div class="card chart-block tri-tension">
+        <h4>The tension</h4>
+        <p id="wuTension">—</p>
+        <div class="mt-4" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" id="resynth">Re-synthesize</button>
+          <span class="caption" id="wuState"></span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="drawer-backdrop" id="backdrop"></div>
+  <aside class="drawer" id="drawer" data-lenis-prevent></aside>
+
+  <script type="module" src="/js/triangle.js"></script>
+  <script src="/js/vendor/lenis.min.js"></script>
+  <script type="module" src="/js/motion.js"></script>
+</body>
+</html>

@@ -11,6 +11,7 @@ import { embedQuery, voyageEnabled } from "./voyage.js";
 import { llmEnabled } from "./ai.js";
 import { runScan, scanRunning, scanStep, scanSettings, DEFAULT_GATE } from "./scan.js";
 import { judgeHorizons, horizonStatus } from "./horizons.js";
+import { classifyTriangle, classifyTriangleIfNeeded, triangleStatus, getWriteup, generateWriteup, regenerateWriteupIfStale, writeupStatus } from "./triangle.js";
 import { startScheduler, scheduleInfo } from "./scheduler.js";
 import { ARCHETYPES, draftScenario, embedScenario } from "./scenarios.js";
 import { simulate, previewDistribution, makeSampler } from "./montecarlo.js";
@@ -187,6 +188,41 @@ app.post("/api/horizons/judge", (_req, res) => {
   res.json({ ok: true, started: true });
 });
 app.get("/api/horizons/status", (_req, res) => res.json(horizonStatus()));
+
+// ---------- futures triangle ----------
+// The page's one-stop payload. Reading it also self-heals: unclassified
+// approved signals kick an incremental classify, and a stale write-up kicks
+// a background regeneration — both fire-and-forget.
+app.get("/api/triangle", (_req, res) => {
+  const rows = d.triangleSignals.all();
+  const corners = { pull: [], push: [], weight: [] };
+  for (const r of rows) if (corners[r.triangle]) corners[r.triangle].push(r);
+  const unclassified = rows.length - corners.pull.length - corners.push.length - corners.weight.length;
+  const kicked = classifyTriangleIfNeeded();
+  const writeupKicked = !kicked && regenerateWriteupIfStale();
+  res.json({
+    counts: { pull: corners.pull.length, push: corners.push.length, weight: corners.weight.length },
+    corners,
+    unclassified,
+    total: rows.length,
+    writeup: getWriteup(),
+    classifying: triangleStatus().running || kicked,
+    writing: writeupStatus().writing || writeupKicked,
+  });
+});
+app.get("/api/triangle/status", (_req, res) => res.json({ ...triangleStatus(), ...writeupStatus() }));
+app.post("/api/triangle/classify", (req, res) => {
+  if (triangleStatus().running) return res.status(409).json({ error: "triangle classification already running" });
+  classifyTriangle({ onlyMissing: req.body?.onlyMissing !== false })
+    .then(() => regenerateWriteupIfStale())
+    .catch((e) => console.error("[triangle] classify failed:", e.message));
+  res.json({ ok: true, started: true });
+});
+app.post("/api/triangle/writeup", (_req, res) => {
+  if (writeupStatus().writing) return res.status(409).json({ error: "write-up already generating" });
+  generateWriteup().catch((e) => console.error("[triangle] writeup failed:", e.message));
+  res.json({ ok: true, started: true });
+});
 
 // ---------- scanning ----------
 app.post("/api/scan/run", (_req, res) => {
@@ -406,7 +442,7 @@ app.post("/api/chat", chatHandler);
 // ---------- static frontend ----------
 app.use(express.static(join(HERE, "public")));
 app.get("/signals", (_req, res) => res.sendFile(join(HERE, "public", "index.html")));
-["review", "scenarios", "scenario", "scenario-config", "simulation", "chat", "sources", "drivers", "driver-config", "map", "artifacts", "present"].forEach((p) =>
+["review", "scenarios", "scenario", "scenario-config", "simulation", "chat", "sources", "drivers", "driver-config", "map", "artifacts", "present", "triangle"].forEach((p) =>
   app.get("/" + p, (_req, res) => res.sendFile(join(HERE, "public", p + ".html"))));
 
 // ---------- boot ----------

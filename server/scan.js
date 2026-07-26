@@ -2,6 +2,7 @@
 // classification against the existing taxonomy → URL + embedding dedup →
 // insert survivors as status 'pending' for human review. Nothing publishes
 // without approval. Each step is fenced so one failure never kills the run.
+import { classifyTriangleIfNeeded } from "./triangle.js";
 import { db, now, insertScanRun, finishScanRun, getScanRun, insertSignal, getSignalByUrl, enabledSources, enabledThemes, touchSource, getSetting } from "./db.js";
 import { perplexityScan, DEFAULT_THEMES } from "./perplexity.js";
 import { firecrawlScan, DEFAULT_FOLLOW_LIMIT } from "./firecrawl.js";
@@ -212,6 +213,7 @@ export async function runScan(trigger = "manual") {
     finishScanRun.run(now(), "failed", pplxCount, fcCount, newPending, dupUrl, dupEmb, rejectedRel, JSON.stringify(errors), JSON.stringify(detail), runId);
   } finally {
     running = false;
+    try { classifyTriangleIfNeeded(); } catch { /* non-fatal */ }
     step = null;
   }
   return getScanRun.get(runId);

@@ -1,0 +1,86 @@
+/* ============================================================
+   Futures Triangle — the library read as three forces. One big
+   interactive figure, then the live synthesis beneath it.
+   ============================================================ */
+
+.tri-stage { position: relative; }
+#triSvg { width: 100%; height: auto; display: block; }
+
+.tri-frame {
+  fill: var(--cream, #F2E9D4);
+  stroke: #E2DBC2;
+  stroke-width: 2;
+}
+.tri-dot {
+  opacity: 0.85;
+  transition: r 0.15s ease;
+  cursor: default;
+}
+.tri-dot:hover { opacity: 1; }
+
+.tri-corner { cursor: pointer; }
+.tri-corner .tri-count {
+  font-family: var(--font-display);
+  font-size: 44px;
+  fill: var(--ink, #131309);
+}
+.tri-corner .tri-name {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  letter-spacing: 2px;
+  fill: var(--gold-text, #7E6721);
+}
+.tri-corner:hover .tri-name, .tri-corner:focus-visible .tri-name { fill: var(--ink, #131309); }
+.tri-corner:focus-visible { outline: 2px solid var(--gold, #E1B83B); outline-offset: 4px; }
+
+.tri-tip {
+  position: absolute;
+  max-width: 300px;
+  background: var(--paperWhite, #FFFEF9);
+  border: 1px solid #D8D2BC;
+  box-shadow: 0 6px 22px rgba(19, 19, 9, 0.14);
+  border-radius: var(--r-sm, 8px);
+  padding: 10px 13px;
+  font-size: 12.5px; line-height: 1.5;
+  pointer-events: none;
+  z-index: 5;
+}
+.tri-tip b { display: block; margin-bottom: 3px; }
+.tri-tip span { color: var(--textMid, #656B5E); font-size: 11.5px; }
+
+.tri-hint { margin-top: 12px; }
+.tri-status[hidden] { display: none; }
+.tri-status { margin-bottom: 14px; color: var(--gold-text, #7E6721); display: flex; align-items: center; gap: 8px; }
+.tri-status::before { content: ""; width: 8px; height: 8px; border-radius: 999px; background: var(--gold, #E1B83B); animation: tri-pulse 1.4s ease-in-out infinite; }
+@keyframes tri-pulse { 50% { opacity: 0.3; } }
+
+/* the synthesis */
+.tri-writeup { margin-top: clamp(28px, 5vh, 48px); }
+.tri-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.tri-card { padding: 22px; }
+.tri-card h4 { display: flex; align-items: center; gap: 10px; }
+.tri-card h4::before { content: ""; width: 10px; height: 10px; flex: 0 0 auto; }
+.tri-card[data-corner="pull"] h4::before { background: #E1B83B; }
+.tri-card[data-corner="push"] h4::before { background: #4E5A2B; }
+.tri-card[data-corner="weight"] h4::before { background: #AC7222; }
+.tri-card p { font-size: 14px; line-height: 1.75; color: var(--textMid, #656B5E); margin-top: 10px; }
+.tri-tension p { font-size: 15.5px; line-height: 1.8; max-width: 76ch; }
+
+/* corner drawer items */
+.tri-item { padding: 14px 0; border-bottom: 1px solid var(--borderLight, #EDEAE0); }
+.tri-item b { font-size: 14px; line-height: 1.4; display: block; }
+.tri-item .caption { display: block; margin-top: 2px; }
+.tri-item p { font-size: 12.5px; line-height: 1.6; color: var(--textMid, #656B5E); margin-top: 6px; }
+
+@media (max-width: 700px) {
+  .tri-corner .tri-count { font-size: 54px; }
+  .tri-corner .tri-name { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tri-status::before { animation: none; }
+}
