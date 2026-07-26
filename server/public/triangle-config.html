@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Triangle configure — Throuple with AI</title>
+  <meta name="description" content="Human override for the Futures Triangle: drag signals between pull, push and weight to reclassify them.">
+  <link rel="icon" href="/favicon.svg">
+  <meta name="pinterest" content="nopin">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/fib.css">
+  <link rel="stylesheet" href="/css/motion.css">
+  <link rel="stylesheet" href="/css/triangle.css">
+</head>
+<body>
+  <main class="container">
+    <div class="page-head">
+      <span class="label">Futures Triangle · human override</span>
+      <h2>Triangle configure</h2>
+      <p class="subtitle">The machine judges each signal's force; you have the last word. Drag a signal into another section — or use its arrows — to reclassify it. Moves take effect immediately: the triangle reshapes, the counts shift, and the synthesis regenerates. The nightly self-heal never touches your moves; only a full re-audit from the Triangle page would re-judge them.</p>
+      <div class="divider mt-4"></div>
+    </div>
+
+    <div class="tcfg-board" id="board">
+      <section class="tcfg-col" data-corner="pull">
+        <header><i style="background:#E1B83B"></i><h4>Pull of the future</h4><b class="tcfg-n">0</b></header>
+        <input type="search" placeholder="Filter…" aria-label="Filter pull signals">
+        <div class="tcfg-body" data-drop="pull"></div>
+      </section>
+      <section class="tcfg-col" data-corner="push">
+        <header><i style="background:#4E5A2B"></i><h4>Push of the present</h4><b class="tcfg-n">0</b></header>
+        <input type="search" placeholder="Filter…" aria-label="Filter push signals">
+        <div class="tcfg-body" data-drop="push"></div>
+      </section>
+      <section class="tcfg-col" data-corner="weight">
+        <header><i style="background:#AC7222"></i><h4>Weight of history</h4><b class="tcfg-n">0</b></header>
+        <input type="search" placeholder="Filter…" aria-label="Filter weight signals">
+        <div class="tcfg-body" data-drop="weight"></div>
+      </section>
+    </div>
+    <p class="caption mt-4" id="tcfgState"></p>
+  </main>
+
+  <div class="drawer-backdrop" id="backdrop"></div>
+  <aside class="drawer" id="drawer" data-lenis-prevent></aside>
+
+  <script type="module" src="/js/triangle-config.js"></script>
+  <script src="/js/vendor/lenis.min.js"></script>
+  <script type="module" src="/js/motion.js"></script>
+</body>
+</html>

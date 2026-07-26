@@ -218,6 +218,19 @@ app.post("/api/triangle/classify", (req, res) => {
     .catch((e) => console.error("[triangle] classify failed:", e.message));
   res.json({ ok: true, started: true });
 });
+// Human override: drag a signal to a different force on the configure board.
+app.patch("/api/triangle/signals/:id", (req, res) => {
+  const corner = req.body?.triangle;
+  if (!["pull", "push", "weight"].includes(corner)) return res.status(400).json({ error: "triangle must be pull, push or weight" });
+  const row = d.getSignal.get(+req.params.id);
+  if (!row || row.status !== "approved") return res.status(404).json({ error: "approved signal not found" });
+  const old = row.triangle || "unclassified";
+  if (old === corner) return res.json({ ok: true, unchanged: true });
+  d.setSignalTriangle.run(corner, `Reclassified ${old} → ${corner} by the reviewer.`, row.id);
+  regenerateWriteupIfStale();
+  res.json({ ok: true, from: old, to: corner });
+});
+
 app.post("/api/triangle/writeup", (_req, res) => {
   if (writeupStatus().writing) return res.status(409).json({ error: "write-up already generating" });
   generateWriteup().catch((e) => console.error("[triangle] writeup failed:", e.message));
@@ -442,7 +455,7 @@ app.post("/api/chat", chatHandler);
 // ---------- static frontend ----------
 app.use(express.static(join(HERE, "public")));
 app.get("/signals", (_req, res) => res.sendFile(join(HERE, "public", "index.html")));
-["review", "scenarios", "scenario", "scenario-config", "simulation", "chat", "sources", "drivers", "driver-config", "map", "artifacts", "present", "triangle"].forEach((p) =>
+["review", "scenarios", "scenario", "scenario-config", "simulation", "chat", "sources", "drivers", "driver-config", "map", "artifacts", "present", "triangle", "triangle-config"].forEach((p) =>
   app.get("/" + p, (_req, res) => res.sendFile(join(HERE, "public", p + ".html"))));
 
 // ---------- boot ----------
