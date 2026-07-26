@@ -44,7 +44,10 @@
 
 .tri-tip {
   position: absolute;
-  max-width: 300px;
+  max-width: 310px;
+  display: flex; gap: 9px; align-items: flex-start;
+  opacity: 0; transform: translateY(4px);
+  transition: opacity 0.14s ease, transform 0.14s ease;
   background: var(--paperWhite, #FFFEF9);
   border: 1px solid #D8D2BC;
   box-shadow: 0 6px 22px rgba(19, 19, 9, 0.14);
@@ -54,14 +57,48 @@
   pointer-events: none;
   z-index: 5;
 }
+.tri-tip.on { opacity: 1; transform: none; }
+.tri-tip i { width: 9px; height: 9px; border-radius: 999px; flex: 0 0 auto; margin-top: 4px; }
 .tri-tip b { display: block; margin-bottom: 3px; }
 .tri-tip span { color: var(--textMid, #656B5E); font-size: 11.5px; }
+@media (prefers-reduced-motion: reduce) { .tri-tip { transition: none; } .tri-chip { transition: none; } }
 
 .tri-hint { margin-top: 12px; }
 .tri-status[hidden] { display: none; }
 .tri-status { margin-bottom: 14px; color: var(--gold-text, #7E6721); display: flex; align-items: center; gap: 8px; }
 .tri-status::before { content: ""; width: 8px; height: 8px; border-radius: 999px; background: var(--gold, #E1B83B); animation: tri-pulse 1.4s ease-in-out infinite; }
 @keyframes tri-pulse { 50% { opacity: 0.3; } }
+
+/* filters + legend */
+.tri-filters { margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 700px) {
+  .tri-filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
+  .tri-filters::-webkit-scrollbar { display: none; }
+  .tri-filters .pill { flex: 0 0 auto; white-space: nowrap; }
+}
+.tri-legend { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.tri-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid #E2DBC2; border-radius: 999px;
+  background: var(--paperWhite, #FFFEF9);
+  padding: 8px 14px;
+  font-size: 12.5px; font-weight: 600; color: var(--ink, #131309);
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tri-chip:hover { border-color: var(--ink, #131309); transform: translateY(-1px); }
+.tri-chip i { width: 10px; height: 10px; border-radius: 999px; }
+.tri-chip b { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--textMid, #656B5E); }
+.tri-legend .tri-hint { margin: 0 0 0 auto; max-width: 46ch; text-align: right; }
+@media (max-width: 900px) { .tri-legend .tri-hint { margin-left: 0; text-align: left; } }
+
+/* the tension carries the house marker */
+.tri-tension-title .mark {
+  background: linear-gradient(transparent 52%, var(--gold, #E1B83B) 52%);
+  padding-inline: 0.1em;
+}
+.tri-card h4 { justify-content: space-between; }
+.tri-card-n { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 1px; color: var(--textMid, #656B5E); font-weight: 400; }
 
 /* the synthesis */
 .tri-writeup { margin-top: clamp(28px, 5vh, 48px); }

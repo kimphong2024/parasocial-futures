@@ -22,6 +22,7 @@
     </div>
 
     <div class="tri-status caption" id="triStatus" hidden></div>
+    <div class="filter-bar tri-filters" id="triFilters"></div>
 
     <section class="card chart-block tri-stage">
       <div class="tri-wrap" id="triWrap">
@@ -46,7 +47,12 @@
         <canvas id="triCanvas" aria-hidden="true"></canvas>
         <div class="tri-tip" id="triTip" hidden></div>
       </div>
-      <p class="caption tri-hint">Each dot is one approved signal, drifting near the force it exerts; a corner's reach grows with the mass of evidence behind it. Hover a dot; click a corner to read its signals and reasoning.</p>
+      <div class="tri-legend">
+        <button class="tri-chip" data-corner="pull"><i style="background:#E1B83B"></i>Pull of the future <b>0</b></button>
+        <button class="tri-chip" data-corner="push"><i style="background:#4E5A2B"></i>Push of the present <b>0</b></button>
+        <button class="tri-chip" data-corner="weight"><i style="background:#AC7222"></i>Weight of history <b>0</b></button>
+        <span class="caption tri-hint">Dots drift near the force they exert; the pointer parts the field. Hover a dot, click it to read the signal; corners and chips open each cohort.</span>
+      </div>
     </section>
 
     <section class="tri-writeup" id="triWriteup">
@@ -54,12 +60,12 @@
         <span class="label">The synthesis · <span id="wuMeta">generating…</span></span>
       </div>
       <div class="tri-cards">
-        <div class="card tri-card" data-corner="pull"><h4>The pull of the future</h4><p id="wuPull">—</p></div>
-        <div class="card tri-card" data-corner="push"><h4>The push of the present</h4><p id="wuPush">—</p></div>
-        <div class="card tri-card" data-corner="weight"><h4>The weight of history</h4><p id="wuWeight">—</p></div>
+        <div class="card tri-card" data-corner="pull"><h4>The pull of the future <span class="tri-card-n"></span></h4><p id="wuPull">—</p></div>
+        <div class="card tri-card" data-corner="push"><h4>The push of the present <span class="tri-card-n"></span></h4><p id="wuPush">—</p></div>
+        <div class="card tri-card" data-corner="weight"><h4>The weight of history <span class="tri-card-n"></span></h4><p id="wuWeight">—</p></div>
       </div>
       <div class="card chart-block tri-tension">
-        <h4>The tension</h4>
+        <h4 class="tri-tension-title"><span class="mark">The tension</span></h4>
         <p id="wuTension">—</p>
         <div class="mt-4" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
           <button class="btn btn-secondary btn-sm" id="resynth">Re-synthesize</button>
