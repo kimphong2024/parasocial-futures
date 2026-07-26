@@ -24,24 +24,29 @@
     <div class="tri-status caption" id="triStatus" hidden></div>
 
     <section class="card chart-block tri-stage">
-      <svg id="triSvg" viewBox="0 0 900 640" role="group" aria-label="The Futures Triangle: signals placed by the force they exert">
-        <polygon class="tri-frame" points="450,60 90,560 810,560"/>
-        <g id="triDots"></g>
-        <g class="tri-corner" data-corner="pull" role="button" tabindex="0" aria-label="Pull of the future — open signal list">
-          <text class="tri-count" x="450" y="40" text-anchor="middle">0</text>
-          <text class="tri-name" x="450" y="88" text-anchor="middle">PULL OF THE FUTURE</text>
-        </g>
-        <g class="tri-corner" data-corner="push" role="button" tabindex="0" aria-label="Push of the present — open signal list">
-          <text class="tri-count" x="90" y="606" text-anchor="middle">0</text>
-          <text class="tri-name" x="90" y="630" text-anchor="middle">PUSH OF THE PRESENT</text>
-        </g>
-        <g class="tri-corner" data-corner="weight" role="button" tabindex="0" aria-label="Weight of history — open signal list">
-          <text class="tri-count" x="810" y="606" text-anchor="middle">0</text>
-          <text class="tri-name" x="810" y="630" text-anchor="middle">WEIGHT OF HISTORY</text>
-        </g>
-      </svg>
-      <div class="tri-tip" id="triTip" hidden></div>
-      <p class="caption tri-hint">Each dot is one approved signal, placed by its judged force. Hover a dot; click a corner to read that force's signals and reasoning.</p>
+      <div class="tri-wrap" id="triWrap">
+        <svg id="triSvg" viewBox="0 0 900 660" role="group" aria-label="The Futures Triangle: signals placed by the force they exert; corner distance reflects signal mass">
+          <polygon class="tri-frame" id="triFrame" points="450,80 110,560 790,560"/>
+          <g class="tri-corner" data-corner="pull" role="button" tabindex="0" aria-label="Pull of the future — open signal list">
+            <circle class="tri-hit" cx="450" cy="80" r="64"/>
+            <text class="tri-count" x="450" y="60" text-anchor="middle">0</text>
+            <text class="tri-name" x="450" y="104" text-anchor="middle">PULL OF THE FUTURE</text>
+          </g>
+          <g class="tri-corner" data-corner="push" role="button" tabindex="0" aria-label="Push of the present — open signal list">
+            <circle class="tri-hit" cx="110" cy="560" r="64"/>
+            <text class="tri-count" x="110" y="606" text-anchor="middle">0</text>
+            <text class="tri-name" x="110" y="630" text-anchor="middle">PUSH OF THE PRESENT</text>
+          </g>
+          <g class="tri-corner" data-corner="weight" role="button" tabindex="0" aria-label="Weight of history — open signal list">
+            <circle class="tri-hit" cx="790" cy="560" r="64"/>
+            <text class="tri-count" x="790" y="606" text-anchor="middle">0</text>
+            <text class="tri-name" x="790" y="630" text-anchor="middle">WEIGHT OF HISTORY</text>
+          </g>
+        </svg>
+        <canvas id="triCanvas" aria-hidden="true"></canvas>
+        <div class="tri-tip" id="triTip" hidden></div>
+      </div>
+      <p class="caption tri-hint">Each dot is one approved signal, drifting near the force it exerts; a corner's reach grows with the mass of evidence behind it. Hover a dot; click a corner to read its signals and reasoning.</p>
     </section>
 
     <section class="tri-writeup" id="triWriteup">
