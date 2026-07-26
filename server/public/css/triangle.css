@@ -247,12 +247,26 @@
   align-items: start;
 }
 .tcfg-col {
+  position: relative;
   background: var(--cream, #F2E9D4);
   border-radius: 16px;
   padding: 16px;
   border: 2px dashed transparent;
   transition: border-color 0.2s ease, background 0.2s ease;
 }
+/* more-below cue: fades out when the column is scrolled to its end */
+.tcfg-col::after {
+  content: "";
+  position: absolute;
+  left: 10px; right: 10px; bottom: 10px;
+  height: 44px;
+  border-radius: 0 0 12px 12px;
+  background: linear-gradient(rgba(242, 233, 212, 0), var(--cream, #F2E9D4) 78%);
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.25s ease;
+}
+.tcfg-col.at-end::after { opacity: 0; }
 .tcfg-col.dropping { border-color: var(--gold, #E1B83B); background: #EFE4C6; }
 .tcfg-col header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .tcfg-col header i { width: 11px; height: 11px; flex: 0 0 auto; }
@@ -265,7 +279,18 @@
   padding: 8px 14px; font-size: 12.5px;
   margin-bottom: 10px;
 }
-.tcfg-body { max-height: 62vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.tcfg-body {
+  max-height: 62vh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 8px;
+  padding-right: 6px;
+  padding-bottom: 30px;
+  scrollbar-width: thin;
+  scrollbar-color: #C2B583 transparent;
+}
+.tcfg-body::-webkit-scrollbar { width: 8px; }
+.tcfg-body::-webkit-scrollbar-track { background: transparent; }
+.tcfg-body::-webkit-scrollbar-thumb { background: #C2B583; border-radius: 999px; }
+.tcfg-body::-webkit-scrollbar-thumb:hover { background: var(--gold-text, #7E6721); }
 .tcfg-row {
   display: flex; align-items: center; gap: 10px;
   background: var(--paperWhite, #FFFEF9);

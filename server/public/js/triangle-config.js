@@ -33,6 +33,7 @@ function renderColumn(corner) {
     .filter((s) => !q || s.title.toLowerCase().includes(q) || (s.cluster || "").toLowerCase().includes(q));
   col.querySelector(".tcfg-body").innerHTML = list.map(row).join("") || `<p class="caption tcfg-empty">No signals${q ? " match" : ""}.</p>`;
   col.querySelector(".tcfg-n").textContent = [...signals.values()].filter((s) => s.triangle === corner).length;
+  updateEndCue(col);
 }
 const renderAll = () => CORNERS.forEach(renderColumn);
 
@@ -128,9 +129,14 @@ async function openSignal(id) {
   $("drawerClose").onclick = closeDrawer;
 }
 
-// column filters
+// column filters + scroll-end cue
+function updateEndCue(col) {
+  const b = col.querySelector(".tcfg-body");
+  col.classList.toggle("at-end", b.scrollTop + b.clientHeight >= b.scrollHeight - 6);
+}
 for (const col of document.querySelectorAll(".tcfg-col")) {
   col.querySelector("input").addEventListener("input", () => renderColumn(col.dataset.corner));
+  col.querySelector(".tcfg-body").addEventListener("scroll", () => updateEndCue(col), { passive: true });
 }
 
 // ---------- load ----------
