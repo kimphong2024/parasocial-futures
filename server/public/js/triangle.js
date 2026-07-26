@@ -25,7 +25,7 @@ for (const c of CORNERS) { verts[c] = [CENTER[0] + DIRS[c][0] * BASE_R, CENTER[1
 let highlight = null;          // corner key, from hover
 let hoverId = null;            // the dot under the cursor — exempt from repulsion
 let filter = null;             // { kind: "cluster"|"horizon", value } or null
-const pointer = { x: -9999, y: -9999, on: false };
+const pointer = { x: -9999, y: -9999, on: false, sp: 0 };   // sp: smoothed speed — the force only acts while sweeping
 const POINTER_R = 90, POINTER_R2 = POINTER_R * POINTER_R, POINTER_S = 5.5;
 
 const rand = (seed) => { let x = Math.imul(seed ^ 0x9E3779B9, 0x85EBCA6B); x ^= x >>> 13; x = Math.imul(x, 0xC2B2AE35); return ((x ^= x >>> 16) >>> 0) / 4294967296; };
@@ -198,6 +198,8 @@ function tick(now) {
   drawFrame();
   ctx.clearRect(0, 0, W, H + 60);
   paintBody();
+  pointer.sp *= 0.9;                                      // stopping kills the force fast
+  const force = Math.min(1, pointer.sp / 5);
   for (const d of dots) {
     if (d.born && now < d.born) continue;              // staggered arrival
     const [hx, hy] = home(d);
@@ -205,12 +207,12 @@ function tick(now) {
     const ty = hy + Math.sin(t * d.f1 * 0.9 + d.p2) * d.amp + Math.cos(t * d.f2 + d.p1) * d.amp * 0.6;
     d.vx = (d.vx + (tx - d.x) * 0.02) * 0.9;
     d.vy = (d.vy + (ty - d.y) * 0.02) * 0.9;
-    if (pointer.on && d.id !== hoverId) {               // the pointer parts the field
+    if (pointer.on && force > 0.02 && d.id !== hoverId) {   // parting only while the pointer sweeps
       const dx = d.x - pointer.x, dy = d.y - pointer.y;
       const d2 = dx * dx + dy * dy;
       if (d2 < POINTER_R2 && d2 > 0.01) {
         const dist = Math.sqrt(d2);
-        const f = (1 - dist / POINTER_R) * POINTER_S;
+        const f = (1 - dist / POINTER_R) * POINTER_S * force;
         d.vx += (dx / dist) * f;
         d.vy += (dy / dist) * f;
       }
@@ -258,6 +260,8 @@ function nearest(mx, my, maxD2) {
 
 wrap.addEventListener("pointermove", (e) => {
   const [mx, my, r] = toView(e);
+  const dxp = mx - pointer.x, dyp = my - pointer.y;
+  if (pointer.x > -9000) pointer.sp = pointer.sp * 0.7 + Math.min(40, Math.hypot(dxp, dyp)) * 0.3;
   pointer.x = mx; pointer.y = my; pointer.on = !reduced;
   if (!dots.length) return;
   const best = nearest(mx, my, 400);
