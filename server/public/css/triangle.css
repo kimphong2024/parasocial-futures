@@ -15,7 +15,8 @@
 .tri-hit { fill: transparent; }
 
 .tri-frame {
-  fill: var(--cream, #F2E9D4);
+  /* the fill lives on the canvas beneath the dots; SVG keeps the outline */
+  fill: none;
   stroke: #E2DBC2;
   stroke-width: 2;
 }

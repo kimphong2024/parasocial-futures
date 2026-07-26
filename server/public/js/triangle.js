@@ -111,6 +111,14 @@ function tick(now) {
   }
   drawFrame();
   ctx.clearRect(0, 0, W, H + 60);
+  // the triangle's body paints beneath the dots
+  ctx.beginPath();
+  ctx.moveTo(verts.pull[0], verts.pull[1]);
+  ctx.lineTo(verts.push[0], verts.push[1]);
+  ctx.lineTo(verts.weight[0], verts.weight[1]);
+  ctx.closePath();
+  ctx.fillStyle = "#FFFEF9";
+  ctx.fill();
   for (const d of dots) {
     const [hx, hy] = home(d);
     // fluid target: home plus layered drift
@@ -134,6 +142,14 @@ function staticDraw() {
   for (const c of CORNERS) verts[c] = [...targets[c]];
   drawFrame();
   ctx.clearRect(0, 0, W, H + 60);
+  // the triangle's body paints beneath the dots
+  ctx.beginPath();
+  ctx.moveTo(verts.pull[0], verts.pull[1]);
+  ctx.lineTo(verts.push[0], verts.push[1]);
+  ctx.lineTo(verts.weight[0], verts.weight[1]);
+  ctx.closePath();
+  ctx.fillStyle = "#FFFEF9";
+  ctx.fill();
   for (const d of dots) {
     const [hx, hy] = home(d);
     ctx.beginPath();
