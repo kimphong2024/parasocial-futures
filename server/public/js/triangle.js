@@ -47,7 +47,7 @@ function rebuildDots() {
   const bornBase = performance.now();
   dots = all.map((s) => {
     const prev = known.get(s.id);
-    const own = 0.6 + rand(s.id) * 0.32;
+    const own = 0.52 + rand(s.id) * 0.28;
     const rest = 1 - own;
     const split = rand(s.id * 7 + 1);
     const w = { pull: 0, push: 0, weight: 0 };
@@ -145,13 +145,13 @@ function drawFrame() {
     // the hit circle covers the label block, not the dot cloud
     const hit = g.querySelector(".tri-hit");
     hit.setAttribute("cx", x);
-    hit.setAttribute("cy", above ? y + 2 : y + 58);
+    hit.setAttribute("cy", above ? y - 44 : y + 62);
     hit.setAttribute("r", 52);
     const count = g.querySelector(".tri-count");
     const name = g.querySelector(".tri-name");
     count.setAttribute("x", x); name.setAttribute("x", x);
-    count.setAttribute("y", above ? y - 20 : y + 46);
-    name.setAttribute("y", above ? y + 24 : y + 70);
+    count.setAttribute("y", above ? y - 52 : y + 66);
+    name.setAttribute("y", above ? y - 16 : y + 90);
   }
 }
 
