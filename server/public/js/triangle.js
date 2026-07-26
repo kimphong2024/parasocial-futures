@@ -23,6 +23,7 @@ const verts = {}, targets = {};
 for (const c of CORNERS) { verts[c] = [CENTER[0] + DIRS[c][0] * BASE_R, CENTER[1] + DIRS[c][1] * BASE_R]; targets[c] = [...verts[c]]; }
 
 let highlight = null;          // corner key, from hover
+let hoverId = null;            // the dot under the cursor — exempt from repulsion
 let filter = null;             // { kind: "cluster"|"horizon", value } or null
 const pointer = { x: -9999, y: -9999, on: false };
 const POINTER_R = 90, POINTER_R2 = POINTER_R * POINTER_R, POINTER_S = 5.5;
@@ -126,7 +127,6 @@ function countUpText(el, target) {
 const canvas = $("triCanvas");
 const ctx = canvas.getContext("2d");
 const svg = $("triSvg");
-const frame = $("triFrame");
 
 function fitCanvas() {
   const r = svg.getBoundingClientRect();
@@ -138,13 +138,15 @@ function fitCanvas() {
 addEventListener("resize", fitCanvas, { passive: true });
 
 function drawFrame() {
-  frame.setAttribute("points", CORNERS.map((c) => `${verts[c][0].toFixed(1)},${verts[c][1].toFixed(1)}`).join(" "));
   for (const c of CORNERS) {
     const g = svg.querySelector(`.tri-corner[data-corner="${c}"]`);
     const [x, y] = verts[c];
     const above = c === "pull";
-    g.querySelector(".tri-hit").setAttribute("cx", x);
-    g.querySelector(".tri-hit").setAttribute("cy", y);
+    // the hit circle covers the label block, not the dot cloud
+    const hit = g.querySelector(".tri-hit");
+    hit.setAttribute("cx", x);
+    hit.setAttribute("cy", above ? y + 2 : y + 58);
+    hit.setAttribute("r", 52);
     const count = g.querySelector(".tri-count");
     const name = g.querySelector(".tri-name");
     count.setAttribute("x", x); name.setAttribute("x", x);
@@ -153,46 +155,17 @@ function drawFrame() {
   }
 }
 
-function paintBody(t) {
-  ctx.beginPath();
-  ctx.moveTo(verts.pull[0], verts.pull[1]);
-  ctx.lineTo(verts.push[0], verts.push[1]);
-  ctx.lineTo(verts.weight[0], verts.weight[1]);
-  ctx.closePath();
-  ctx.fillStyle = "#FFFEF9";
-  ctx.fill();
+function paintBody() {
+  // soft colour pools ground each cohort; no frame, no marker
   const total = Math.max(1, data ? data.counts.pull + data.counts.push + data.counts.weight : 1);
-  // colour pooling toward each vertex, radius with mass — clipped to the body
-  ctx.save();
-  ctx.clip();
   for (const c of CORNERS) {
     const share = (data ? data.counts[c] : 0) / total;
-    const R = 120 + share * 420;
+    const R = 130 + share * 400;
     const g = ctx.createRadialGradient(verts[c][0], verts[c][1], 0, verts[c][0], verts[c][1], R);
-    g.addColorStop(0, `rgba(${COLORS[c]},0.16)`);
+    g.addColorStop(0, `rgba(${COLORS[c]},0.13)`);
     g.addColorStop(1, `rgba(${COLORS[c]},0)`);
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
-  }
-  ctx.restore();
-  // centre of gravity: signal-weighted barycentre
-  if (data) {
-    const gx = CORNERS.reduce((s, c) => s + verts[c][0] * data.counts[c], 0) / total;
-    const gy = CORNERS.reduce((s, c) => s + verts[c][1] * data.counts[c], 0) / total;
-    ctx.strokeStyle = "rgba(19,19,9,0.10)";
-    ctx.lineWidth = 1;
-    for (const c of CORNERS) {
-      ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(verts[c][0], verts[c][1]); ctx.stroke();
-    }
-    const pulse = reduced ? 0.5 : 0.5 + 0.5 * Math.sin(t * 2.2);
-    ctx.beginPath(); ctx.arc(gx, gy, 7 + pulse * 2, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(225,184,59,0.9)"; ctx.fill();
-    ctx.beginPath(); ctx.arc(gx, gy, 11 + pulse * 4, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(225,184,59,${0.5 - pulse * 0.3})`; ctx.lineWidth = 1.5; ctx.stroke();
-    ctx.fillStyle = "rgba(107,104,82,0.9)";
-    ctx.font = "10px 'Fragment Mono', monospace";
-    ctx.textAlign = "center";
-    ctx.fillText("CENTRE OF GRAVITY", gx, gy + 28);
   }
 }
 
@@ -224,7 +197,7 @@ function tick(now) {
   }
   drawFrame();
   ctx.clearRect(0, 0, W, H + 60);
-  paintBody(t);
+  paintBody();
   for (const d of dots) {
     if (d.born && now < d.born) continue;              // staggered arrival
     const [hx, hy] = home(d);
@@ -232,7 +205,7 @@ function tick(now) {
     const ty = hy + Math.sin(t * d.f1 * 0.9 + d.p2) * d.amp + Math.cos(t * d.f2 + d.p1) * d.amp * 0.6;
     d.vx = (d.vx + (tx - d.x) * 0.02) * 0.9;
     d.vy = (d.vy + (ty - d.y) * 0.02) * 0.9;
-    if (pointer.on) {                                   // the pointer parts the field
+    if (pointer.on && d.id !== hoverId) {               // the pointer parts the field
       const dx = d.x - pointer.x, dy = d.y - pointer.y;
       const d2 = dx * dx + dy * dy;
       if (d2 < POINTER_R2 && d2 > 0.01) {
@@ -242,6 +215,7 @@ function tick(now) {
         d.vy += (dy / dist) * f;
       }
     }
+    if (d.id === hoverId) { d.vx *= 0.6; d.vy *= 0.6; } // the hovered dot holds still to be caught
     d.x += d.vx; d.y += d.vy;
     d.a += (d.ta - d.a) * 0.12;
     drawDot(d);
@@ -253,7 +227,7 @@ function staticDraw() {
   for (const c of CORNERS) verts[c] = [...targets[c]];
   drawFrame();
   ctx.clearRect(0, 0, W, H + 60);
-  paintBody(0);
+  paintBody();
   for (const d of dots) {
     const [hx, hy] = home(d);
     d.x = hx; d.y = hy; d.a = d.ta;
@@ -286,7 +260,9 @@ wrap.addEventListener("pointermove", (e) => {
   const [mx, my, r] = toView(e);
   pointer.x = mx; pointer.y = my; pointer.on = !reduced;
   if (!dots.length) return;
-  const best = nearest(mx, my, 196);
+  const best = nearest(mx, my, 400);
+  hoverId = best ? best.id : null;
+  wrap.style.cursor = best ? "pointer" : "default";
   if (!best) { tip.classList.remove("on"); return; }
   tip.innerHTML = `<i style="background:rgb(${best.color})"></i><div><b>${esc(best.sig.title)}</b><span>${esc(best.sig.cluster)} · ${esc(NAMES[best.sig.triangle])} · click to read</span></div>`;
   tip.classList.add("on");
@@ -294,7 +270,7 @@ wrap.addEventListener("pointermove", (e) => {
   tipPos.tx = Math.min(e.clientX - r.left + 16, r.width - 330);
   tipPos.ty = e.clientY - r.top + 16;
 });
-wrap.addEventListener("pointerleave", () => { pointer.on = false; pointer.x = -9999; tip.classList.remove("on"); });
+wrap.addEventListener("pointerleave", () => { pointer.on = false; pointer.x = -9999; hoverId = null; tip.classList.remove("on"); });
 
 // tooltip glides
 (function glide() {
@@ -308,7 +284,7 @@ wrap.addEventListener("pointerleave", () => { pointer.on = false; pointer.x = -9
 wrap.addEventListener("click", (e) => {
   if (e.target.closest(".tri-corner")) return;         // corner clicks open cohorts
   const [mx, my] = toView(e);
-  const best = nearest(mx, my, 256);
+  const best = nearest(mx, my, 676);      // ~26px reach — dots are catchable
   if (best) openSignal(best.sig.id, best.sig);
 });
 
@@ -365,8 +341,26 @@ for (const g of document.querySelectorAll(".tri-corner, .tri-chip")) {
   const corner = g.dataset.corner;
   g.addEventListener("click", (e) => { e.stopPropagation(); data && openCorner(corner); });
   g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); data && openCorner(corner); } });
-  g.addEventListener("mouseenter", () => { highlight = corner; applyDimming(); if (reduced) staticDraw(); });
-  g.addEventListener("mouseleave", () => { highlight = null; applyDimming(); if (reduced) staticDraw(); });
+  g.addEventListener("mouseenter", () => { highlight = corner; applyDimming(); showPanel(corner); if (reduced) staticDraw(); });
+  g.addEventListener("mouseleave", () => { highlight = null; applyDimming(); hidePanel(); if (reduced) staticDraw(); });
+}
+
+// ---------- the write-up peek panel ----------
+const panel = $("triPanel");
+let panelTimer = null;
+function showPanel(corner) {
+  const w = data?.writeup;
+  if (!w || !w[corner]) return;
+  clearTimeout(panelTimer);
+  panel.innerHTML = `
+    <div class="tp-bar" style="background:rgb(${COLORS[corner]})"></div>
+    <h4>${esc(NAMES[corner])} <span class="tp-n">${data.counts[corner]} signals</span></h4>
+    <p>${esc(w[corner])}</p>`;
+  panel.classList.add("on");
+}
+function hidePanel() {
+  clearTimeout(panelTimer);
+  panelTimer = setTimeout(() => panel.classList.remove("on"), 220);
 }
 
 // ---------- filters ----------
@@ -412,14 +406,7 @@ function drawWriteup() {
     $("wuMeta").textContent = data.writing ? "synthesizing from the classified library…" : "awaiting first classification";
     return;
   }
-  $("wuPull").textContent = w.pull;
-  $("wuPush").textContent = w.push;
-  $("wuWeight").textContent = w.weight;
   $("wuTension").textContent = w.tension;
-  for (const c of CORNERS) {
-    const chip = document.querySelector(`.tri-card[data-corner="${c}"] .tri-card-n`);
-    if (chip && data.counts[c]) chip.textContent = `${data.counts[c]} signals`;
-  }
   const t = new Date(w.updated_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   $("wuMeta").textContent = `synthesized from ${w.signal_count} classified signals · ${t}`;
   $("wuState").textContent = data.writing ? "a fresh synthesis is generating — this text updates when it lands" : "";

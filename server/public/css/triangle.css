@@ -14,12 +14,6 @@
 }
 .tri-hit { fill: transparent; }
 
-.tri-frame {
-  /* the fill lives on the canvas beneath the dots; SVG keeps the outline */
-  fill: none;
-  stroke: #E2DBC2;
-  stroke-width: 2;
-}
 .tri-dot {
   opacity: 0.85;
   transition: r 0.15s ease;
@@ -130,3 +124,28 @@
 @media (prefers-reduced-motion: reduce) {
   .tri-status::before { animation: none; }
 }
+
+/* the force write-up peeks in from the right while hovering a cohort */
+.tri-panel {
+  position: fixed;
+  top: 50%; right: 0;
+  transform: translate(105%, -50%);
+  width: min(400px, 86vw);
+  max-height: 76vh;
+  overflow-y: auto;
+  background: var(--paperWhite, #FFFEF9);
+  border: 1px solid #E2DBC2;
+  border-right: none;
+  border-radius: 16px 0 0 16px;
+  box-shadow: -16px 0 44px rgba(19, 19, 9, 0.16);
+  padding: 24px 26px;
+  z-index: 40;
+  pointer-events: none;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tri-panel.on { transform: translate(0, -50%); }
+.tri-panel .tp-bar { height: 5px; border-radius: 999px; margin-bottom: 16px; }
+.tri-panel h4 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.tri-panel .tp-n { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 1px; color: var(--textMid, #656B5E); }
+.tri-panel p { font-size: 14px; line-height: 1.75; color: var(--textMid, #656B5E); margin-top: 12px; }
+@media (prefers-reduced-motion: reduce) { .tri-panel { transition: none; } }

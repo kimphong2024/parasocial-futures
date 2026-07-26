@@ -27,7 +27,6 @@
     <section class="card chart-block tri-stage">
       <div class="tri-wrap" id="triWrap">
         <svg id="triSvg" viewBox="0 0 900 660" role="group" aria-label="The Futures Triangle: signals placed by the force they exert; corner distance reflects signal mass">
-          <polygon class="tri-frame" id="triFrame" points="450,80 110,560 790,560"/>
           <g class="tri-corner" data-corner="pull" role="button" tabindex="0" aria-label="Pull of the future — open signal list">
             <circle class="tri-hit" cx="450" cy="80" r="64"/>
             <text class="tri-count" x="450" y="60" text-anchor="middle">0</text>
@@ -59,11 +58,7 @@
       <div class="page-head" style="margin-top:0">
         <span class="label">The synthesis · <span id="wuMeta">generating…</span></span>
       </div>
-      <div class="tri-cards">
-        <div class="card tri-card" data-corner="pull"><h4>The pull of the future <span class="tri-card-n"></span></h4><p id="wuPull">—</p></div>
-        <div class="card tri-card" data-corner="push"><h4>The push of the present <span class="tri-card-n"></span></h4><p id="wuPush">—</p></div>
-        <div class="card tri-card" data-corner="weight"><h4>The weight of history <span class="tri-card-n"></span></h4><p id="wuWeight">—</p></div>
-      </div>
+      <p class="caption mb-4">Hover a force — its corner label or legend chip — to slide in that force's synthesis.</p>
       <div class="card chart-block tri-tension">
         <h4 class="tri-tension-title"><span class="mark">The tension</span></h4>
         <p id="wuTension">—</p>
@@ -75,6 +70,7 @@
     </section>
   </main>
 
+  <aside class="tri-panel" id="triPanel" aria-live="polite"></aside>
   <div class="drawer-backdrop" id="backdrop"></div>
   <aside class="drawer" id="drawer" data-lenis-prevent></aside>
 
