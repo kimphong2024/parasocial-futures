@@ -284,25 +284,10 @@
   display: flex; flex-direction: column; gap: 8px;
   padding-right: 18px;
   padding-bottom: 30px;
+  /* the column draws its own scrollbar — the native one stays hidden */
+  scrollbar-width: none;
 }
-/* Firefox only — in Chrome these standard properties would disable the
-   ::-webkit-scrollbar styling below and bring back the overlay bar */
-@supports (-moz-appearance: none) {
-  .tcfg-body { scrollbar-width: auto; scrollbar-color: var(--gold-text, #7E6721) var(--paperWhite, #FFFEF9); }
-}
-.tcfg-body::-webkit-scrollbar { width: 12px; }
-.tcfg-body::-webkit-scrollbar-track {
-  background: var(--paperWhite, #FFFEF9);
-  border: 1px solid #E2DBC2;
-  border-radius: 999px;
-}
-.tcfg-body::-webkit-scrollbar-thumb {
-  background: var(--gold-text, #7E6721);
-  border-radius: 999px;
-  border: 2px solid var(--paperWhite, #FFFEF9);
-  min-height: 44px;
-}
-.tcfg-body::-webkit-scrollbar-thumb:hover { background: var(--ink, #131309); }
+.tcfg-body::-webkit-scrollbar { display: none; }
 .tcfg-row {
   display: flex; align-items: center; gap: 10px;
   background: var(--paperWhite, #FFFEF9);
