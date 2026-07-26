@@ -282,15 +282,27 @@
 .tcfg-body {
   max-height: 62vh; overflow-y: auto;
   display: flex; flex-direction: column; gap: 8px;
-  padding-right: 6px;
+  padding-right: 18px;
   padding-bottom: 30px;
-  scrollbar-width: thin;
-  scrollbar-color: #C2B583 transparent;
 }
-.tcfg-body::-webkit-scrollbar { width: 8px; }
-.tcfg-body::-webkit-scrollbar-track { background: transparent; }
-.tcfg-body::-webkit-scrollbar-thumb { background: #C2B583; border-radius: 999px; }
-.tcfg-body::-webkit-scrollbar-thumb:hover { background: var(--gold-text, #7E6721); }
+/* Firefox only — in Chrome these standard properties would disable the
+   ::-webkit-scrollbar styling below and bring back the overlay bar */
+@supports (-moz-appearance: none) {
+  .tcfg-body { scrollbar-width: auto; scrollbar-color: var(--gold-text, #7E6721) var(--paperWhite, #FFFEF9); }
+}
+.tcfg-body::-webkit-scrollbar { width: 12px; }
+.tcfg-body::-webkit-scrollbar-track {
+  background: var(--paperWhite, #FFFEF9);
+  border: 1px solid #E2DBC2;
+  border-radius: 999px;
+}
+.tcfg-body::-webkit-scrollbar-thumb {
+  background: var(--gold-text, #7E6721);
+  border-radius: 999px;
+  border: 2px solid var(--paperWhite, #FFFEF9);
+  min-height: 44px;
+}
+.tcfg-body::-webkit-scrollbar-thumb:hover { background: var(--ink, #131309); }
 .tcfg-row {
   display: flex; align-items: center; gap: 10px;
   background: var(--paperWhite, #FFFEF9);
@@ -322,6 +334,24 @@
 .tcfg-move button:hover { transform: scale(1.15); border-color: var(--ink, #131309); }
 .tcfg-move button i { width: 10px; height: 10px; border-radius: 999px; }
 .tcfg-empty { padding: 14px 4px; }
+/* self-drawn scrollbar — persistent by construction, immune to overlay settings */
+.tcfg-track {
+  position: absolute;
+  width: 8px;
+  background: var(--paperWhite, #FFFEF9);
+  border: 1px solid #E2DBC2;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.tcfg-thumb {
+  position: absolute;
+  left: 1px; right: 1px;
+  background: var(--gold-text, #7E6721);
+  border-radius: 999px;
+  min-height: 40px;
+  cursor: grab;
+}
+.tcfg-thumb:active { cursor: grabbing; background: var(--ink, #131309); }
 /* the explicit scroll control */
 .tcfg-more {
   width: 100%;

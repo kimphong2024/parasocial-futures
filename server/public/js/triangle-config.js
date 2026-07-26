@@ -34,6 +34,7 @@ function renderColumn(corner) {
   col.querySelector(".tcfg-body").innerHTML = list.map(row).join("") || `<p class="caption tcfg-empty">No signals${q ? " match" : ""}.</p>`;
   col.querySelector(".tcfg-n").textContent = [...signals.values()].filter((s) => s.triangle === corner).length;
   updateEndCue(col);
+  col._syncTrack?.();
 }
 const renderAll = () => CORNERS.forEach(renderColumn);
 
@@ -128,6 +129,53 @@ async function openSignal(id) {
   document.body.classList.add("drawer-open");
   $("drawerClose").onclick = closeDrawer;
 }
+
+// self-drawn scrollbars — native ones auto-hide on overlay-scrollbar systems
+function buildTrack(col) {
+  const body = col.querySelector(".tcfg-body");
+  const track = document.createElement("div");
+  track.className = "tcfg-track";
+  const thumb = document.createElement("div");
+  thumb.className = "tcfg-thumb";
+  track.appendChild(thumb);
+  col.appendChild(track);
+  const sync = () => {
+    const overflow = body.scrollHeight > body.clientHeight + 4;
+    track.style.display = overflow ? "block" : "none";
+    if (!overflow) return;
+    track.style.top = body.offsetTop + "px";
+    track.style.height = body.clientHeight + "px";
+    track.style.right = "8px";
+    const h = Math.max(40, body.clientHeight * body.clientHeight / body.scrollHeight);
+    thumb.style.height = h + "px";
+    thumb.style.top = (body.scrollTop / (body.scrollHeight - body.clientHeight)) * (body.clientHeight - h) + "px";
+  };
+  body.addEventListener("scroll", () => requestAnimationFrame(sync), { passive: true });
+  addEventListener("resize", sync, { passive: true });
+  // drag the thumb / click the track
+  let dragging = null;
+  thumb.addEventListener("pointerdown", (e) => {
+    dragging = { y: e.clientY, top: body.scrollTop };
+    thumb.setPointerCapture(e.pointerId);
+    e.preventDefault(); e.stopPropagation();
+  });
+  thumb.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    const h = thumb.offsetHeight;
+    const ratio = (body.scrollHeight - body.clientHeight) / (body.clientHeight - h);
+    body.scrollTop = dragging.top + (e.clientY - dragging.y) * ratio;
+  });
+  thumb.addEventListener("pointerup", () => { dragging = null; });
+  track.addEventListener("pointerdown", (e) => {
+    if (e.target === thumb) return;
+    const r = track.getBoundingClientRect();
+    const frac = (e.clientY - r.top) / r.height;
+    body.scrollTo({ top: frac * (body.scrollHeight - body.clientHeight), behavior: "smooth" });
+  });
+  col._syncTrack = sync;
+  sync();
+}
+document.querySelectorAll(".tcfg-col").forEach(buildTrack);
 
 // column filters + the explicit scroll control
 function updateEndCue(col) {
