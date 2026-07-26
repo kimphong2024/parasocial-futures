@@ -134,13 +134,20 @@ for (const col of document.querySelectorAll(".tcfg-col")) {
 }
 
 // ---------- load ----------
+let loadTimer = null;
 async function load() {
   const data = await api("/api/triangle");
   signals = new Map();
   for (const c of CORNERS) for (const s of data.corners[c]) signals.set(s.id, s);
   renderAll();
-  if (data.unclassified > 0) $("tcfgState").textContent = `${data.unclassified} signals are still being classified — they appear here once judged.`;
+  if (data.unclassified > 0 || data.classifying) {
+    $("tcfgState").textContent = `${signals.size} of ${signals.size + data.unclassified} approved signals classified and listed — ${data.unclassified} still being judged; they appear here automatically.`;
+    clearTimeout(loadTimer);
+    loadTimer = setTimeout(load, 3000);
+  } else if (!$("tcfgState").textContent.startsWith("Saved")) {
+    $("tcfgState").textContent = `All ${signals.size} approved signals are listed across the three sections.`;
+  }
 }
 
-renderNav("/triangle");
+renderNav("/triangle-config");
 load();
