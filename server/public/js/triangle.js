@@ -410,7 +410,9 @@ function drawWriteup() {
     $("wuMeta").textContent = data.writing ? "synthesizing from the classified library…" : "awaiting first classification";
     return;
   }
-  $("wuTension").textContent = w.tension;
+  const sentences = (w.tension || "").split(/(?<=\.)\s+/);
+  $("wuLede").textContent = sentences[0] || "";
+  $("wuRest").textContent = sentences.slice(1).join(" ");
   const t = new Date(w.updated_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   $("wuMeta").textContent = `synthesized from ${w.signal_count} classified signals · ${t}`;
   $("wuState").textContent = data.writing ? "a fresh synthesis is generating — this text updates when it lands" : "";
