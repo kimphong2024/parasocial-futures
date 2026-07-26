@@ -11,6 +11,7 @@ import { embedQuery, voyageEnabled } from "./voyage.js";
 import { llmEnabled } from "./ai.js";
 import { runScan, scanRunning, scanStep, scanSettings, DEFAULT_GATE } from "./scan.js";
 import { judgeHorizons, horizonStatus } from "./horizons.js";
+import { auditMiddleware } from "./audit.js";
 import { classifyTriangle, classifyTriangleIfNeeded, triangleStatus, getWriteup, generateWriteup, regenerateWriteupIfStale, writeupStatus } from "./triangle.js";
 import { startScheduler, scheduleInfo } from "./scheduler.js";
 import { ARCHETYPES, draftScenario, embedScenario } from "./scenarios.js";
@@ -24,6 +25,8 @@ const PORT = process.env.PORT || 8080;
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
+app.set("trust proxy", 1);
+app.use(auditMiddleware);
 
 // The platform is fully open by design — no accounts, no password.
 // Old /login links land on the app.
@@ -44,6 +47,7 @@ app.get("/api/public/stats", (_req, res) => {
 });
 
 // ---------- meta ----------
+app.get("/api/audit", (req, res) => res.json({ entries: d.listAudit.all(Math.min(500, +req.query.limit || 100)) }));
 app.get("/api/health", (_req, res) => {
   const last = d.lastScanRun.get();
   res.json({

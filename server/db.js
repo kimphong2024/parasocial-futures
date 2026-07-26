@@ -159,6 +159,20 @@ try { db.exec("ALTER TABLE signals ADD COLUMN triangle_reasoning TEXT NOT NULL D
 try { db.exec("ALTER TABLE signals ADD COLUMN note TEXT NOT NULL DEFAULT ''"); } catch { /* already migrated */ }
 try { db.exec("ALTER TABLE signals ADD COLUMN note_updated_at TEXT"); } catch { /* already migrated */ }
 
+db.exec(`CREATE TABLE IF NOT EXISTS audit_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  at TEXT NOT NULL,
+  method TEXT NOT NULL,
+  path TEXT NOT NULL,
+  action TEXT NOT NULL,
+  entity TEXT,
+  entity_id INTEGER,
+  summary TEXT NOT NULL DEFAULT '',
+  detail_json TEXT NOT NULL DEFAULT '{}',
+  ip TEXT,
+  status INTEGER
+)`);
+
 // One-time data migration: seed the evidence grouping for the shipped drivers
 // from the clusters their rationales already name. Runs only while every
 // driver's grouping is still empty, so human edits are never overwritten.
@@ -191,6 +205,9 @@ export const countByStatus = db.prepare("SELECT COUNT(*) AS n FROM signals WHERE
 export const setSignalStatus = db.prepare("UPDATE signals SET status = ?, reviewed_at = ? WHERE id = ?");
 export const setSignalHorizon = db.prepare("UPDATE signals SET horizon = ?, horizon_reasoning = ?, horizon_judged_at = ? WHERE id = ?");
 export const approvedSignals = db.prepare("SELECT id, title, summary, cluster, signal_type, date, year, horizon FROM signals WHERE status = 'approved' ORDER BY id");
+export const insertAudit = db.prepare("INSERT INTO audit_log (at, method, path, action, entity, entity_id, summary, detail_json, ip, status) VALUES (?,?,?,?,?,?,?,?,?,?)");
+export const listAudit = db.prepare("SELECT * FROM audit_log ORDER BY id DESC LIMIT ?");
+export const pruneAudit = db.prepare("DELETE FROM audit_log WHERE id <= (SELECT MAX(id) FROM audit_log) - 5000");
 export const setSignalNote = db.prepare("UPDATE signals SET note = ?, note_updated_at = ? WHERE id = ?");
 export const setSignalTriangle = db.prepare("UPDATE signals SET triangle = ?, triangle_reasoning = ? WHERE id = ?");
 export const triangleSignals = db.prepare("SELECT id, title, cluster, signal_type, urgency, horizon, triangle, triangle_reasoning FROM signals WHERE status = 'approved' ORDER BY id");
