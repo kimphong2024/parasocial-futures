@@ -92,6 +92,14 @@ app.get("/api/signals/facets", (req, res) => res.json(d.facets(req.query.status 
 // from the in-memory vector index and cached until the process restarts
 // or the library count changes.
 let graphCache = null;
+// Radar payload: every approved signal + the drivers with their evidence
+// clusters — the client maps signal.cluster to a driver slice.
+app.get("/api/signals/radar", (_req, res) => {
+  const signals = d.db.prepare("SELECT id, title, cluster, horizon, urgency FROM signals WHERE status = 'approved'").all();
+  const drivers = d.db.prepare("SELECT id, key, name, cluster_json, sort_order FROM drivers WHERE enabled = 1 ORDER BY sort_order, id").all();
+  res.json({ signals, drivers });
+});
+
 app.get("/api/signals/graph", (_req, res) => {
   const approved = d.db.prepare("SELECT id, title, cluster, horizon FROM signals WHERE status = 'approved'").all();
   if (graphCache && graphCache.n === approved.length) return res.json(graphCache.payload);
@@ -476,7 +484,7 @@ app.post("/api/chat", chatHandler);
 // ---------- static frontend ----------
 app.use(express.static(join(HERE, "public")));
 app.get("/signals", (_req, res) => res.sendFile(join(HERE, "public", "index.html")));
-["review", "scenarios", "scenario", "scenario-config", "simulation", "chat", "sources", "drivers", "driver-config", "map", "artifacts", "present", "triangle", "triangle-config", "activity"].forEach((p) =>
+["review", "scenarios", "scenario", "scenario-config", "simulation", "chat", "sources", "drivers", "driver-config", "map", "artifacts", "present", "triangle", "triangle-config", "activity", "radar"].forEach((p) =>
   app.get("/" + p, (_req, res) => res.sendFile(join(HERE, "public", p + ".html"))));
 
 // ---------- boot ----------

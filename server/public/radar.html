@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signal radar — Throuple with AI</title>
+  <meta name="description" content="The signal library as a futures radar: horizons as concentric zones, drivers as slices, every approved signal a dot in its cell.">
+  <link rel="icon" href="/favicon.svg">
+  <meta name="pinterest" content="nopin">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/fib.css">
+  <link rel="stylesheet" href="/css/motion.css">
+  <link rel="stylesheet" href="/css/radar.css">
+</head>
+<body>
+  <main class="container">
+    <div class="page-head">
+      <span class="label">Signals · futures radar</span>
+      <h2>Signal radar</h2>
+      <p class="subtitle">The library on one dial. Concentric zones are time horizons — the nearer future sits nearer the centre — and each slice is one of the eight drivers, claiming the signals whose clusters ground it. Signals no driver claims gather in their own slice: unclaimed territory worth watching. Hover a dot; click it to read the signal.</p>
+      <div class="divider mt-4"></div>
+    </div>
+
+    <section class="card chart-block radar-stage">
+      <div class="radar-wrap" id="radarWrap">
+        <svg id="radarSvg" viewBox="0 0 1000 1000" role="group" aria-label="Futures radar: horizon rings and driver slices"></svg>
+        <canvas id="radarCanvas" aria-hidden="true"></canvas>
+        <div class="tri-tip" id="radarTip" hidden></div>
+      </div>
+      <div class="radar-legend" id="radarLegend"></div>
+    </section>
+  </main>
+
+  <div class="drawer-backdrop" id="backdrop"></div>
+  <aside class="drawer" id="drawer" data-lenis-prevent></aside>
+
+  <script type="module" src="/js/radar.js"></script>
+  <script src="/js/vendor/lenis.min.js"></script>
+  <script type="module" src="/js/motion.js"></script>
+</body>
+</html>
