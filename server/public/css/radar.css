@@ -4,7 +4,7 @@
    ============================================================ */
 
 .radar-stage { position: relative; }
-.radar-wrap { position: relative; max-width: 860px; margin: 0 auto; padding-inline: 40px; }
+.radar-wrap { position: relative; max-width: 820px; margin: 0 auto; }
 #radarSvg { width: 100%; height: auto; display: block; position: relative; z-index: 2; pointer-events: none; overflow: visible; }
 #radarSvg .radar-slice-label { pointer-events: auto; }
 #radarCanvas {
@@ -22,7 +22,10 @@
 .radar-hlabel {
   font-family: var(--font-mono, monospace);
   font-size: 12.5px; letter-spacing: 1px;
-  fill: var(--textMid, #656B5E);
+  fill: var(--ink, #131309);
+  paint-order: stroke;
+  stroke: var(--cream, #F2E9D4);
+  stroke-width: 4px;
 }
 .radar-now {
   font-family: var(--font-mono, monospace);
