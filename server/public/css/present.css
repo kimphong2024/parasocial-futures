@@ -346,19 +346,26 @@
 /* ---------- 8 · drivers ---------- */
 .s-drv.now { display: grid; grid-template-columns: 1fr 1.05fr; gap: 52px; align-items: center; }
 .drv-copy { height: auto; }
-.drv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin-top: 4px; }
+.drv-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px 22px; margin-top: 4px;
+  align-items: start;
+}
 .drv-grid span {
   font-family: var(--font-mono);
   font-size: 12.5px; letter-spacing: 0.5px; text-transform: uppercase;
+  line-height: 1.5;
   color: var(--ink, #131309);
-  padding: 8px 0 8px 16px;
+  padding: 4px 0 4px 18px;
   position: relative;
+  align-self: start;          /* never stretch to a wrapping neighbour */
   cursor: default;
   transition: color 0.2s ease;
 }
 .drv-grid span::before {
   content: "";
-  position: absolute; left: 0; top: 50%;
+  position: absolute;
+  left: 0; top: calc(4px + 0.75em);   /* the centre of the FIRST line */
   width: 8px; height: 8px; translate: 0 -50%;
   background: var(--gold, #E1B83B);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
