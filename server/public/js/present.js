@@ -252,6 +252,7 @@ async function hydrate() {
     const lib = document.getElementById("libCount");
     if (lib && o.total) lib.dataset.n = o.total;
     set("stat-clusters", o.clusters?.length);
+    const dn = $("doorSignalN"); if (dn && o.total) dn.textContent = Number(o.total).toLocaleString();
     set("stat-sources", o.sources?.distinct);
     // top clusters as animated bars
     const bars = document.getElementById("libBars");
@@ -282,6 +283,25 @@ async function hydrate() {
       slide.querySelector(".scen-myth").textContent = myth ? "“" + myth.replace(/\.$/, "") + ".”" : "";
     }
   } catch {}
+  // the odds slide reads the platform's latest real run
+  try {
+    const L = (await api("/api/simulation/latest")).latest;
+    const list = typeof L.scenarios === "string" ? JSON.parse(L.scenarios) : L.scenarios;
+    const COL = { growth: "225,184,59", collapse: "196,69,54", discipline: "91,138,154", transformation: "78,90,43" };
+    const rows = [...list].sort((a, b) => b.probability - a.probability).map((s) => `
+      <div class="so-row">
+        <span class="nm">${esc(s.title)}</span>
+        <span class="tr"><span class="fl" style="width:${(s.probability * 100).toFixed(1)}%;background:rgb(${COL[s.archetype] || "107,104,82"})"></span></span>
+        <span class="pc">${(s.probability * 100).toFixed(1)}%</span>
+      </div>`).join("");
+    $("simOdds").innerHTML = rows + `
+      <div class="so-row resid">
+        <span class="nm">unclaimed</span>
+        <span class="tr"><span class="fl" style="width:${(L.residual * 100).toFixed(1)}%"></span></span>
+        <span class="pc">${(L.residual * 100).toFixed(1)}%</span>
+      </div>`;
+    $("simNote").textContent = `Live from run #${L.run_id} — ${Number(L.n).toLocaleString()} futures, seed ${L.seed}, ${L.duration_ms}ms. The unclaimed share is reported, not hidden: four archetypes are four shapes of change, not a partition of everything possible.`;
+  } catch {}
   try {
     const j = await api("/api/drivers");
     renderDrivers((j.drivers || []).filter((d) => d.enabled !== 0).slice(0, 8));
@@ -293,7 +313,10 @@ async function hydrate() {
       cap: `${a.type} · ${s.title}`,
       type: a.type, scenario: s.title, title: a.title, blurb: a.blurb,
     })));
-    if (all.length) { artList = all; artIdx = 0; }
+    if (all.length) {
+      artList = all; artIdx = 0;
+      const an = $("doorArtN"); if (an) an.textContent = all.length;
+    }
   } catch {}
   dealArtifacts();
   // re-run count-ups on the current slide with hydrated numbers

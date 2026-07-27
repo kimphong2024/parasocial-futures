@@ -638,3 +638,14 @@
 
 .bayes-rule { flex: 0 0 auto; max-width: none; }
 .bayes-rule strong { color: var(--ink, #131309); }
+
+/* live odds on the simulation slide */
+.sim-odds { display: flex; flex-direction: column; gap: 9px; margin-top: 4px; }
+.so-row { display: grid; grid-template-columns: 132px 1fr 46px; align-items: center; gap: 12px; }
+.so-row .nm { font-size: 13px; font-weight: 600; color: var(--ink, #131309); }
+.so-row .tr { height: 14px; background: var(--cream, #F2E9D4); border-radius: 4px; overflow: hidden; }
+.so-row .fl { height: 100%; border-radius: 4px; }
+.so-row .pc { font-family: var(--font-mono); font-size: 12px; color: var(--textMid, #656B5E); text-align: right; }
+.so-row.resid .nm, .so-row.resid .pc { color: var(--textMid, #656B5E); font-style: italic; }
+.so-row.resid .fl { background: repeating-linear-gradient(45deg, #E2DBC2, #E2DBC2 4px, transparent 4px, transparent 8px); }
+.sim-note { font-size: 13.5px; margin-top: 4px; }

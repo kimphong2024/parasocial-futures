@@ -49,7 +49,7 @@
         <a class="door" href="/signals" tabindex="-1">
           <img class="door-shot" src="/img/shot-signals.png" alt="" loading="lazy">
           <span class="door-n">01</span><span class="door-name">Signals</span>
-          <span class="door-note">A 938-signal library, refreshed nightly by a two-leg scan and reviewed by a human before anything enters.</span>
+          <span class="door-note">A <b id="doorSignalN">938</b>-signal library, refreshed nightly by a two-leg scan and reviewed by a human before anything enters.</span>
         </a>
         <a class="door" href="/drivers" tabindex="-1">
           <img class="door-shot" src="/img/shot-drivers.png" alt="" loading="lazy">
@@ -64,7 +64,7 @@
         <a class="door" href="/artifacts" tabindex="-1">
           <img class="door-shot" src="/img/shot-artifacts.png" alt="" loading="lazy">
           <span class="door-n">04</span><span class="door-name">Artifacts</span>
-          <span class="door-note">Twenty-four ordinary objects from four futures — receipts, patches, ID cards — words authored, prompts disclosed.</span>
+          <span class="door-note"><b id="doorArtN">Twenty-four</b> ordinary objects from four futures — receipts, patches, ID cards — words authored, prompts disclosed.</span>
         </a>
         <a class="door" href="/chat" tabindex="-1">
           <img class="door-shot" src="/img/shot-chat.png" alt="" loading="lazy">
@@ -243,10 +243,8 @@
         <p class="s-label">Decision support · simulation</p>
         <h2 class="s-head">Odds in ten thousand futures</h2>
         <p class="s-text">Every driver is spun once from its own range to build one complete future — then ten thousand of them. Each is checked against every scenario's declared conditions; the share that lands inside a scenario is its probability.</p>
-        <div class="drv-grid">
-          <span>10,000 sampled futures</span><span>seeded · reproducible</span><span>~40 ms a run</span><span>residual reported, not hidden</span>
-        </div>
-        <p class="s-text" style="font-size:14px">Change a belief and the whole map redraws — which is the point. The sensitivity chart then ranks which belief, if wrong, would move the answer most.</p>
+        <div class="sim-odds" id="simOdds"></div>
+        <p class="s-text sim-note" id="simNote">Change a belief and the whole map redraws — which is the point.</p>
       </div>
       <figure class="s-shot drv-shot"><img src="/img/shot-simulation.png" alt="Scenario probabilities and driver sensitivity"></figure>
     </section>
