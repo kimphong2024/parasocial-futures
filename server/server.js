@@ -48,6 +48,13 @@ app.get("/api/public/stats", (_req, res) => {
 
 // ---------- meta ----------
 app.get("/api/audit", (req, res) => res.json({ entries: d.listAudit.all(Math.min(500, +req.query.limit || 100)) }));
+// Clearing the log is itself a logged action — the wipe leaves one entry
+// recording who cleared it and how many entries went.
+app.delete("/api/audit", (_req, res) => {
+  const n = d.countAudit.get().n;
+  d.clearAudit.run();
+  res.json({ ok: true, removed: n });
+});
 app.get("/api/health", (_req, res) => {
   const last = d.lastScanRun.get();
   res.json({

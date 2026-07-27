@@ -54,6 +54,7 @@ const ACTIONS = [
   [/^PATCH \/api\/drivers\/\d+$/, "driver.edit"],
   [/^DELETE \/api\/drivers\/\d+$/, "driver.delete"],
   [/^POST \/api\/simulation\/run$/, "simulation.run"],
+  [/^DELETE \/api\/audit$/, "audit.clear"],
 ];
 
 // short value for inline prose
@@ -156,6 +157,8 @@ export function auditMiddleware(req, res, next) {
       let summary;
       if (!ok) {
         summary = `Attempted ${action.replace(".", " ")}${shape && name ? ` on ${shape.entity} ${entityId} “${name}”` : ""} — failed with status ${res.statusCode}`;
+      } else if (action === "audit.clear") {
+        summary = `Cleared the activity log (${payload?.removed ?? "all"} earlier entries removed)`;
       } else {
         summary = describe(action, { entityId, name, before, after, diff, body: req.body })
           || (shape && name

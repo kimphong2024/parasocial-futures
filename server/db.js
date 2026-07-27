@@ -208,6 +208,8 @@ export const approvedSignals = db.prepare("SELECT id, title, summary, cluster, s
 export const insertAudit = db.prepare("INSERT INTO audit_log (at, method, path, action, entity, entity_id, summary, detail_json, ip, status) VALUES (?,?,?,?,?,?,?,?,?,?)");
 export const listAudit = db.prepare("SELECT * FROM audit_log ORDER BY id DESC LIMIT ?");
 export const pruneAudit = db.prepare("DELETE FROM audit_log WHERE id <= (SELECT MAX(id) FROM audit_log) - 5000");
+export const clearAudit = db.prepare("DELETE FROM audit_log");
+export const countAudit = db.prepare("SELECT COUNT(*) AS n FROM audit_log");
 export const setSignalNote = db.prepare("UPDATE signals SET note = ?, note_updated_at = ? WHERE id = ?");
 export const setSignalTriangle = db.prepare("UPDATE signals SET triangle = ?, triangle_reasoning = ? WHERE id = ?");
 export const triangleSignals = db.prepare("SELECT id, title, cluster, signal_type, urgency, horizon, triangle, triangle_reasoning FROM signals WHERE status = 'approved' ORDER BY id");
