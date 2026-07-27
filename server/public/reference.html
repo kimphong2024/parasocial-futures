@@ -310,7 +310,7 @@ EVIDENCE for this exchange:
         <ul>
           <li><strong>Fully open by design.</strong> There are no accounts and no password: every page and every action — reviewing signals, editing drivers and scenarios, steering the scan, running simulations — is publicly reachable and writable. The platform is a public demonstration instrument; openness of the machinery is part of the method, and the trade-off (anyone may edit) is accepted knowingly.</li>
           <li>No user accounts, no analytics, no tracking. The chat log stores questions and cited ids only — never conversations.</li>
-          <li><strong>Every write is logged.</strong> All mutating API calls — approvals, edits, moves, publishes, scan triggers — are recorded with a readable action name, a before/after field diff where an entity changed, the request body, the caller's address and the response status (last 5,000 entries, viewable on the Review page's Activity tab). Chat is excluded; conversations are never stored.</li>
+          <li><strong>Every write is logged.</strong> All mutating API calls — approvals, edits, moves, publishes, scan triggers — are recorded with a readable action name, a before/after field diff where an entity changed, the request body, the caller's address and the response status (last 5,000 entries, viewable on the Activity page). Chat is excluded; conversations are never stored.</li>
           <li>All keys live in environment variables; every integration is env-gated and degrades gracefully when its key is absent.</li>
           <li>Nightly scan at 22:00 Asia/Singapore; per-step failures are visible in the review queue's scan history.</li>
         </ul>

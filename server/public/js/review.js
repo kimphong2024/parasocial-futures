@@ -110,35 +110,6 @@ async function load() {
     : `<div class="empty-note">No scenario drafts waiting. Draft one from the Scenarios page.</div>`;
 
   const runs = await api("/api/scan/runs");
-  const audit = await api("/api/audit?limit=200");
-  $("tab-activity").innerHTML = audit.entries.length
-    ? `<p class="caption mb-4">Every human change on the platform, newest first — click a row for its full detail. Showing the last ${audit.entries.length}; the log keeps the most recent 5,000.</p>
-       <table class="data"><thead><tr><th>When</th><th>Action</th><th>What changed</th></tr></thead>
-       <tbody>${audit.entries.map((a) => `
-         <tr class="audit-row" data-aid="${a.id}" style="cursor:pointer">
-           <td class="caption" style="white-space:nowrap">${new Date(a.at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</td>
-           <td><span class="tag ${a.status < 400 ? "tag-olive" : "tag-dim"}">${esc(a.action)}</span></td>
-           <td style="font-size:12.5px">${esc(a.summary)}</td>
-         </tr>`).join("")}</tbody></table>`
-    : `<div class="empty-note">No changes recorded yet — edits, approvals, moves and publishes will appear here.</div>`;
-  $("tab-activity").addEventListener("click", (e) => {
-    const r = e.target.closest(".audit-row");
-    if (!r) return;
-    const a = audit.entries.find((x) => x.id === Number(r.dataset.aid));
-    let detail = {};
-    try { detail = JSON.parse(a.detail_json); } catch {}
-    $("drawer").innerHTML = `
-      <button class="drawer-close" id="dclose" aria-label="Close">&times;</button>
-      <span class="tag tag-olive">${esc(a.action)}</span>
-      <h3 class="mt-2" style="font-size:19px">${esc(a.summary)}</h3>
-      <p class="caption mt-2">${esc(a.method)} ${esc(a.path)} · status ${a.status} · from ${esc(a.ip || "unknown")}<br>${esc(new Date(a.at).toLocaleString("en-GB"))}</p>
-      ${detail.diff ? `<h4 class="mt-4">Field changes</h4>${Object.entries(detail.diff).map(([k, v]) => `
-        <div class="citation mt-2"><div class="quote"><strong>${esc(k)}</strong><br><s style="opacity:0.6">${esc(String(v.from ?? "—"))}</s><br>${esc(String(v.to ?? "—"))}</div></div>`).join("")}` : ""}
-      ${detail.body ? `<h4 class="mt-4">Request body</h4><p class="caption" style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(detail.body)}</p>` : ""}`;
-    document.body.classList.add("drawer-open");
-    $("dclose").onclick = () => document.body.classList.remove("drawer-open");
-  }, { once: false });
-
   $("tab-runs").innerHTML = runs.runs.length
     ? `<table class="data"><thead><tr><th>Run</th><th>Trigger</th><th>Status</th><th>Candidates</th><th>New pending</th><th>Duplicates</th><th>Off-topic</th><th>Finished</th></tr></thead>
        <tbody>${runs.runs.map(runRow).join("")}</tbody></table>`
@@ -148,7 +119,7 @@ async function load() {
 document.querySelectorAll(".tab").forEach((t) =>
   t.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("active", x === t));
-    ["signals", "drafts", "runs", "activity"].forEach((k) => $("tab-" + k).style.display = t.dataset.tab === k ? "" : "none");
+    ["signals", "drafts", "runs"].forEach((k) => $("tab-" + k).style.display = t.dataset.tab === k ? "" : "none");
   }));
 
 document.addEventListener("click", async (e) => {

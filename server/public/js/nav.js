@@ -11,6 +11,7 @@ const SECTIONS = [
   { path: "/scenarios", label: "Scenarios", children: [["/scenario-config", "Scenario configure"], ["/simulation", "Scenario simulation"]] },
   { path: "/artifacts", label: "Artifacts", children: [] },
   { path: "/chat", label: "Chat", children: [] },
+  { path: "/activity", label: "Activity", children: [] },
   { path: "/reference", label: "Method", children: [] },
 ];
 

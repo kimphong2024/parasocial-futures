@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Activity — Throuple with AI</title>
+  <meta name="description" content="Every human change on the platform — approvals, edits, moves, publishes — logged with field-level detail.">
+  <link rel="icon" href="/favicon.svg">
+  <meta name="pinterest" content="nopin">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/fib.css">
+  <link rel="stylesheet" href="/css/motion.css">
+</head>
+<body>
+  <main class="container">
+    <div class="page-head">
+      <span class="label">The record of the open platform</span>
+      <h2>Activity</h2>
+      <p class="subtitle">Every human change — approvals, edits, reclassifications, publishes, scan settings — recorded with a field-level before/after diff and its source address. The platform is open by design; this page is the other half of that bargain. Click a row for full detail.</p>
+      <div class="divider mt-4"></div>
+    </div>
+    <div id="activityBody"><div class="empty-note">Loading…</div></div>
+  </main>
+
+  <div class="drawer-backdrop" id="backdrop"></div>
+  <aside class="drawer" id="drawer" data-lenis-prevent></aside>
+
+  <script type="module" src="/js/activity.js"></script>
+  <script src="/js/vendor/lenis.min.js"></script>
+  <script type="module" src="/js/motion.js"></script>
+</body>
+</html>
