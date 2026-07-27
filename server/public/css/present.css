@@ -584,3 +584,50 @@
 .deck-hmc .hmc-badge { width: 30px; height: 30px; color: var(--paperWhite, #FFFEF9); opacity: 0.9; flex: 0 0 auto; }
 .deck-hmc a { color: var(--paperWhite, #FFFEF9); text-decoration: underline; text-underline-offset: 3px; }
 .deck-hmc a:hover { color: var(--gold, #E1B83B); }
+
+/* ---------- 4 · real-time Bayesian foresight ---------- */
+.s-bayes.now { display: flex; flex-direction: column; gap: 22px; }
+.bayes-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1.05fr;
+  gap: 54px;
+  align-items: start;
+  min-height: 0;
+}
+.bayes-idea { display: flex; flex-direction: column; gap: 16px; }
+.bayes-idea .s-text { font-size: 16px; line-height: 1.7; max-width: none; }
+.bayes-idea strong { color: var(--ink, #131309); }
+
+.bayes-curve { width: 100%; height: auto; }
+.bp-prior { fill: none; stroke: var(--textMid, #656B5E); stroke-width: 1.5; stroke-dasharray: 4 4; opacity: 0.55; }
+.bp-post { fill: rgba(225, 184, 59, 0.35); stroke: var(--gold-text, #7E6721); stroke-width: 2; }
+.bp-base { stroke: #E2DBC2; stroke-width: 1.5; }
+
+.bayes-loop {
+  display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 11.5px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--textMid, #656B5E);
+}
+.bayes-loop span {
+  border: 1px solid #D8D2BC; border-radius: 999px;
+  padding: 5px 12px; color: var(--ink, #131309);
+}
+.bayes-loop span.on { background: var(--gold, #E1B83B); border-color: var(--gold, #E1B83B); font-weight: 700; }
+.bayes-loop i { font-style: normal; color: var(--gold-text, #7E6721); }
+.bayes-loop em { font-style: italic; text-transform: none; letter-spacing: 0; font-size: 12.5px; font-family: var(--font-body, inherit); }
+
+.bayes-map { display: flex; flex-direction: column; gap: 14px; }
+.bm-row { display: flex; gap: 14px; align-items: baseline; }
+.bm-row b {
+  font-family: var(--font-mono);
+  font-size: 12px; letter-spacing: 1px;
+  color: var(--gold-text, #7E6721);
+  flex: 0 0 auto;
+}
+.bm-row span { display: block; font-size: 15.5px; font-weight: 700; color: var(--ink, #131309); }
+.bm-row p { margin: 4px 0 0; font-size: 13.5px; line-height: 1.6; color: var(--textMid, #656B5E); }
+
+.bayes-rule { flex: 0 0 auto; max-width: none; }
+.bayes-rule strong { color: var(--ink, #131309); }

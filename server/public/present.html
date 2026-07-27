@@ -75,7 +75,37 @@
       <p class="s-text doors-rule"><strong>Nothing publishes without a human decision.</strong> The gate is the method, not a feature.</p>
     </section>
 
-    <!-- 4 · the pipeline: a candidate travels the gates -->
+    <!-- 4 · the method underneath: Bayesian foresight, made live -->
+    <section class="slide s-bayes">
+      <div class="s-body s-top">
+        <p class="s-label">The method underneath</p>
+        <h2 class="s-head">Real-time Bayesian foresight</h2>
+      </div>
+      <div class="bayes-grid">
+        <div class="bayes-idea">
+          <p class="s-text">Bayesian thinking holds a belief as a <strong>probability, not a verdict</strong>: you state it before the evidence, in a form specific enough to be moved, then let each new observation shift it. You never arrive at certainty — only at a better-informed position, held until something moves it again.</p>
+          <svg class="bayes-curve" viewBox="0 0 420 150" role="img" aria-label="A wide prior belief narrowing and shifting into a posterior as evidence arrives">
+            <path id="bayesPrior" class="bp-prior" d=""/>
+            <path id="bayesPost" class="bp-post" d=""/>
+            <line class="bp-base" x1="0" y1="148" x2="420" y2="148"/>
+          </svg>
+          <div class="bayes-loop">
+            <span>Prior</span><i>→</i><span>Evidence</span><i>→</i><span class="on">Posterior</span>
+            <em>…which becomes tomorrow's prior</em>
+          </div>
+        </div>
+        <div class="bayes-map">
+          <p class="s-label">How this platform meets it</p>
+          <div class="bm-row"><b>01</b><div><span>Priors are stated, not implied</span><p>Eight drivers, each a distribution — minimum, most-likely, maximum — with a written rationale naming the signal clusters behind the range.</p></div></div>
+          <div class="bm-row"><b>02</b><div><span>Evidence arrives nightly</span><p>The scan runs every night and a human decides what enters the library. Beliefs meet new observations continuously, not once at the start of a project.</p></div></div>
+          <div class="bm-row"><b>03</b><div><span>Updating is a single run</span><p>Move a range and ten thousand futures re-sample; every scenario's odds move with it, seeded so the update is exactly reproducible.</p></div></div>
+          <div class="bm-row"><b>04</b><div><span>It names what to watch</span><p>The sensitivity chart ranks which belief, if wrong, would most redraw the map — telling you which evidence is worth going to find next.</p></div></div>
+        </div>
+      </div>
+      <p class="s-text bayes-rule"><strong>No number here is a forecast.</strong> Each is today's position, held until the evidence moves it.</p>
+    </section>
+
+    <!-- 5 · the pipeline: a candidate travels the gates -->
     <section class="slide s-pipe">
       <div class="s-body s-top">
         <p class="s-label">How signals arrive · nightly at 22:00 SGT</p>
@@ -207,16 +237,32 @@
       <div class="drv-tip art-tip" id="artTip" hidden></div>
     </section>
 
-    <!-- 15 · odds & advice -->
-    <section class="slide s-two">
-      <div class="s-body s-top">
-        <p class="s-label">Decision support</p>
-        <h2 class="s-head">Odds, not opinions · advice that shows its sources</h2>
+    <!-- 16 · the simulation -->
+    <section class="slide s-drv">
+      <div class="s-body s-left drv-copy">
+        <p class="s-label">Decision support · simulation</p>
+        <h2 class="s-head">Odds in ten thousand futures</h2>
+        <p class="s-text">Every driver is spun once from its own range to build one complete future — then ten thousand of them. Each is checked against every scenario's declared conditions; the share that lands inside a scenario is its probability.</p>
+        <div class="drv-grid">
+          <span>10,000 sampled futures</span><span>seeded · reproducible</span><span>~40 ms a run</span><span>residual reported, not hidden</span>
+        </div>
+        <p class="s-text" style="font-size:14px">Change a belief and the whole map redraws — which is the point. The sensitivity chart then ranks which belief, if wrong, would move the answer most.</p>
       </div>
-      <div class="s-shots2">
-        <figure><img src="/img/shot-simulation.png" alt="Scenario simulation"><figcaption>Monte Carlo over the eight drivers — every run reports each scenario's odds and which drivers move them</figcaption></figure>
-        <figure><img src="/img/shot-chat.png" alt="Decision chat"><figcaption>Retrieval-grounded chat — answers cite the signals they stand on, and say so when the evidence is thin</figcaption></figure>
+      <figure class="s-shot drv-shot"><img src="/img/shot-simulation.png" alt="Scenario probabilities and driver sensitivity"></figure>
+    </section>
+
+    <!-- 17 · the chat -->
+    <section class="slide s-drv">
+      <div class="s-body s-left drv-copy">
+        <p class="s-label">Decision support · chat</p>
+        <h2 class="s-head">Ask the futures</h2>
+        <p class="s-text">A question is embedded, matched against the whole reviewed library, reranked, and answered alongside the published scenarios — so the reply argues from the evidence base rather than from the model's memory.</p>
+        <div class="drv-grid">
+          <span>cites signals inline</span><span>names the scenarios it bets on</span><span>says when the scan is thin</span><span>conversations never stored</span>
+        </div>
+        <p class="s-text" style="font-size:14px">Every citation is a pill you can open — the claim and its source are one click apart, so nothing has to be taken on faith.</p>
       </div>
+      <figure class="s-shot drv-shot"><img src="/img/shot-chat.png" alt="The decision-support chat with citations"></figure>
     </section>
 
     <!-- 16 · learnings: five lessons, click through them -->
@@ -270,7 +316,7 @@
         </text>
       </svg>
     <a href="https://www.dubaifuture.ae/wp-content/uploads/2025/09/HMC-White-paper-ENG.pdf" target="_blank" rel="noopener">Read more</a>
-    <span class="sep">·</span> AI in Foresight · <span id="counter">01 / 16</span>
+    <span class="sep">·</span> AI in Foresight · <span id="counter">01 / 19</span>
   </div>
 
   <script type="module" src="/js/present.js"></script>

@@ -109,6 +109,37 @@ function placeTip(tip, e) {
   tip.style.top = Math.max(20, y) + "px";
 }
 
+// ---------- slide 4: the belief that updates ----------
+// A wide prior narrows and shifts as evidence lands, then resets — the
+// Bayesian loop drawn rather than described.
+const bell = (mu, sigma, w = 420, h = 148) => {
+  const pts = [];
+  for (let i = 0; i <= 72; i++) {
+    const x = i / 72;
+    const y = Math.exp(-0.5 * ((x - mu) / sigma) ** 2);
+    pts.push(`L${(x * w).toFixed(1)},${(h - y * h * 0.84).toFixed(1)}`);
+  }
+  return `M0,${h} ${pts.join(" ")} L${w},${h} Z`;
+};
+const PRIOR = { mu: 0.42, sigma: 0.2 }, POST = { mu: 0.6, sigma: 0.095 };
+
+function bayesLoop() {
+  const prior = $("bayesPrior"), post = $("bayesPost");
+  if (!prior || !post) return;
+  prior.setAttribute("d", bell(PRIOR.mu, PRIOR.sigma));
+  if (reduced) { post.setAttribute("d", bell(POST.mu, POST.sigma)); return; }
+  const t0 = performance.now();
+  const step = (now) => {
+    const c = ((now - t0) / 1000) % 7;                   // 7s cycle
+    // 0-2.4s: evidence moves the belief · hold · 5.6-7s: a new prior widens again
+    const p = c < 2.4 ? c / 2.4 : c < 5.6 ? 1 : 1 - (c - 5.6) / 1.4;
+    const e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+    post.setAttribute("d", bell(PRIOR.mu + (POST.mu - PRIOR.mu) * e, PRIOR.sigma + (POST.sigma - PRIOR.sigma) * e));
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
 // ---------- slide 8: live drivers with hover descriptions ----------
 const DRV_SHORT = {
   "Parasocial AI Relationship Adoption": "Adoption",
@@ -269,6 +300,8 @@ async function hydrate() {
   enter(slides[i]);
 }
 hydrate();
+
+bayesLoop();
 
 const k0 = parseInt(location.hash.slice(1), 10);
 go(k0 >= 1 && k0 <= N ? k0 - 1 : 0, false);
