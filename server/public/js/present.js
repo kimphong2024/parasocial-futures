@@ -3,6 +3,7 @@
 // count-ups, animated cluster bars, the live map embed, the artifact table.
 import { api, esc } from "./api.js";
 
+const $ = (id) => document.getElementById(id);
 const stage = document.getElementById("stage");
 const slides = [...stage.querySelectorAll(".slide")];
 const dots = document.getElementById("dots");
@@ -96,6 +97,40 @@ pyr?.addEventListener("click", (e) => {
   claNote.textContent = tier.dataset.note;
 });
 
+// ---------- slide 8: live drivers with hover descriptions ----------
+const DRV_SHORT = {
+  "Parasocial AI Relationship Adoption": "Adoption",
+  "Governance Restrictiveness of Companion AI": "Governance",
+  "Prosocial / Anti-Dependency Design Maturity": "Prosocial design",
+  "Embodiment & Persistence Maturity": "Embodiment",
+  "Social Legitimacy of AI Intimacy": "Social legitimacy",
+  "Human Relational Displacement / Deskilling": "Displacement",
+  "Accumulated Relational Harm Burden": "Harm burden",
+  "Market Concentration & Persona Control": "Market control",
+};
+const FALLBACK_DRIVERS = ["Adoption", "Governance", "Prosocial design", "Embodiment", "Social legitimacy", "Displacement", "Harm burden", "Market control"]
+  .map((n) => ({ name: n, description: "", unit: "" }));
+
+function renderDrivers(list) {
+  const grid = $("drvGrid");
+  const note = $("drvNote");
+  if (!grid) return;
+  grid.innerHTML = list.map((d, i) => {
+    const short = DRV_SHORT[d.name] || d.name;
+    return `<span data-i="${i}">${esc(short)}</span>`;
+  }).join("");
+  const show = (d) => {
+    note.innerHTML = `<b>${esc(DRV_SHORT[d.name] || d.name)}</b><p>${esc(d.description || "")}</p>${d.unit ? `<span class="unit">Measured as: ${esc(d.unit)}</span>` : ""}`;
+  };
+  const clear = () => { note.innerHTML = `<span class="drv-note-hint">Hover a driver to read what it measures.</span>`; };
+  grid.querySelectorAll("span").forEach((el) => {
+    const d = list[Number(el.dataset.i)];
+    if (!d?.description) return;
+    el.addEventListener("mouseenter", () => show(d));
+    el.addEventListener("mouseleave", clear);
+  });
+}
+
 // ---------- learnings: click through the five lessons ----------
 const LEARNINGS = [
   { t: "Breadth has a price", who: "machine", x: "Machines add breadth and rigour — hundreds of candidates a night, judged consistently. They also produce confident false positives, which is why every automated judgment ends at a gate." },
@@ -187,6 +222,10 @@ async function hydrate() {
       slide.querySelector(".scen-myth").textContent = myth ? "“" + myth.replace(/\.$/, "") + ".”" : "";
     }
   } catch {}
+  try {
+    const j = await api("/api/drivers");
+    renderDrivers((j.drivers || []).filter((d) => d.enabled !== 0).slice(0, 8));
+  } catch { renderDrivers(FALLBACK_DRIVERS); }
   try {
     const j = await api("/api/artifacts");
     const all = (j.scenarios || []).flatMap((s) => s.artifacts.map((a) => ({

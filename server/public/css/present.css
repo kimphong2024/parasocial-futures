@@ -166,7 +166,7 @@
   overflow: hidden;
   transition: flex 0.5s cubic-bezier(0.16, 1, 0.3, 1), background 0.35s ease;
 }
-.door:hover, .door:focus-visible { flex: 2.4; background: var(--gold, #E1B83B); }
+.door:hover, .door:focus-visible { flex: 3.1; background: var(--gold, #E1B83B); }
 .door, .door:hover, .door *, .door:hover * { text-decoration: none; }
 .door-n { font-family: var(--font-mono); font-size: 13px; letter-spacing: 2px; color: var(--gold-text, #7E6721); }
 .door:hover .door-n { color: var(--ink, #131309); }
@@ -183,13 +183,13 @@
   max-height: 0; opacity: 0;
   transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease 0.1s;
 }
-.door:hover .door-note, .door:focus-visible .door-note { max-height: 130px; opacity: 1; }
+.door:hover .door-note, .door:focus-visible .door-note { max-height: 110px; opacity: 1; }
 .door-shot {
   flex: 1 1 auto; min-height: 0;
   width: 100%;
-  object-fit: cover; object-position: top;
+  /* the whole screenshot, never a crop — the panel letterboxes around it */
+  object-fit: contain; object-position: center;
   border-radius: 10px;
-  border: 1px solid rgba(19, 19, 9, 0.12);
   opacity: 0;
   transition: opacity 0.4s ease 0.12s;
 }
@@ -353,13 +353,41 @@
   color: var(--ink, #131309);
   padding: 8px 0 8px 16px;
   position: relative;
+  cursor: default;
+  transition: color 0.2s ease;
 }
 .drv-grid span::before {
   content: "";
   position: absolute; left: 0; top: 50%;
   width: 8px; height: 8px; translate: 0 -50%;
   background: var(--gold, #E1B83B);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
+.drv-grid span:hover { color: var(--gold-text, #7E6721); }
+.drv-grid span:hover::before { transform: scale(1.5); }
+/* what the hovered driver measures — a reserved band, so nothing jumps */
+.drv-note {
+  margin-top: 14px;
+  min-height: 96px;
+  border-top: 1px solid #E2DBC2;
+  padding-top: 14px;
+}
+.drv-note-hint { font-size: 14px; color: var(--textMid, #656B5E); font-style: italic; }
+.drv-note b {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 21px; letter-spacing: 0.5px; text-transform: uppercase;
+  color: var(--ink, #131309);
+  margin-bottom: 6px;
+}
+.drv-note p { font-size: 14px; line-height: 1.6; color: var(--textMid, #656B5E); margin: 0; }
+.drv-note .unit {
+  display: block; margin-top: 6px;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.5px;
+  color: var(--gold-text, #7E6721);
+}
+@media (prefers-reduced-motion: reduce) { .drv-grid span, .drv-grid span::before { transition: none; } }
 .drv-shot img { width: 100%; border-radius: 12px; border: 1px solid #E2DBC2; box-shadow: 0 18px 50px rgba(19, 19, 9, 0.18); display: block; }
 
 /* ---------- 9 · the pyramid ---------- */
@@ -398,7 +426,9 @@
 .art-table { position: relative; height: 560px; }
 .art-table img {
   position: absolute;
-  width: 330px; aspect-ratio: 4 / 3; object-fit: cover;
+  width: 300px; aspect-ratio: 1 / 1;
+  object-fit: contain;
+  background: var(--paperWhite, #FFFEF9);
   border-radius: 14px;
   border: 6px solid var(--paperWhite, #FFFEF9);
   box-shadow: 0 16px 44px rgba(19, 19, 9, 0.24);
