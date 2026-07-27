@@ -97,6 +97,18 @@ pyr?.addEventListener("click", (e) => {
   claNote.textContent = tier.dataset.note;
 });
 
+// the stage is a scaled canvas — convert the cursor into its 1280x720 space
+function placeTip(tip, e) {
+  const r = stage.getBoundingClientRect();
+  const scale = r.width / 1280;
+  let x = (e.clientX - r.left) / scale + 18;
+  let y = (e.clientY - r.top) / scale + 18;
+  x = Math.min(x, 1280 - tip.offsetWidth - 40);
+  y = Math.min(y, 720 - tip.offsetHeight - 30);
+  tip.style.left = Math.max(40, x) + "px";
+  tip.style.top = Math.max(20, y) + "px";
+}
+
 // ---------- slide 8: live drivers with hover descriptions ----------
 const DRV_SHORT = {
   "Parasocial AI Relationship Adoption": "Adoption",
@@ -113,21 +125,24 @@ const FALLBACK_DRIVERS = ["Adoption", "Governance", "Prosocial design", "Embodim
 
 function renderDrivers(list) {
   const grid = $("drvGrid");
-  const note = $("drvNote");
   if (!grid) return;
   grid.innerHTML = list.map((d, i) => {
     const short = DRV_SHORT[d.name] || d.name;
     return `<span data-i="${i}">${esc(short)}</span>`;
   }).join("");
-  const show = (d) => {
-    note.innerHTML = `<b>${esc(DRV_SHORT[d.name] || d.name)}</b><p>${esc(d.description || "")}</p>${d.unit ? `<span class="unit">Measured as: ${esc(d.unit)}</span>` : ""}`;
-  };
-  const clear = () => { note.innerHTML = `<span class="drv-note-hint">Hover a driver to read what it measures.</span>`; };
+  const tip = $("drvTip");
+  const place = (e) => placeTip(tip, e);
   grid.querySelectorAll("span").forEach((el) => {
     const d = list[Number(el.dataset.i)];
     if (!d?.description) return;
-    el.addEventListener("mouseenter", () => show(d));
-    el.addEventListener("mouseleave", clear);
+    el.addEventListener("mouseenter", (e) => {
+      tip.innerHTML = `<b>${esc(DRV_SHORT[d.name] || d.name)}</b><p>${esc(d.description || "")}</p>${d.unit ? `<span class="unit">Measured as: ${esc(d.unit)}</span>` : ""}`;
+      tip.hidden = false;
+      place(e);
+      requestAnimationFrame(() => tip.classList.add("on"));
+    });
+    el.addEventListener("mousemove", place);
+    el.addEventListener("mouseleave", () => tip.classList.remove("on"));
   });
 }
 
@@ -171,12 +186,26 @@ function dealArtifacts() {
   // the top card plus two beneath, strewn like objects on a table
   const shown = [0, 1, 2].map((k) => artList[(artIdx + k) % artList.length]);
   artTable.innerHTML = shown.map((a, k) => `
-    <img src="${esc(a.src)}" alt="${esc(a.cap)}" loading="lazy" style="
+    <img src="${esc(a.src)}" alt="${esc(a.cap)}" loading="lazy" data-k="${k}" style="
       z-index: ${3 - k};
       left: ${[70, 10, 150][k]}px; top: ${[60, 190, 230][k]}px;
       transform: rotate(${ROTS[(artIdx + k) % ROTS.length]}deg) scale(${k === 0 ? 1.12 : 0.94});
       opacity: ${k === 0 ? 1 : 0.75};">`).join("");
   artCaption.textContent = shown[0].cap;
+  // hovering an object tells you what it is and what it reveals
+  const tip = $("artTip");
+  artTable.querySelectorAll("img").forEach((img) => {
+    const a = shown[Number(img.dataset.k)];
+    if (!a?.blurb) return;
+    img.addEventListener("mouseenter", (e) => {
+      tip.innerHTML = `<span class="kind">${esc(a.type)} · ${esc(a.scenario)}</span><b>${esc(a.title)}</b><p>${esc(a.blurb)}</p>`;
+      tip.hidden = false;
+      placeTip(tip, e);
+      requestAnimationFrame(() => tip.classList.add("on"));
+    });
+    img.addEventListener("mousemove", (e) => placeTip(tip, e));
+    img.addEventListener("mouseleave", () => tip.classList.remove("on"));
+  });
 }
 document.getElementById("artNext")?.addEventListener("click", (e) => {
   e.stopPropagation();
@@ -231,6 +260,7 @@ async function hydrate() {
     const all = (j.scenarios || []).flatMap((s) => s.artifacts.map((a) => ({
       src: `/img/artifacts/${s.archetype}-${a.slug}.jpg`,
       cap: `${a.type} · ${s.title}`,
+      type: a.type, scenario: s.title, title: a.title, blurb: a.blurb,
     })));
     if (all.length) { artList = all; artIdx = 0; }
   } catch {}

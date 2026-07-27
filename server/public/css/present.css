@@ -365,28 +365,45 @@
 }
 .drv-grid span:hover { color: var(--gold-text, #7E6721); }
 .drv-grid span:hover::before { transform: scale(1.5); }
-/* what the hovered driver measures — a reserved band, so nothing jumps */
-.drv-note {
-  margin-top: 14px;
-  min-height: 96px;
-  border-top: 1px solid #E2DBC2;
-  padding-top: 14px;
+.drv-hint { font-size: 13.5px; font-style: italic; color: var(--textMid, #656B5E); margin: 6px 0 0; }
+/* the hover layer — floats with the cursor, above everything on the slide */
+.drv-tip {
+  position: absolute;
+  z-index: 6;
+  width: 330px;
+  background: var(--paperWhite, #FFFEF9);
+  border: 1px solid #D8D2BC;
+  border-left: 4px solid var(--gold, #E1B83B);
+  box-shadow: 0 14px 40px rgba(19, 19, 9, 0.2);
+  border-radius: 12px;
+  padding: 16px 18px;
+  pointer-events: none;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
 }
-.drv-note-hint { font-size: 14px; color: var(--textMid, #656B5E); font-style: italic; }
-.drv-note b {
+.drv-tip.on { opacity: 1; transform: none; }
+.art-tip { width: 360px; }
+.art-tip .kind {
+  display: block; margin-bottom: 6px;
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--gold-text, #7E6721);
+}
+.art-table img { cursor: help; }
+.drv-tip b {
   display: block;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 21px; letter-spacing: 0.5px; text-transform: uppercase;
+  font-size: 20px; letter-spacing: 0.5px; text-transform: uppercase;
   color: var(--ink, #131309);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
-.drv-note p { font-size: 14px; line-height: 1.6; color: var(--textMid, #656B5E); margin: 0; }
-.drv-note .unit {
-  display: block; margin-top: 6px;
-  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.5px;
+.drv-tip p { font-size: 13.5px; line-height: 1.65; color: var(--textMid, #656B5E); margin: 0; }
+.drv-tip .unit {
+  display: block; margin-top: 8px;
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.5px;
   color: var(--gold-text, #7E6721);
 }
+@media (prefers-reduced-motion: reduce) { .drv-tip { transition: none; } }
 @media (prefers-reduced-motion: reduce) { .drv-grid span, .drv-grid span::before { transition: none; } }
 .drv-shot img { width: 100%; border-radius: 12px; border: 1px solid #E2DBC2; box-shadow: 0 18px 50px rgba(19, 19, 9, 0.18); display: block; }
 
