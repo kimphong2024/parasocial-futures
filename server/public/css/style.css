@@ -178,6 +178,20 @@ input, select, textarea {
   padding: 9px 12px; transition: border-color 180ms ease;
 }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--olive); }
+
+/* Keyboard focus. Every interactive control needs a visible indicator; the
+   app had one only on bespoke SVG controls, so shared buttons, pills, tabs
+   and nav links showed nothing. :focus-visible keeps it off mouse clicks. */
+.btn:focus-visible,
+.pill:focus-visible,
+.tab:focus-visible,
+.site-nav a:focus-visible,
+.site-subnav a:focus-visible,
+.drawer-close:focus-visible,
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--charcoal);
+  outline-offset: 2px;
+}
 textarea { width: 100%; resize: vertical; line-height: 1.7; }
 label.field-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--textDim); margin-bottom: 4px; }
 

@@ -21,24 +21,23 @@
       <div class="divider mt-4"></div>
     </div>
 
-    <div class="report-status caption" id="repStatus" hidden></div>
+    <div class="report-status" id="repStatus" hidden></div>
 
-    <section class="card" id="repHeadlineCard">
-      <span class="label">What the library currently says</span>
+    <div class="report-standfirst">
       <p class="report-headline" id="repHeadline"></p>
-      <div class="report-meta caption" id="repMeta"></div>
+      <div class="report-meta" id="repMeta"></div>
       <div class="report-actions">
         <button class="btn btn-sm" id="regenerate">Regenerate the report</button>
-        <span class="caption" id="repState"></span>
+        <span class="report-state" id="repState" role="status" aria-live="polite"></span>
       </div>
-    </section>
+    </div>
 
-    <div id="repBody"></div>
+    <article id="repBody"></article>
 
-    <section class="card" id="repMethod" hidden>
-      <span class="label">How to read this</span>
-      <p class="caption mt-2">The report is written by Claude from the human-approved library, then cached; it regenerates only when someone asks. Citations are filtered server-side against the evidence pack, so a citation that survives points at a signal that exists — but the prose around it is generation, and the pills are there so no claim needs to be taken on faith. Probabilities are conditional on human-set driver ranges and hand-shaped scenario conditions, not forecasts. Artifacts are shipped as a seed file rather than database rows, so they are described here but not citable the way signals and scenarios are. Method in full on the <a href="/reference">Method</a> page.</p>
-    </section>
+    <aside class="report-method" id="repMethod" hidden>
+      <h3>How to read this</h3>
+      <p>Claude writes the report from the human-approved library, and it is then cached; it regenerates only when someone asks. Citations are filtered server-side against the evidence pack, so a citation that survives points at a signal that exists — but the prose around it is generation, and the pills are there so no claim need be taken on faith. Anything presented as a quotation is checked against retained source text and removed if it does not match. Probabilities are conditional on human-set driver ranges and hand-shaped scenario conditions, not forecasts. Artifacts ship as a seed file rather than database rows, so they are described here but not citable the way signals and scenarios are. Method in full on the <a href="/reference">Method</a> page.</p>
+    </aside>
   </main>
 
   <div class="drawer-backdrop" id="backdrop"></div>

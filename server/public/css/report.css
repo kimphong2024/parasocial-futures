@@ -1,87 +1,209 @@
 /* ============================================================
-   The Report — the synthesis page.
+   The Report — a document, not a dashboard.
 
-   Reading register rather than dashboard register: one measure-limited
-   column of prose, with the two charts sitting inside their sections
-   rather than beside them. Everything else comes from style.css.
+   The rest of the app is card-shaped because it is task-shaped:
+   discrete objects you act on. The report is read top to bottom,
+   so it is set as a printed document — prose on the paper ground,
+   sections divided by rules and space rather than boxes. Cards are
+   kept for the two things here that genuinely are objects: the
+   figures, and the method note.
+
+   Tokens come from fib.css (--ink / --cream / --gold / --gold-text
+   / --chart-mid), which re-skins the product pages after style.css.
    ============================================================ */
 
+/* ---------- notice ---------- */
+/* Full border and a marker square, echoing the page-head label rule.
+   No side stripe. */
 .report-status {
-  padding: 12px 16px;
-  margin-bottom: var(--s-4);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--mustard);
-  border-radius: var(--r-box);
-  background: var(--mustardLight);
-  color: var(--charcoal);
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 14px 18px;
+  margin-bottom: var(--s-6, 32px);
+  border: 1px solid var(--creamLine);
+  border-radius: 14px;
+  background: var(--cream);
+  color: var(--ink);
+  font-size: 13.5px;
+  line-height: 1.6;
 }
-.report-status.is-error { border-left-color: var(--urgentRed); background: var(--redLight); }
+.report-status::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: var(--gold);
+  transform: translateY(-1px);
+}
+.report-status.is-error::before { background: #A03325; }
 
-.report-headline {
-  font-size: clamp(21px, 2.6vw, 30px);
-  line-height: 1.32;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin-top: var(--s-3);
-  max-width: 30em;
+/* ---------- standfirst: the thesis, set as a lede ---------- */
+.report-standfirst {
+  padding-bottom: var(--s-6, 32px);
+  border-bottom: 1px solid var(--ink);
+  margin-bottom: var(--s-6, 32px);
 }
-.report-meta { margin-top: var(--s-3); }
+.report-headline {
+  font-size: clamp(1.35rem, 2.5vw, 1.95rem);
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  max-width: 26ch;
+  text-wrap: balance;
+  margin: 0;
+}
+/* Long thesis sentences need room; the balance cap above keeps short
+   ones from stranding a single word on line two. */
+@supports not (text-wrap: balance) { .report-headline { max-width: 30ch; } }
+
+.report-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: var(--s-4, 16px);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  color: var(--chart-mid);
+}
 .report-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: var(--s-4);
+  gap: 14px;
   flex-wrap: wrap;
+  margin-top: var(--s-4, 16px);
 }
+.report-state { color: var(--chart-mid); font-size: 12.5px; }
 
-.report-section { margin-bottom: var(--s-4); }
+/* ---------- sections ---------- */
+/* Heading in a left rail, prose in the measure. A 66ch column inside a
+   1240px page otherwise strands half the width; this gives that space a
+   job and matches the two-column idiom already used by /reference and
+   /simulation. Figures span both columns — they are objects, not prose,
+   and they earn the full width. */
+.report-section {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+  gap: 8px 48px;
+  align-items: start;
+}
+.report-section + .report-section {
+  border-top: 1px solid var(--creamLine);
+  margin-top: var(--s-6, 32px);
+  padding-top: var(--s-6, 32px);
+}
 .report-section h3 {
-  font-size: 17px;
+  grid-column: 1;
+  font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+  line-height: 1.3;
   font-weight: 700;
-  margin-top: var(--s-3);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0;
+  text-wrap: balance;
+  position: sticky;
+  top: 24px;
 }
-.report-section .num {
-  font-size: 10px;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: var(--textDim);
-}
-.report-prose {
-  margin-top: var(--s-3);
-  max-width: 38em;
-  font-size: 15px;
-  line-height: 1.75;
-}
-.report-prose p + p { margin-top: 0.9em; }
+.report-section .report-prose { grid-column: 2; }
+.report-section .report-figure { grid-column: 1 / -1; }
 
-/* Citation pills — same affordance as the chat page, so a reader who has
-   used one already knows what these do. */
+/* Body copy is the point of this page: ink, not muted gray, and set
+   at a reading size. style.css caps `p` at clamp(13px, 1vw, 15px),
+   which beats inheritance from the wrapper — so the size is declared
+   on the paragraph itself. */
+.report-prose { max-width: 66ch; }
+.report-prose p {
+  font-size: 15.5px;
+  line-height: 1.72;
+  color: #23231A;
+  text-wrap: pretty;
+  margin: 0;
+}
+.report-prose p + p { margin-top: 0.95em; }
+
+/* ---------- citations ---------- */
+/* A real button: reachable by keyboard, announced as a control, and
+   at least 24px tall (WCAG 2.5.8 inline-target minimum — a 44px pill
+   inside running prose would wreck the line rhythm). Colours are
+   fib's own text-safe pairs: 5.79:1 and 6.85:1. */
 .cite-pill {
   display: inline-block;
-  font-size: 11px;
-  line-height: 1.5;
-  padding: 1px 6px;
+  font: inherit;
+  font-size: 0.78em;
+  font-weight: 600;
+  line-height: 1;
+  padding: 5px 8px;
+  min-height: 24px;
   margin: 0 1px;
-  border-radius: var(--r-pill);
-  background: var(--brownLight);
-  color: var(--brown);
   border: 1px solid transparent;
+  border-radius: 999px;
+  background: #E9D9BD;
+  color: #6B4A12;
   cursor: pointer;
   vertical-align: baseline;
   white-space: nowrap;
+  transition: background 180ms var(--ease-epoch), border-color 180ms var(--ease-epoch);
 }
-.cite-pill:hover { border-color: var(--brown); }
-.cite-pill[data-scenario] { background: var(--oliveLight); color: var(--olive); }
+.cite-pill:hover { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+.cite-pill:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.cite-pill[data-scenario] { background: #DDE3D2; color: #33421F; }
+.cite-pill[data-scenario]:hover { background: var(--deepGreen); border-color: var(--deepGreen); color: var(--paperWhite); }
 
-.report-figure { margin-top: var(--s-4); }
-.report-figure .figure-label {
-  font-size: 10px;
-  letter-spacing: 3px;
+/* ---------- figures: the one place a card is the right answer ---------- */
+.report-figure {
+  margin-top: var(--s-5, 24px);
+  padding: var(--s-5, 24px);
+  background: var(--cream);
+  border-radius: 18px;
+}
+.report-figure figcaption {
+  margin-top: var(--s-3, 12px);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--chart-mid);
+  max-width: 60ch;
+}
+.report-figure svg { display: block; width: 100%; height: auto; }
+
+/* ---------- method note: an aside, deliberately quieter ---------- */
+.report-method {
+  margin-top: var(--s-8, 64px);
+  padding: var(--s-5, 24px);
+  background: var(--cream);
+  border-radius: 18px;
+}
+.report-method h3 {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--textDim);
-  margin-bottom: var(--s-2);
+  font-weight: 400;
+  color: var(--chart-mid);
+  margin: 0 0 var(--s-3, 12px);
+}
+.report-method p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #3A3A2E;
+  max-width: 72ch;
+  margin: 0;
+}
+.report-method a { color: var(--deepGreen); text-decoration: underline; text-underline-offset: 2px; }
+
+/* Below the two-column threshold the rail stops being a rail: heading sits
+   above its prose, un-stuck, and everything runs full width. */
+@media (max-width: 900px) {
+  .report-section { grid-template-columns: 1fr; gap: 0; }
+  .report-section h3 { position: static; margin-bottom: var(--s-4, 16px); }
+  .report-section .report-prose,
+  .report-section .report-figure { grid-column: 1; }
 }
 
 @media (max-width: 720px) {
-  .report-prose { font-size: 14.5px; }
+  .report-prose p { font-size: 15px; }
+  .report-figure, .report-method { padding: var(--s-4, 16px); }
+  .report-headline { max-width: none; }
 }

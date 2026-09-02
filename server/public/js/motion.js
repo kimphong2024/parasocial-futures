@@ -41,12 +41,22 @@ const io = reduced ? null : new IntersectionObserver((entries) => {
   }
 }, { threshold: 0.12, rootMargin: "0px 0px -4% 0px" });
 
+// A reveal must never gate visibility. CSS animations do not run in a hidden
+// tab, and `mask-up` uses `backwards` fill, so tagging an element while the
+// page is hidden leaves it clipped and invisible — a background-tab load or a
+// headless capture would ship a blank page. So: don't tag while hidden, and
+// sweep once the page is actually shown.
 function tag(el) {
   if (el.classList.contains("mreveal") || el.matches(EXCLUDE)) return;
+  if (document.hidden) return;
   el.classList.add("mreveal");
   if (!io) { el.classList.add("in"); return; }
   io.observe(el); // fires immediately for elements already in view
 }
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) sweep(document);
+});
 
 function sweep(root) {
   for (const sel of REVEAL)

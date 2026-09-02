@@ -29,11 +29,13 @@ const INPUT_LABEL = {
 let data = null;
 let timer = null;
 
-// Same citation affordance as the chat page (js/chat.js) — a pill you can
-// click through to the underlying signal.
+// Same citation affordance as the chat page, but rendered as real buttons:
+// these are the primary control on the page, and a span with a click handler
+// is unreachable by keyboard and announced as nothing.
 const pills = (s) => esc(s)
-  .replace(/\[S(\d+)\]/g, `<span class="cite-pill" data-sig="$1">S$1</span>`)
-  .replace(/\[SC:([a-z0-9-]+)\]/gi, `<span class="cite-pill" data-scenario="$1">$1</span>`);
+  .replace(/\[S(\d+)\]/g, `<button type="button" class="cite-pill" data-sig="$1" aria-label="Open signal $1">S$1</button>`)
+  .replace(/\[SC:([a-z0-9-]+)\]/gi, (_m, slug) =>
+    `<button type="button" class="cite-pill" data-scenario="${slug}" aria-label="Open scenario ${slug}">${slug}</button>`);
 
 const paras = (s) => (s || "").split(/\n{2,}/).map((p) => `<p>${pills(p.trim())}</p>`).join("");
 
@@ -73,9 +75,6 @@ function drawStatus() {
 
 function drawReport() {
   const r = data.report;
-  // The card stays visible with no report — it carries the button that writes
-  // the first one.
-  $("repHeadlineCard").hidden = false;
   $("regenerate").textContent = r ? "Regenerate the report" : "Write the report";
   $("regenerate").disabled = !data.available || data.generating;
   if (!r) {
@@ -92,13 +91,12 @@ function drawReport() {
     `Written from ${r.signal_count} human-approved signals · ${fmtWhen(r.updated_at)}` +
     (r.citations_dropped ? ` · ${r.citations_dropped} unverifiable citation${r.citations_dropped === 1 ? "" : "s"} removed` : "");
 
-  $("repBody").innerHTML = SECTIONS.map(([key, title], i) => `
-    <section class="card report-section" data-section="${key}">
-      <span class="num">${String(i + 1).padStart(2, "0")}</span>
+  $("repBody").innerHTML = SECTIONS.map(([key, title]) => `
+    <section class="report-section" data-section="${key}">
       <h3>${esc(title)}</h3>
       <div class="report-prose">${paras(r[key])}</div>
-      ${key === "odds" ? `<div class="report-figure"><div class="figure-label">Scenario probabilities</div><div id="repOdds"></div></div>` : ""}
-      ${key === "sensitivity" ? `<div class="report-figure"><div class="figure-label">Driver sensitivity</div><div id="repTornado"></div></div>` : ""}
+      ${key === "odds" ? `<figure class="report-figure"><div id="repOdds"></div><figcaption id="repOddsCap">Scenario probabilities from the latest simulation run, with the residual — the share of sampled futures matching no scenario.</figcaption></figure>` : ""}
+      ${key === "sensitivity" ? `<figure class="report-figure"><div id="repTornado"></div><figcaption id="repTornadoCap"></figcaption></figure>` : ""}
     </section>`).join("");
 
   drawFigures();
@@ -109,7 +107,12 @@ function drawReport() {
 async function drawFigures() {
   try {
     const { latest } = await api("/api/simulation/latest");
-    if (!latest) return;
+    // No run yet: drop the figures rather than leaving empty frames with
+    // captions describing numbers that do not exist.
+    if (!latest) {
+      document.querySelectorAll(".report-figure").forEach((f) => f.remove());
+      return;
+    }
     const odds = $("repOdds");
     if (odds) {
       probabilityBars(odds, (latest.scenarios || []).map((s) => ({
@@ -120,8 +123,9 @@ async function drawFigures() {
     if (tor) {
       const first = Object.keys(latest.tornado || {})[0];
       if (first) {
-        tor.insertAdjacentHTML("beforebegin", `<p class="caption">Sensitivity shown for <strong>${esc(first)}</strong>; the full set is on the <a href="/simulation">simulation</a> page.</p>`);
         tornado(tor, latest.tornado[first]);
+        const cap = $("repTornadoCap");
+        if (cap) cap.innerHTML = `How far each driver moves the odds for <strong>${esc(first)}</strong>, comparing its top third against its bottom third. The full set is on the <a href="/simulation">simulation</a> page.`;
       }
     }
   } catch { /* figures are an enhancement; the prose stands without them */ }
