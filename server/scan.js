@@ -3,6 +3,7 @@
 // insert survivors as status 'pending' for human review. Nothing publishes
 // without approval. Each step is fenced so one failure never kills the run.
 import { classifyTriangleIfNeeded } from "./triangle.js";
+import { storeArticleText } from "./quotes.js";
 import { db, now, insertScanRun, finishScanRun, getScanRun, insertSignal, getSignalByUrl, enabledSources, enabledThemes, touchSource, getSetting } from "./db.js";
 import { perplexityScan, DEFAULT_THEMES } from "./perplexity.js";
 import { firecrawlScan, DEFAULT_FOLLOW_LIMIT } from "./firecrawl.js";
@@ -192,14 +193,19 @@ export async function runScan(trigger = "manual") {
         if (nearest && nearest.score >= settings.dedup_threshold) { dupEmb++; return; }
       }
       try {
-        const raw = JSON.stringify({ ...c, nearest });
+        // article_text is retained separately, not in raw_json — it is the
+        // verbatim-check corpus, not part of the machine's audit payload.
+        const { article_text, ...payload } = c;
+        const raw = JSON.stringify({ ...payload, nearest });
         const info = insertSignal.run(
           c.title, c.summary || "", c.url, c.source || "", c.topic_tags || "",
           c.cluster || "", c.signal_type || "", c.urgency || "", c.horizon || "",
           c.date || "", c.date ? Number((c.date.match(/20\d\d/) || [])[0]) || null : null,
           c.provenance, "pending", runId, raw, ts, null,
         );
-        if (v) addSignalVector(Number(info.lastInsertRowid), v);
+        const newId = Number(info.lastInsertRowid);
+        if (v) addSignalVector(newId, v);
+        if (article_text) { try { storeArticleText(newId, article_text); } catch { /* quotation support is best-effort */ } }
         newPending++;
       } catch (e) {
         if (/UNIQUE/.test(e.message)) dupUrl++;

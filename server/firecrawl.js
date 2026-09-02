@@ -98,6 +98,10 @@ async function followArticles(src, sigs, isKnown, followLimit) {
         s.summary = rich.summary;
         if (rich.date) s.date = rich.date;
         s.url = article.url;
+        // Retain the article text this classification was made from. It is the
+        // only thing a verbatim quotation can later be checked against, and it
+        // was previously discarded the moment extraction finished.
+        s.article_text = article.markdown;
       }
     } catch { /* keep the teaser */ }
   }
