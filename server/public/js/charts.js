@@ -22,6 +22,48 @@ const INK = cssVar("--chart-ink", "#282E2A"),
   SERIES = cssVar("--chart-series", "#4E5A2B");
 const pct = (x) => (x * 100).toFixed(1) + "%";
 
+// Direct-labeled magnitude bar. Was private to dashboard.js; shared now that
+// the report draws the same library composition.
+export function hbar(label, n, max, { cls = "", title = "", data = "" } = {}) {
+  const w = Math.max(0.6, (n / max) * 100);
+  return `<div class="hbar ${cls}" ${data} title="${esc(title || `${label} — ${n} signals`)}">
+    <span class="hbar-label">${esc(label)}</span>
+    <span class="hbar-track"><span class="hbar-fill" style="width:${w.toFixed(1)}%"></span></span>
+    <span class="hbar-value">${n}</span>
+  </div>`;
+}
+
+// One proportional bar split into named segments — for showing the shape of a
+// facet (horizons, urgencies, types) at a glance rather than as a sentence.
+// parts = [{label, n, color}]. Segments below 7% drop their inline label and
+// keep it in the legend, so narrow slivers never overlap.
+// Label ink is chosen per segment by relative luminance, not fixed to white.
+// Measured across the horizon and urgency ramps, this keeps every inline
+// label between 4.6:1 and 9.9:1; a fixed white label failed on five of the
+// seven segment colours.
+const relLum = (hex) => {
+  const h = hex.replace("#", "");
+  const v = [0, 2, 4].map((i) => {
+    const c = parseInt(h.slice(i, i + 2), 16) / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+};
+const labelInk = (bg) => (relLum(bg) < 0.18 ? "#FFFEF9" : "#131309");
+
+export function segmentBar(parts, { total } = {}) {
+  const sum = total || parts.reduce((a, p) => a + p.n, 0) || 1;
+  const seg = parts.map((p) => {
+    const share = p.n / sum;
+    return `<span class="segbar-part" style="flex:${share};background:${p.color};color:${labelInk(p.color)}" title="${esc(p.label)} — ${p.n} (${(share * 100).toFixed(0)}%)">
+      ${share >= 0.07 ? `<span class="segbar-inline">${(share * 100).toFixed(0)}%</span>` : ""}
+    </span>`;
+  }).join("");
+  const key = parts.map((p) =>
+    `<span class="segbar-key"><i style="background:${p.color}"></i>${esc(p.label)} <b>${p.n}</b></span>`).join("");
+  return `<div class="segbar"><div class="segbar-track">${seg}</div><div class="segbar-legend">${key}</div></div>`;
+}
+
 // Horizontal probability bars: items = [{label, sublabel, value (0..1), color}]
 export function probabilityBars(el, items) {
   const W = 720, ROW = 44, LAB = 230, PAD = 8;

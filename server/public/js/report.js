@@ -2,6 +2,7 @@ import { api, esc } from "./api.js";
 import { renderNav } from "./nav.js";
 import { noteCard, wireNoteCard } from "./signal-note.js";
 import { probabilityBars, tornado, ARCH_COLOR } from "./charts.js";
+import { evidenceFigure, triangleFigure, scenarioLedger } from "./report-figures.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -37,7 +38,44 @@ const pills = (s) => esc(s)
   .replace(/\[SC:([a-z0-9-]+)\]/gi, (_m, slug) =>
     `<button type="button" class="cite-pill" data-scenario="${slug}" aria-label="Open scenario ${slug}">${slug}</button>`);
 
-const paras = (s) => (s || "").split(/\n{2,}/).map((p) => `<p>${pills(p.trim())}</p>`).join("");
+// The model returns each section as a single block, which lands as a 150-word
+// wall. Split on sentence boundaries into roughly even paragraphs — words are
+// never touched, only where the breaks fall.
+//
+// The boundary needs all three of: terminal punctuation, whitespace, and a
+// capital or opening quote after it. An earlier version matched any period and
+// rewrote "8.8%" as "8. 8%" — corrupting figures is far worse than a long
+// paragraph, so the lookahead is load-bearing, not defensive styling.
+const SENTENCE_BREAK = /(?<=[.!?]["\u201d\u2019]?)\s+(?=["\u201c(\[]?[A-Z])/;
+
+function breakUp(block, target = 55) {
+  const count = (t) => t.split(/\s+/).filter(Boolean).length;
+  if (count(block) <= 80) return [block];
+  const sentences = block.split(SENTENCE_BREAK);
+  if (sentences.length < 2) return [block];
+
+  const words = count(block);
+  const per = Math.ceil(words / Math.max(2, Math.round(words / target)));
+  const out = [];
+  let buf = [], n = 0;
+  for (const sent of sentences) {
+    buf.push(sent);
+    n += count(sent);
+    if (n >= per) { out.push(buf.join(" ")); buf = []; n = 0; }
+  }
+  if (buf.length) {
+    const tail = buf.join(" ");
+    if (out.length && count(tail) < 18) out[out.length - 1] += " " + tail;
+    else out.push(tail);
+  }
+  return out;
+}
+
+const paras = (s) => (s || "")
+  .split(/\n{2,}/)
+  .flatMap((block) => breakUp(block.trim()))
+  .filter(Boolean)
+  .map((p) => `<p>${pills(p)}</p>`).join("");
 
 function fmtWhen(iso) {
   if (!iso) return "";
@@ -91,44 +129,64 @@ function drawReport() {
     `Written from ${r.signal_count} human-approved signals · ${fmtWhen(r.updated_at)}` +
     (r.citations_dropped ? ` · ${r.citations_dropped} unverifiable citation${r.citations_dropped === 1 ? "" : "s"} removed` : "");
 
+  const fig = {
+    state_of_evidence: evidenceFigure(ctx),
+    triangle_reading: triangleFigure(ctx.triangle),
+    scenario_space: scenarioLedger(ctx.scenarios, ctx.sim),
+    odds: ctx.sim ? `<figure class="report-figure"><div class="fig-head"><h4>How the odds fall</h4><p class="fig-sub">${ctx.sim.n.toLocaleString()} sampled futures, seed ${ctx.sim.seed}</p></div><div id="repOdds"></div></figure>` : "",
+    sensitivity: ctx.sim ? `<figure class="report-figure"><div class="fig-head"><h4>What actually moves them</h4><p class="fig-sub" id="repTornadoCap"></p></div><div id="repTornado"></div></figure>` : "",
+  };
+
   $("repBody").innerHTML = SECTIONS.map(([key, title]) => `
-    <section class="report-section" data-section="${key}">
+    <section class="report-section${fig[key] ? " has-figure" : ""}" data-section="${key}">
       <h3>${esc(title)}</h3>
       <div class="report-prose">${paras(r[key])}</div>
-      ${key === "odds" ? `<figure class="report-figure"><div id="repOdds"></div><figcaption id="repOddsCap">Scenario probabilities from the latest simulation run, with the residual — the share of sampled futures matching no scenario.</figcaption></figure>` : ""}
-      ${key === "sensitivity" ? `<figure class="report-figure"><div id="repTornado"></div><figcaption id="repTornadoCap"></figcaption></figure>` : ""}
+      ${fig[key] || ""}
     </section>`).join("");
 
-  drawFigures();
+  drawCharts(ctx);
 }
 
-// The figures come from the simulation endpoint directly rather than from the
-// model's prose, so the numbers on the page are the platform's numbers.
-async function drawFigures() {
-  try {
-    const { latest } = await api("/api/simulation/latest");
-    // No run yet: drop the figures rather than leaving empty frames with
-    // captions describing numbers that do not exist.
-    if (!latest) {
-      document.querySelectorAll(".report-figure").forEach((f) => f.remove());
-      return;
+// Everything the figures draw is fetched live rather than taken from the
+// model's prose, so a picture can never disagree with the platform. When the
+// report itself is stale the banner already says so; the figures stay current
+// on purpose, and the method note explains why.
+let ctx = { facets: null, overview: null, triangle: null, scenarios: null, sim: null };
+
+async function loadContext() {
+  const get = (p) => api(p).catch(() => null);
+  const [facets, overview, triangle, scenarios, simRes] = await Promise.all([
+    get("/api/signals/facets?status=approved"),
+    get("/api/signals/overview"),
+    get("/api/triangle"),
+    get("/api/scenarios?status=published"),
+    get("/api/simulation/latest"),
+  ]);
+  ctx = {
+    facets, overview,
+    triangle: triangle?.counts || null,
+    scenarios: scenarios?.scenarios || null,
+    sim: simRes?.latest || null,
+  };
+}
+
+function drawCharts(c) {
+  if (!c.sim) return;
+  const odds = $("repOdds");
+  if (odds) {
+    probabilityBars(odds, (c.sim.scenarios || []).map((s) => ({
+      label: s.title, sublabel: s.archetype, value: s.probability, color: ARCH_COLOR[s.archetype] || "#6B7264",
+    })).concat([{ label: "No scenario fits", sublabel: "residual", value: c.sim.residual, color: "#8A8778" }]));
+  }
+  const tor = $("repTornado");
+  if (tor) {
+    const first = Object.keys(c.sim.tornado || {})[0];
+    if (first) {
+      tornado(tor, c.sim.tornado[first]);
+      const cap = $("repTornadoCap");
+      if (cap) cap.innerHTML = `Driver sensitivity for <strong>${esc(first)}</strong> — each driver's top third against its bottom third. Full set on the <a href="/simulation">simulation</a> page.`;
     }
-    const odds = $("repOdds");
-    if (odds) {
-      probabilityBars(odds, (latest.scenarios || []).map((s) => ({
-        label: s.title, sublabel: s.archetype, value: s.probability, color: ARCH_COLOR[s.archetype] || "#6B7264",
-      })).concat([{ label: "No scenario fits", sublabel: "residual", value: latest.residual, color: "#9A9A8A" }]));
-    }
-    const tor = $("repTornado");
-    if (tor) {
-      const first = Object.keys(latest.tornado || {})[0];
-      if (first) {
-        tornado(tor, latest.tornado[first]);
-        const cap = $("repTornadoCap");
-        if (cap) cap.innerHTML = `How far each driver moves the odds for <strong>${esc(first)}</strong>, comparing its top third against its bottom third. The full set is on the <a href="/simulation">simulation</a> page.`;
-      }
-    }
-  } catch { /* figures are an enhancement; the prose stands without them */ }
+  }
 }
 
 // ---------------- drawer (citation follow-through) ----------------
@@ -175,7 +233,8 @@ document.addEventListener("click", (e) => {
 // ---------------- load / regenerate ----------------
 
 async function load() {
-  data = await api("/api/report");
+  const [rep] = await Promise.all([api("/api/report"), loadContext()]);
+  data = rep;
   drawStatus();
   drawReport();
   clearTimeout(timer);

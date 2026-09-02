@@ -164,7 +164,14 @@ function buildPrompt() {
 
 // ---------------- generation ----------------
 
-const SECTION = (desc, words) => ({ type: "string", description: `${desc} About ${words} words. Cite with [S<id>] and [SC:<slug>].` });
+// Two blank-line-separated paragraphs per section. Asked for explicitly
+// because a single 150-word block renders as a wall; the client can only
+// split at sentence boundaries after the fact, and a 110-word sentence
+// cannot be split at all without fracturing it.
+const SECTION = (desc, words) => ({
+  type: "string",
+  description: `${desc} About ${words} words, written as two or three paragraphs separated by a blank line. Vary sentence length — a 100-word sentence is unreadable however it is set. Cite with [S<id>] and [SC:<slug>].`,
+});
 
 const REPORT_SCHEMA = {
   type: "object",

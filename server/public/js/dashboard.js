@@ -1,6 +1,7 @@
 import { api, esc, fmtDate } from "./api.js";
 import { renderNav } from "./nav.js";
 import { noteCard, wireNoteCard } from "./signal-note.js";
+import { hbar } from "./charts.js";
 
 const state = { q: "", semantic: false, cluster: "", type: "", horizon: "", provenance: "", sort: "newest", page: 1 };
 const $ = (id) => document.getElementById(id);
@@ -55,14 +56,7 @@ async function loadFacets() {
 
 // "Where the library comes from" — magnitude charts (single hue each,
 // direct-labeled thin bars). Cluster bars filter the library on click.
-function hbar(label, n, max, { cls = "", title = "", data = "" } = {}) {
-  const w = Math.max(0.6, (n / max) * 100);
-  return `<div class="hbar ${cls}" ${data} title="${esc(title || `${label} — ${n} signals`)}">
-    <span class="hbar-label">${esc(label)}</span>
-    <span class="hbar-track"><span class="hbar-fill" style="width:${w.toFixed(1)}%"></span></span>
-    <span class="hbar-value">${n}</span>
-  </div>`;
-}
+// hbar() lives in charts.js now; the report draws the same composition.
 
 async function loadOverview() {
   const o = await api("/api/signals/overview");
