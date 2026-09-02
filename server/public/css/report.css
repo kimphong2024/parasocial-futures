@@ -14,7 +14,13 @@
 
 /* ---------- notice ---------- */
 /* Full border and a marker square, echoing the page-head label rule.
-   No side stripe. */
+   No side stripe.
+
+   The [hidden] guard is load-bearing: an explicit `display` beats the UA's
+   `[hidden] { display: none }` on specificity, so without it the banner
+   showed as an empty bar whenever the report was current. triangle.css:61
+   solved the same problem for .tri-status — this follows it. */
+.report-status[hidden], .report-method[hidden] { display: none; }
 .report-status {
   display: flex;
   align-items: baseline;
