@@ -1,6 +1,6 @@
 # PRD — Futures of Parasocial AI, post-review iteration
 
-Status: draft for comment · Branch: `iteration/simeon-feedback` off `297f5e6` · Written 2026-09-02
+Status: built · Branch: `iteration/build` off `297f5e6` · Written 2026-09-02, amended on implementation
 
 This document responds to recorded advisor feedback from Simeon on 2026-09-02 (transcript and summary in
 `../feedback/`). It specifies four workstreams. Nothing here is required — Simeon was explicit that the
@@ -61,7 +61,8 @@ not two, and they are specified here in that order.
 
 One page that states what the library currently shows, what the triangle reads, where the scenario space
 sits, what the odds are, what would change our mind, and what a reader should do about it — every claim
-citable back to a signal or a published scenario, and the whole thing regenerating as the evidence moves.
+citable back to a signal or a published scenario, and the whole thing declaring itself stale when the
+evidence moves beneath it.
 
 This is the "so what" surface. It is the first thing a visitor sees after the home page, the thing you link
 someone to, and the opening move of the showcase demo.
@@ -71,6 +72,8 @@ someone to, and the opening move of the showcase demo.
 `server/triangle.js:105-200` is the only persisted LLM-generated synthesis in the codebase, and its shape is
 already correct: a `composition()` sha1 over the inputs, prose cached in the `settings` table, and
 `regenerateWriteupIfStale()` firing on read. `server/report.js` mirrors it rather than inventing a mechanism.
+
+**Amended on build (manual generation).** The original draft had the report regenerate in the background on read, mirroring `regenerateWriteupIfStale()`. That was changed before implementation: a high-effort model call behind an unauthenticated GET on a public site is a standing cost risk, so **reading never generates**. A human presses a button, at most once every ten minutes (`canGenerate()` returns a real 429). A report whose inputs have moved says so, and names which input moved.
 
 **Staleness.** `composition()` returns a sha1 over:
 
@@ -82,9 +85,9 @@ already correct: a `composition()` sha1 over the inputs, prose cached in the `se
 | latest `simulation_runs.id` | `db.js:117-126` |
 | max `drivers.updated_at` | `enabledDrivers` (`db.js:287`) |
 
-Any input moving makes the report stale. `GET /api/report` returns the cached record immediately and kicks a
-background regeneration when the hash has moved — the reader never waits on the model, and the page always
-says how old what they are reading is.
+Any input moving makes the report stale. `GET /api/report` returns the cached record immediately and reports
+`stale: true` plus a `changed[]` list naming which inputs moved — it does not generate. The reader never
+waits on the model, and the page always says how old what they are reading is and what has shifted under it.
 
 **Storage.** `settings['live_report']`, following `triangle_writeup`. No new table.
 
@@ -113,8 +116,8 @@ citation mechanism is introduced anywhere in this document.
 ### 2.3 API
 
 ```
-GET  /api/report            → { report, hash, updated_at, stale, generating, inputs }
-POST /api/report/regenerate → { ok, started }   409 while generating · 503 without ANTHROPIC_API_KEY
+GET  /api/report            → { report, hash, inputs, stale, changed[], generating, available }
+POST /api/report/regenerate → { ok, started }   409 generating · 429 too soon · 503 no key
 ```
 
 ### 2.4 Files
@@ -132,7 +135,8 @@ sensitivity figures; `api()`/`esc()`/`fmtDate()` from `js/api.js`; the `.card`, 
 ### 2.5 Acceptance
 
 - The report renders from live data, and every claim resolves to a real signal or published scenario.
-- Approving a signal in review changes the composition hash and triggers background regeneration.
+- Approving a signal in review changes the composition hash, and the page then reports itself stale and names
+  the approved library as the input that moved.
 - With `ANTHROPIC_API_KEY` unset the page serves the cached report with a visible staleness note, consistent
   with the graceful-degradation posture in `README.md`.
 - The odds section states the residual.
@@ -189,9 +193,15 @@ min-cosine-0.45 graph over approved signals and caches it.
 
 New `server/cluster.js`:
 
-- Agglomerative grouping over `signalVecs` restricted to pending, average linkage, cosine threshold tuned
-  against the existing `DEDUP_THRESHOLD = 0.90` floor — grouping is a looser question than deduplication, so
-  expect something nearer 0.60–0.70 and tune it against real output rather than guessing here.
+- **Amended on build (the threshold guess was wrong, and wrong in an instructive way).** Grouping on raw
+  cosine does not work at any threshold: the corpus is one subject, so pairwise similarity averages 0.666 with
+  a 99.9th percentile of 0.854, and every setting yields either one blob or nothing. The fix is to mean-centre
+  the vectors first — subtracting the queue's mean removes the shared "this is about parasocial AI" direction
+  and leaves what actually distinguishes signals. In centred space the same pairs average 0.000 and a
+  threshold of **0.42** gives coherent, nameable groups. The drafted 0.60–0.70 range was guessed against the
+  wrong geometry entirely.
+- Incremental centroid ("leader") clustering rather than true agglomerative — average-linkage in spirit,
+  O(n · groups), and unlike single-linkage it cannot chain two themes together through a bridge signal.
 - Singletons stay singletons; they are the interesting ones and must not be swept into a nearest group.
 - One `askTool` call labels each group and names what its members share.
 - `GET /api/review/groups` → groups with representative signal, member ids, size, and intra-group cohesion.
@@ -305,21 +315,20 @@ conference wifi. Have a recorded fallback or end on `/simulation`.
 
 ## 6. Risks and open items
 
-**6.1 The app is light; the docs say it is dark.** `TRANSPARENCY.md` §10 states *"the whole product is
+**6.1 The app is light; the docs said it was dark — resolved.** `TRANSPARENCY.md` §10 states *"the whole product is
 dark"* via an `app-dark.css` token remap, and `css/app-dark.css` exists and describes itself as *"Loaded ONLY
 by app pages (+ login)"*. **No HTML file links it.** Verified locally and against the live `/review`, which
 loads only `style.css`, `fib.css`, `motion.css`. `DESIGN.md`'s light-app description is the accurate one. The
-dark theme was written and never wired up, and `TRANSPARENCY.md` §10 is wrong on a point of fact today. Decide
-whether to wire it or correct the document before specifying the report page's styling — the report page
-should not be the thing that quietly resolves this.
+dark theme was written and never wired up, and `TRANSPARENCY.md` §10 is wrong on a point of fact today. Resolved by
+correcting `TRANSPARENCY.md` §11 rather than wiring the theme: the report page follows the light app register
+with every other page, and the dormant sheet is now described as dormant.
 
 (The same file's "+ login" reference is also stale: `TRANSPARENCY.md` §11 records that there is no auth.)
 
-**6.2 No auth, by design.** Every endpoint is publicly writable (§11). `POST /api/report/regenerate` is a
-high-effort LLM call exposed to the internet, as is `POST /api/scan/run` today. This is consistent with the
-existing posture, but a report regeneration is expensive enough that it should be a deliberate decision rather
-than an inherited one. At minimum, rate-limit it or gate it behind the same staleness check the read path
-uses.
+**6.2 No auth, by design — resolved.** Every endpoint is publicly writable. `POST /api/report/regenerate` is a
+high-effort LLM call exposed to the internet, as is `POST /api/scan/run` today. Resolved by making generation
+manual and rate-limited to one run per ten minutes, and by ensuring the read path never generates. The wider
+question of authentication on a public write surface is untouched and remains open.
 
 **6.3 Batch approval weakens the method claim** unless §3.4 ships with it. Listed twice on purpose.
 

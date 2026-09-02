@@ -6,9 +6,10 @@ FORE 6397 capstone platform — an interactive, cloud-based foresight tool on ho
 
 | Piece | How |
 |---|---|
+| **The report** | `/report` — one synthesis threading library, triangle, scenarios and simulation into a single argument; every claim cites a signal or scenario, staleness stated, generated on request |
 | **Signal library** | 705-signal seed corpus (33 clusters), filter/facet browse, keyword + semantic search |
 | **Live scanning** | Nightly (22:00 SGT) — Perplexity Sonar for the undirected sweep, Firecrawl for directed sources, Claude classifies into the existing taxonomy, URL + embedding dedup, hits land as `pending` |
-| **Review queue** | Human approves/rejects/edits every scan hit and scenario draft before it publishes |
+| **Review queue** | Human approves/rejects/edits every scan hit and scenario draft before it publishes — paged, cluster-filterable, and groupable by embedding proximity so a coherent group can be decided as one audited batch |
 | **Scenario library** | Four Dator archetypes structured with Causal Layered Analysis, drafted by Claude from the approved evidence, human-edited, published |
 | **Monte Carlo** | 7 editable driver distributions (PERT default) → 10k sampled futures → scenario probabilities, residual, tornado sensitivity |
 | **Decision-support chat** | RAG over approved signals + published scenarios (Voyage embeddings + rerank), Claude streamed with `[S123]` citations |
@@ -52,6 +53,9 @@ server/
   scenarios.js   CLA drafting from a stratified evidence pack
   montecarlo.js  PERT/triangular/uniform/discrete, seeded, tornado terciles
   chat.js        RAG retrieval + SSE stream
+  report.js      live synthesis: composition hash, evidence pack, citation filter
+  cluster.js     mean-centred embedding grouping of the pending queue + LLM labels
+  quotes.js      retained source text + deterministic verbatim-quotation check
   vectors.js     in-memory cosine index over SQLite BLOBs
   scheduler.js   in-process daily timer (Intl-based, DST-safe)
 ```

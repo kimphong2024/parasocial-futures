@@ -41,6 +41,9 @@ server/
   server.js      routes + boot sequence (seed → vector index → scheduler)
   db.js          schema + prepared statements (all tables below)
   scan.js        scan orchestrator: perplexity + firecrawl → classify → dedup → pending
+  cluster.js     mean-centred embedding grouping of the review queue + LLM group labels
+  report.js      the live synthesis report: composition hash, evidence pack, citation filter
+  quotes.js      retained source text + deterministic verbatim-quotation check
   perplexity.js  12 themed Sonar queries, weekly recency, tolerant JSON parsing
   firecrawl.js   v2 scrape/crawl + Claude extraction (forced tool_use)
   scenarios.js   evidence-pack assembly + CLA drafting + publish/embedding
@@ -51,7 +54,7 @@ server/
 scripts/
   seed.js            CSV → 705 approved signals, 7 drivers, starter sources, 4 scenarios
   build-embeddings.js batch Voyage embedding (resumable, 429 backoff)
-  gen-images.sh      Leonardo Phoenix image generation (all prompts in §9)
+  gen-images.sh      Leonardo Phoenix image generation (all prompts in §10)
 ```
 
 ### Data model (SQLite)
@@ -63,6 +66,7 @@ scripts/
 - `scenarios` — slug, title, archetype, **four CLA layers (litany, systemic, worldview, myth)**, narrative, `signal_ids` (citations), `driver_conditions` (JSON), **status (draft/published/archived)**
 - `drivers` — key, name, unit, dist_type, params_json, **rationale (which clusters justify the range)**
 - `simulation_runs` — n, seed, full driver/condition snapshots, full results (reproducibility record)
+- `article_text` / `quotes` — retained full scrape per signal (hash-pinned) and every quotation that passed the verbatim check; `signals.content_sha256` pins the text a signal was classified from
 - `chat_log` — append-only question + cited-signal ids (usage evidence; conversations themselves stay client-side and are never stored)
 
 ### Boot sequence (fresh volume self-restores)
@@ -75,15 +79,15 @@ scripts/
 
 Every nightly (or manual) run executes five fenced steps; a failure in any step is recorded in `errors_json` and never aborts the rest.
 
-1. **Perplexity Sonar (undirected sweep).** Twelve fixed themed queries (§8.1) with `search_recency_filter: "week"`, each asked for up to 10 distinct items with a last-48-hours priority, and a JSON schema response format. Perplexity's structured output is unreliable, so a tolerant parser (whole-parse → regex block-extract → drop-and-log) guards it.
+1. **Perplexity Sonar (undirected sweep).** Twelve fixed themed queries (§9.1) with `search_recency_filter: "week"`, each asked for up to 10 distinct items with a last-48-hours priority, and a JSON schema response format. Perplexity's structured output is unreliable, so a tolerant parser (whole-parse → regex block-extract → drop-and-log) guards it.
 2. **Firecrawl (directed watch).** Every enabled source is scraped (or crawled, capped at 5 pages / 90 s). Page markdown (truncated to 15k chars) goes to Claude with a forced tool call (`emit_signals`) — the structurally reliable leg. Front-page teasers are then **followed through**: up to 3 not-yet-known article URLs per source are scraped and re-extracted from full article text, so classification judges real content rather than a headline; any follow-through failure keeps the teaser. The 16 configured sources were mined from the seed corpus itself: domains ranked by how many corpus signals they produced.
-3. **Claude classification + relevance gate.** One batched forced-tool call normalizes both legs into the existing 33-cluster taxonomy, six signal types, urgency, horizon — and applies a strict relevance gate (§8.3) that rejects generic AI news with no human-relationship angle. Unclassifiable candidates are dropped, never inserted. The number of rejects is recorded per run (`rejected_relevance`) and shown in the run history, so a low new-pending count is always explainable.
+3. **Claude classification + relevance gate.** One batched forced-tool call normalizes both legs into the existing 33-cluster taxonomy, six signal types, urgency, horizon — and applies a strict relevance gate (§9.3) that rejects generic AI news with no human-relationship angle. Unclassifiable candidates are dropped, never inserted. The number of rejects is recorded per run (`rejected_relevance`) and shown in the run history, so a low new-pending count is always explainable.
 4. **Deduplication.** (a) URL normalization (strip utm/fbclid/gclid, trailing slash, lowercase host) against every stored URL; (b) Voyage embedding cosine against the full in-memory index (approved + pending), threshold `DEDUP_THRESHOLD = 0.90`. The nearest existing signal and its score are stored with each pending hit and **shown in the review UI**, so threshold judgment stays visible to the human.
 5. **Insert as `pending`** with provenance `scan:perplexity` or `scan:firecrawl`, the raw machine payload preserved in `raw_json`, and an embedding so the *next* run dedups against it.
 
 **Horizon audit.** Beyond intake classification, a dedicated on-demand LLM pass (triggerable from the Scan settings page) re-judges every approved signal's time horizon at high reasoning effort against strict definitions (H1 = already unfolding before 2030; H2 = requires named developments, 2030–2035; H3 = stacked slow preconditions, 2036–2040+), judging the phenomenon's social arrival rather than the article's publication date. Each signal stores the judge's 2–4-sentence written reasoning (`horizon_reasoning`), shown in the library drawer — the horizon field is never a bare label.
 
-**User control and per-run provenance.** The sweep themes, the Firecrawl source list, the scan knobs (search window, follow-through limit, duplicate threshold) and the relevance-gate text itself are all editable in the app's Scanning page — the reviewer controls what is scanned, not just what is approved. To keep that power accountable, every run records in `detail_json` exactly what it ran with: per-theme and per-source yield, the full list of candidates the gate rejected (auditable from the run history), the settings used, and the verbatim gate text (flagged when it differs from the shipped default documented in §8.3).
+**User control and per-run provenance.** The sweep themes, the Firecrawl source list, the scan knobs (search window, follow-through limit, duplicate threshold) and the relevance-gate text itself are all editable in the app's Scanning page — the reviewer controls what is scanned, not just what is approved. To keep that power accountable, every run records in `detail_json` exactly what it ran with: per-theme and per-source yield, the full list of candidates the gate rejected (auditable from the run history), the settings used, and the verbatim gate text (flagged when it differs from the shipped default documented in §9.3).
 
 Verified live behavior (2026-07-14): the first production scan produced 22 pending from 25 candidates; after the relevance tightening, a full 16-source run yielded 0–2 hits per source with most sources correctly returning zero.
 
@@ -91,11 +95,17 @@ Verified live behavior (2026-07-14): the first production scan produced 22 pendi
 
 | Stage | AI does | Human does |
 |---|---|---|
-| Scanning | Query, extract, classify, dedup, queue | Approves / edits classification / rejects each hit |
+| Scanning | Query, extract, classify, dedup, queue | Approves / edits classification / rejects — per hit, or as a reviewed batch (see below) |
+| Queue triage | Groups pending hits by embedding proximity and names each group | Reads the group, then decides about it as a unit |
+| Report | Drafts the synthesis from approved evidence; citations filtered server-side | Asks for it; every claim is followed to its source |
 | Scenarios | Selects evidence pack, drafts CLA layers + narrative + driver conditions | Edits any layer, reshapes conditions, publishes |
 | Simulation | Samples, counts, computes sensitivity | Sets every distribution parameter; interprets |
 | Chat | Retrieves, reranks, generates with citations | Asks, judges, follows citations to sources |
 | Imagery | Generates from prompts | Chose every concept; rejected/regenerated off-brief outputs |
+
+**Batch review — what the human decision actually is.** Reviewing 1,352 queued hits one at a time is not something a person does, and the only bulk control used to be an indiscriminate "approve all", so in practice the queue simply stopped moving and the approved corpus froze for five weeks. The queue is now paged and filterable by cluster, and can be grouped by embedding proximity (`cluster.js`: vectors mean-centred to remove the corpus's shared subject direction, then incremental centroid clustering at cosine 0.42, with singletons never absorbed into a nearest group and an LLM naming each group). A reviewer can approve or reject a whole group as one decision.
+
+This is a real change to what "a human approved every hit" means, so it is recorded rather than glossed: every batch writes an `audit_log` entry naming the basis of the decision (which cluster or group), the size, and every member id. The honest description is that a human read a named, coherent group and decided about it — not that they read each row. Signals that resemble nothing else stay singletons precisely so they still get read individually.
 
 ---
 
@@ -113,11 +123,25 @@ Verified live behavior (2026-07-14): the first production scan produced 22 pendi
 - **Membership**: a sampled future belongs to a scenario iff *all* its conditions hold; scenarios may overlap; the **residual** (futures outside every scenario) is reported rather than hidden — currently ~51%, itself a foresight talking point about what the archetypes don't cover.
 - **Sensitivity**: tercile split — P(scenario | driver in top third) − P(scenario | bottom third) — chosen over regression-based indices because it is assumption-free and explainable to a non-technical committee.
 
-## 6. Decision-support chat (RAG)
+## 6. The live synthesis report
 
-Retrieval: the question is embedded (Voyage `voyage-3.5`, query mode) → cosine over approved signals (top 24) → Voyage `rerank-2.5` to 12 → plus top 4 published scenarios. Generation: Claude streams over SSE; the client renders `[S123]` / `[SC:slug]` as clickable citation pills resolving to the underlying source. The system prompt (§8.5) instructs the model to say plainly when the scan is thin rather than invent certainty. Only the question and the cited ids are logged; conversations are not stored server-side.
+`/report` is one document threading the whole instrument: what the reviewed library shows, how the triangle reads, where the scenario space sits, what the odds are, what would change our mind, and what follows for a policy maker or a trust team. It exists because the platform could produce many lenses and left the reader to assemble the argument.
 
-## 7. AI models and services used
+- **Generation is manual.** Reading `/api/report` never generates; a human presses the button, and not more often than once every ten minutes. A high-effort model call behind an unauthenticated GET would be a standing invitation to spend someone else's money.
+- **Staleness is stated, not hidden.** A sha1 over the approved-signal count and max id, the triangle write-up's own hash, the published scenario ids and timestamps, the latest simulation run, and the driver timestamps. When any of it moves the page says which part moved and that what you are reading describes an earlier state.
+- **Citations are filtered server-side.** The model must cite `[S<id>]` / `[SC:slug]`; ids absent from the evidence pack are stripped after generation, the same guard `scenarios.js` applies to drafts. The count of stripped citations is stored with the report and shown on the page.
+- **Quotations are checked, not trusted.** Anything presented as a quotation next to a citation must be found verbatim in the retained scrape of that source (`quotes.js`) or the words are removed and only the citation remains. The check is a substring lookup against hash-pinned text and fails closed. It only covers signals scanned since this shipped, since earlier scrapes were discarded — coverage is reported alongside the report.
+- **The figures are the platform's.** Odds and sensitivity charts read `/api/simulation/latest` directly rather than the model's prose, so the numbers on the page cannot drift from the numbers in the model.
+
+Limits worth naming: the prose is generation, and the pills exist so no claim need be taken on faith; artifacts ship as a seed file rather than DB rows, so they are described but not citable the way signals and scenarios are.
+
+---
+
+## 7. Decision-support chat (RAG)
+
+Retrieval: the question is embedded (Voyage `voyage-3.5`, query mode) → cosine over approved signals (top 24) → Voyage `rerank-2.5` to 12 → plus top 4 published scenarios. Generation: Claude streams over SSE; the client renders `[S123]` / `[SC:slug]` as clickable citation pills resolving to the underlying source. The system prompt (§9.5) instructs the model to say plainly when the scan is thin rather than invent certainty. Only the question and the cited ids are logged; conversations are not stored server-side.
+
+## 8. AI models and services used
 
 | Service | Model | Used for | Notes |
 |---|---|---|---|
@@ -125,16 +149,16 @@ Retrieval: the question is embedded (Voyage `voyage-3.5`, query mode) → cosine
 | Voyage AI | `voyage-3.5` (1024-dim) + `rerank-2.5` | Semantic search, dedup, retrieval | Corpus embedding cost ≈ $0.01 |
 | Perplexity | `sonar` | Undirected weekly-recency sweep | JSON schema + tolerant parsing |
 | Firecrawl | v2 scrape/crawl | Directed source watch | Markdown only, main content, capped |
-| Leonardo | Phoenix 1.0 | All site imagery | Every prompt in §9; every output human-selected |
+| Leonardo | Phoenix 1.0 | All site imagery | Every prompt in §10; every output human-selected |
 | Claude Code | (build tool) | The platform itself was built with Claude Code under human direction | This document was drafted the same way |
 
 ---
 
-## 8. System prompts — verbatim
+## 9. System prompts — verbatim
 
 Reproduced exactly as they exist in the deployed code.
 
-### 8.1 Perplexity sweep — system prompt
+### 9.1 Perplexity sweep — system prompt
 
 > You are a horizon-scanning assistant for a foresight research team studying parasocial AI — how AI reshapes human relationships and social structures. Return only signals where the human-relationship or social-fabric angle is explicit: AI companionship, artificial intimacy, attachment, loneliness, grief tech, AI and family or romance, social norms around AI relationships. REJECT generic AI news (model releases, chips, enterprise tools, coding assistants, general AI policy) unless the item is specifically about AI's effect on human relationships. Return up to 10 distinct, dated, citable signals with a real, specific source URL each — prioritize items published in the last 48 hours over older ones, and prefer the primary source over syndicated copies of the same story. Return JSON only.
 
@@ -153,11 +177,11 @@ Reproduced exactly as they exist in the deployed code.
 11. *work_school*: "Social AI reshaping everyday relationship norms in workplaces and schools: AI colleagues or study buddies people bond with, etiquette and friendship norms around always-available AI, people preferring AI interaction over coworkers or classmates, institutional rules about befriending AI. Exclude pure productivity-tool coverage."
 12. *fandom*: "Virtual beings, VTubers, romance games and fandom parasociality with AI: AI-powered idols and streamers with devoted fans, dating sims and romance games adding AI characters, fan communities forming around AI personas, parasocial dynamics of AI-generated influencers. Exclude game-industry business news without the fan-relationship angle."
 
-### 8.2 Firecrawl extraction — system prompt (Claude, forced tool `emit_signals`)
+### 9.2 Firecrawl extraction — system prompt (Claude, forced tool `emit_signals`)
 
 > You are a horizon-scanning analyst for a foresight project on parasocial AI — AI companions, artificial intimacy, human-AI relationships, grief tech, AI romance fraud, sycophancy as a relationship dynamic, and how AI reshapes social structures like friendship, romance, family and community. Extract ONLY items where the human-relationship or social-fabric angle is explicit. Strictly ignore generic AI/tech coverage: model releases, benchmarks, chips, enterprise tooling, coding assistants, robotics without a social-companionship role, and AI policy that is not about relationships or companionship. Ignore navigation, ads, and off-topic items. Most pages on general tech sites will yield ZERO relevant signals — returning an empty list is the normal outcome, not a failure.
 
-### 8.3 Classification + relevance gate — system prompt (Claude, forced tool `classify_signals`)
+### 9.3 Classification + relevance gate — system prompt (Claude, forced tool `classify_signals`)
 
 *The gate paragraph below is the shipped default. The reviewer may edit it in the app's Scanning page; every scan run permanently records the exact gate text it used, and runs with a modified gate are flagged in the run history.*
 
@@ -170,7 +194,7 @@ Reproduced exactly as they exist in the deployed code.
 > Existing clusters:
 > *(the current 33-cluster list is injected from the database at call time)*
 
-### 8.4 Scenario drafting — system prompt (Claude, forced tool `emit_scenario`, high effort)
+### 9.4 Scenario drafting — system prompt (Claude, forced tool `emit_scenario`, high effort)
 
 > You are a foresight practitioner drafting a 2040 scenario using Causal Layered Analysis inside a Dator archetype, for a capstone on parasocial AI and the futures of social relations.
 >
@@ -188,7 +212,7 @@ Reproduced exactly as they exist in the deployed code.
 
 The user message is the numbered evidence pack (~40 approved signals with cluster/type/urgency/horizon metadata) followed by "Draft the *(archetype)* scenario for 2040."
 
-### 8.5 Decision-support chat — system prompt (Claude, streamed)
+### 9.5 Decision-support chat — system prompt (Claude, streamed)
 
 > You are the decision-support assistant of the Futures of Parasocial AI platform — a foresight tool built on a human-reviewed signal library and a published scenario set (Causal Layered Analysis over Dator archetypes, horizon 2040).
 >
@@ -206,7 +230,7 @@ The user message is the numbered evidence pack (~40 approved signals with cluste
 
 ---
 
-## 9. Imagery — provenance and prompts
+## 10. Imagery — provenance and prompts
 
 All site imagery is generated with **Leonardo Phoenix 1.0** via `scripts/gen-images.sh` (contrast 4.0, no alchemy, one image per prompt; the script skips existing files, so regeneration is an explicit human act of deleting a file). Two negative-prompt sets exist: the default bans people/faces/hands; a second (`faces`) permits synthetic faces and figures and was used only for the three images whose concept requires them. Concepts, iterated with the human until on-brief:
 
@@ -228,15 +252,15 @@ Rendering rule for all imagery: pure-black photo backgrounds dissolve into the p
 
 **The 3D hero (`/models/hero.glb`).** The landing page's hero is a 3D Janus head — a realistic human face and a sculpted porcelain face with gold-traced features sharing one head — that turns from human to synthetic as the visitor scrolls. Pipeline (`scripts/gen-3d.sh`): turnaround views generated with Leonardo Phoenix at a fixed seed (saved in `server/public/img/rodin-refs/`), fused by **Rodin v2** through the Leonardo API (`model: "rodin-v2"`, Quad mesh, medium quality, PBR materials, GLB output). The decisive methodological lesson, after several attempts produced single-faced meshes: **the reference images must show both faces in the same frame** — double-profile views with a nose silhouette pointing each way — because an image-to-3D model otherwise assumes one forward-facing face. The model renders via Google's `<model-viewer>` (raised exposure for the porcelain), user controls disabled — the scroll owns the camera and avoids the mesh's weakest angle. On load failure or reduced motion, the 2D hero image stands in.
 
-## 10. Design decisions
+## 11. Design decisions
 
 - **Design system**: "Heartful Futures / Earthy Foresight" (Lexend; olive `#4E5A2B`, brown `#AC7222`, mustard `#E1B83B` on warm surfaces), extended with a dark observation register: olive-black void `#101408`, Fragment Mono instrument annotations, reticle-cornered data callouts — the visual language of alethia.earth's specimen-observation hero, adapted rather than copied.
-- **The whole product is dark**; the app pages share the aesthetic via a token remap (`app-dark.css`) rather than a rewrite, so the light token names keep their semantic roles.
+- **The app pages are light; the home page carries the dark acts.** A dark token remap for the app (`css/app-dark.css`) was written but is not linked by any page, so it is presently dormant code rather than a shipped theme — an earlier version of this document claimed the whole product was dark, which was not true of what deploys. The `/report` page follows the light app register with the rest.
 - **Chart palettes are machine-validated**, not eyeballed: the archetype colors pass a six-check validator (OKLCH lightness band, chroma floor, adjacent-pair color-vision-deficiency separation, contrast vs surface) in both light (`#D3963E/#C44536/#5B8A9A/#4E5A2B`) and dark (`#C08430/#C44536/#3D9ED4/#7E9440`) modes; identity never rides on color alone (every bar is a direct-labeled row).
 - **Motion**: scroll choreography is rAF-driven CSS custom properties; app-wide motion (smooth scrolling via a vendored Lenis, clip-path mask-wipe reveals with incremental-delay staggers, two easing tokens, drag-to-scroll strips) adapts the interaction language studied from weareepoch.com's public site, re-implemented in vanilla CSS/JS. Every effect has a `prefers-reduced-motion` static equivalent; content is visible without JavaScript.
 - **One aligned content column** — header and content resolve to `min(1240px, viewport − 2×gutter)`, gutter `clamp(24px, 6vw, 96px)` everywhere.
 
-## 11. Security, privacy, operations
+## 12. Security, privacy, operations
 
 - Auth: none — the platform is fully open by design. Every page and every action (review, driver and scenario editing, scan controls, simulation) is publicly reachable and writable; the trade-off is accepted knowingly for a public demonstration instrument.
 - Secrets live in environment variables (Railway) and a gitignored local `.env`; never in the repository.
@@ -244,21 +268,23 @@ Rendering rule for all imagery: pure-black photo backgrounds dissolve into the p
 - All third-party keys are env-gated: any missing key degrades that feature gracefully (recorded scan error, 503 on chat) without breaking the rest.
 - Nightly scan at 22:00 Asia/Singapore; failed steps are visible per-run in the review UI's scan history.
 
-## 12. Known limitations and ethical notes
+## 13. Known limitations and ethical notes
 
 1. **Model-mediated evidence.** Perplexity and Firecrawl+Claude choose what surfaces; the taxonomy gate shapes what survives. The mitigations are provenance (`raw_json` on every hit), visible dedup scores, and the human queue — but selection bias upstream of the human is real and unavoidable.
 2. **Scenario authorship.** Claude drafts; a human edits and publishes. The published text is human-approved but machine-originated — the citations list on each scenario is the honest trail of what informed it.
 3. **Probabilities are conditional artifacts.** Simulation outputs depend entirely on human-set driver ranges and hand-shaped scenario conditions (see §4's disclosed reshaping). They are disciplined judgments made inspectable and reproducible (seeded runs, stored snapshots) — not forecasts.
 4. **The corpus leans English-language and Western media**, with deliberate but partial counterweights (China governance signals, Southeast-Asia focus option in drafting).
-5. **Chat can still be wrong.** Retrieval grounds it and the prompt demands epistemic honesty, but generation is generation; the citation pills exist so no claim needs to be taken on faith.
-6. **Imagery is synthetic** and stylized; no real persons are depicted. The faces are deliberately porcelain/artificial — depicting the *category* of synthetic intimacy, not any product or person.
-7. **Dual-use awareness.** A tool that maps how parasocial attachment forms could inform exploitative design as easily as protective policy; the platform's framing, driver set, and chat instructions are explicitly oriented to the protective reading.
+5. **Batch review trades depth for motion.** Grouping lets the queue move again, but a group decision is a decision about a group. The audit log records the basis and every member id so the trade is inspectable, and singletons are never batched — but a signal approved inside a coherent group of thirteen has had less individual attention than one approved on its own, and the corpus should be read with that in mind.
+6. **Verbatim checking is partial by construction.** Quotations are verified against retained source text, and text is only retained for signals scanned after this shipped; earlier scrapes were discarded after classification. An unverifiable quotation is stripped rather than shown, so the failure mode is a missing quote rather than a wrong one — but the guarantee covers a growing minority of the library, not all of it.
+7. **Chat can still be wrong.** Retrieval grounds it and the prompt demands epistemic honesty, but generation is generation; the citation pills exist so no claim needs to be taken on faith.
+8. **Imagery is synthetic** and stylized; no real persons are depicted. The faces are deliberately porcelain/artificial — depicting the *category* of synthetic intimacy, not any product or person.
+9. **Dual-use awareness.** A tool that maps how parasocial attachment forms could inform exploitative design as easily as protective policy; the platform's framing, driver set, and chat instructions are explicitly oriented to the protective reading.
 
-## 13. Reproducibility
+## 14. Reproducibility
 
 - Fresh deployment self-seeds the full reviewed state (corpus, drivers, sources, published scenarios) from files shipped in the image.
 - Every simulation stores seed + parameter snapshots; identical seeds reproduce identical outputs.
 - Every scan run stores counters and errors; every scan hit stores its raw machine output.
 - The repository contains every prompt, the seed corpus, and this document.
 
-*Last updated 2026-07-14. This document is maintained alongside the code; if a prompt in the repository differs from §8, the repository is the truth and this file needs a commit.*
+*Last updated 2026-09-02. This document is maintained alongside the code; if a prompt in the repository differs from §9, the repository is the truth and this file needs a commit.*
