@@ -5,6 +5,7 @@
 import { api } from "./api.js";
 
 const SECTIONS = [
+  { path: "/report", label: "Report", children: [] },
   { path: "/signals", label: "Signals", children: [["/map", "Signal map"], ["/radar", "Signal radar"], ["/review", "Signal review"], ["/sources", "Scan settings"]] },
   { path: "/triangle", label: "Futures Triangle", children: [["/triangle-config", "Triangle configure"]] },
   { path: "/drivers", label: "Drivers", children: [["/driver-config", "Driver configure"]] },
@@ -15,9 +16,12 @@ const SECTIONS = [
   { path: "/reference", label: "Method", children: [] },
 ];
 
+// A single scenario page has no nav entry of its own; it lights Scenarios.
+// Looked up by path rather than by index so inserting a section cannot
+// silently repoint it.
 const sectionOf = (path) =>
   SECTIONS.find((s) => s.path === path || s.children.some(([p]) => p === path)) ||
-  (path === "/scenario" ? SECTIONS[2] : null);
+  (path === "/scenario" ? SECTIONS.find((s) => s.path === "/scenarios") : null);
 
 export async function renderNav(active) {
   const section = sectionOf(active);
