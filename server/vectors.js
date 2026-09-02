@@ -36,6 +36,10 @@ export function loadIndex() {
 export const signalText = (s) => `${s.title} — ${s.summary}`;
 export const indexedCount = () => signalVecs.size;
 export const hasVector = (signalId) => signalVecs.has(signalId);
+// Raw (unit-normalised) vector access, for callers that need to compare
+// signals to each other rather than to a query — see cluster.js.
+export const getVector = (signalId) => signalVecs.get(signalId) || null;
+export const cosine = dot;
 
 export function addSignalVector(signalId, f32, persist = true) {
   if (persist) upsertEmbedding.run(signalId, toBlob(f32), MODEL_NAME, DIM, now());
