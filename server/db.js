@@ -158,6 +158,31 @@ try { db.exec("ALTER TABLE signals ADD COLUMN triangle TEXT"); } catch { /* alre
 try { db.exec("ALTER TABLE signals ADD COLUMN triangle_reasoning TEXT NOT NULL DEFAULT ''"); } catch { /* already migrated */ }
 try { db.exec("ALTER TABLE signals ADD COLUMN note TEXT NOT NULL DEFAULT ''"); } catch { /* already migrated */ }
 try { db.exec("ALTER TABLE signals ADD COLUMN note_updated_at TEXT"); } catch { /* already migrated */ }
+try { db.exec("ALTER TABLE signals ADD COLUMN content_sha256 TEXT"); } catch { /* already migrated */ }
+
+// Verbatim quotation support. Embeddings are adequate for finding the right
+// source; they cannot guarantee that quoted words are the words that were
+// written. article_text is the retained scrape a quotation is checked against
+// (hash-pinned, so a later edit of the source cannot silently validate a quote
+// that no longer matches); quotes records each quotation that passed.
+db.exec(`CREATE TABLE IF NOT EXISTS article_text (
+  signal_id INTEGER PRIMARY KEY,
+  text TEXT NOT NULL,
+  sha256 TEXT NOT NULL,
+  chars INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+)`);
+db.exec(`CREATE TABLE IF NOT EXISTS quotes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  signal_id INTEGER NOT NULL,
+  text TEXT NOT NULL,
+  sha256 TEXT NOT NULL,
+  start_offset INTEGER NOT NULL,
+  end_offset INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+)`);
+db.exec("CREATE INDEX IF NOT EXISTS idx_quotes_signal ON quotes(signal_id)");
+db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_quotes_hash ON quotes(signal_id, sha256)");
 
 db.exec(`CREATE TABLE IF NOT EXISTS audit_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -211,6 +236,12 @@ export const pruneAudit = db.prepare("DELETE FROM audit_log WHERE id <= (SELECT 
 export const clearAudit = db.prepare("DELETE FROM audit_log");
 export const countAudit = db.prepare("SELECT COUNT(*) AS n FROM audit_log");
 export const setSignalNote = db.prepare("UPDATE signals SET note = ?, note_updated_at = ? WHERE id = ?");
+export const setSignalContentHash = db.prepare("UPDATE signals SET content_sha256 = ? WHERE id = ?");
+export const putArticleText = db.prepare("INSERT INTO article_text (signal_id, text, sha256, chars, created_at) VALUES (?,?,?,?,?) ON CONFLICT(signal_id) DO UPDATE SET text = excluded.text, sha256 = excluded.sha256, chars = excluded.chars, created_at = excluded.created_at");
+export const getArticleText = db.prepare("SELECT * FROM article_text WHERE signal_id = ?");
+export const countArticleText = db.prepare("SELECT COUNT(*) AS n FROM article_text");
+export const putQuote = db.prepare("INSERT OR IGNORE INTO quotes (signal_id, text, sha256, start_offset, end_offset, created_at) VALUES (?,?,?,?,?,?)");
+export const quotesForSignal = db.prepare("SELECT * FROM quotes WHERE signal_id = ?");
 export const setSignalTriangle = db.prepare("UPDATE signals SET triangle = ?, triangle_reasoning = ? WHERE id = ?");
 export const triangleSignals = db.prepare("SELECT id, title, cluster, signal_type, urgency, horizon, triangle, triangle_reasoning FROM signals WHERE status = 'approved' ORDER BY id");
 export const triangleUnclassified = db.prepare("SELECT id, title, summary, cluster, signal_type FROM signals WHERE status = 'approved' AND (triangle IS NULL OR triangle = '') ORDER BY id");

@@ -28,7 +28,7 @@ const ENTITIES = [
 // method+path → readable action
 const ACTIONS = [
   [/^PATCH \/api\/signals\/\d+\/note$/, "signal.note"],
-  [/^POST \/api\/review\/approve-all$/, "review.approve-all"],
+  [/^POST \/api\/review\/batch$/, "review.batch"],
   [/^POST \/api\/review\/signals\/\d+\/approve$/, "review.approve"],
   [/^POST \/api\/review\/signals\/\d+\/reject$/, "review.reject"],
   [/^PATCH \/api\/review\/signals\/\d+$/, "review.edit"],
@@ -91,7 +91,15 @@ function describe(action, { entityId, name, before, after, diff, body }) {
     case "review.approve": return `Approved pending ${sig} into the library`;
     case "review.reject": return `Rejected pending ${sig} from the review queue`;
     case "review.edit": return `Edited pending ${sig}${diff ? " — " + diffPhrase(diff) : ""}`;
-    case "review.approve-all": return "Approved every pending scan hit into the library";
+    case "review.batch": {
+      // The basis is the point of the record: it says what the human read
+      // before deciding, so a 200-signal approval stays an inspectable claim.
+      const n = Array.isArray(body?.ids) ? body.ids.length : 0;
+      const verb = body?.action === "reject" ? "Rejected" : "Approved";
+      const basis = body?.basis && body.basis !== "selection" ? `the “${brief(body.basis, 60)}” group` : "a hand-picked selection";
+      const ids = Array.isArray(body?.ids) ? body.ids.slice(0, 40).join(", ") + (body.ids.length > 40 ? `, and ${body.ids.length - 40} more` : "") : "";
+      return `${verb} ${n} pending signal${n === 1 ? "" : "s"} as one decision on ${basis} — ids ${ids}`;
+    }
     case "horizons.judge": return "Started a full horizon audit over the approved library";
     case "triangle.classify-all": return "Started a triangle re-audit (re-judging classifications)";
     case "triangle.writeup": return "Requested a fresh triangle synthesis";

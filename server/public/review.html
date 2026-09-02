@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/fib.css">
   <link rel="stylesheet" href="/css/motion.css">
+  <link rel="stylesheet" href="/css/review.css">
 </head>
 <body>
   <main class="container">
@@ -20,16 +21,33 @@
         <div class="divider mt-4"></div>
       </div>
       <button class="btn" id="runScan">Run scan now</button>
-      <button class="btn btn-secondary" id="approveAll">Approve all pending</button>
     </div>
 
     <div class="tabs">
       <button class="tab active" data-tab="signals">Signal hits <span id="nSignals"></span></button>
+      <button class="tab" data-tab="groups">Groups <span id="nGroups"></span></button>
       <button class="tab" data-tab="drafts">Scenario drafts <span id="nDrafts"></span></button>
       <button class="tab" data-tab="runs">Scan history</button>
     </div>
 
-    <section id="tab-signals"></section>
+    <section id="tab-signals">
+      <div class="review-layout">
+        <nav class="review-rail" id="clusterRail" aria-label="Filter the queue by cluster"></nav>
+        <div>
+          <div class="batch-bar" id="batchBar">
+            <label class="pick"><input type="checkbox" id="pickPage"> Select page</label>
+            <button class="btn btn-sm btn-secondary" id="pickCluster">Select all in filter</button>
+            <span class="spacer"></span>
+            <span class="batch-count" id="batchCount">Nothing selected</span>
+            <button class="btn btn-sm" id="batchApprove" disabled>Approve</button>
+            <button class="btn btn-sm btn-danger" id="batchReject" disabled>Reject</button>
+          </div>
+          <div id="queueCards"></div>
+          <div class="pagination" id="queuePager"></div>
+        </div>
+      </div>
+    </section>
+    <section id="tab-groups" style="display:none"></section>
     <section id="tab-drafts" style="display:none"></section>
     <section id="tab-runs" style="display:none"></section>
   </main>

@@ -1,0 +1,125 @@
+/* ============================================================
+   Review queue — the triage layout.
+
+   A sticky left rail of clusters beside the card column. Geometry
+   borrowed from .tdoc-layout (transparency.css) but defined here so
+   the review page does not inherit that sheet's dark register, and
+   so the rail collapses to a horizontal pill strip on narrow screens
+   instead of disappearing the way a table of contents may.
+   ============================================================ */
+
+.review-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: clamp(24px, 4vw, 56px);
+  align-items: start;
+}
+.review-layout > * { min-width: 0; }
+
+.review-rail {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-left: 1px solid var(--borderLight);
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+}
+.review-rail .rail-head {
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--textDim);
+  padding: 0 0 8px 14px;
+}
+.review-rail button {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-left: 1px solid transparent;
+  margin-left: -1px;
+  padding: 7px 8px 7px 14px;
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--textMid);
+  cursor: pointer;
+}
+.review-rail button:hover { color: var(--charcoal); border-left-color: var(--olive); }
+.review-rail button.active {
+  color: var(--charcoal);
+  border-left-color: var(--olive);
+  background: var(--oliveLight);
+}
+.review-rail button .n {
+  font-size: 11px;
+  color: var(--textDim);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+/* The batch bar. Sticks under the header so the count of what is about
+   to be decided stays visible while scrolling a page of cards. */
+.batch-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: var(--s-4);
+  background: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: var(--r-box);
+}
+.batch-bar .spacer { flex: 1 1 auto; }
+.batch-bar .batch-count { font-size: 12.5px; color: var(--textMid); }
+.batch-bar .batch-count strong { color: var(--charcoal); }
+
+.review-card .pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--textDim);
+  cursor: pointer;
+}
+.review-card .pick input { width: 15px; height: 15px; accent-color: var(--olive); cursor: pointer; }
+.review-card.picked { box-shadow: inset 3px 0 0 var(--olive); }
+
+/* Group cards (Phase 2 — embedding clustering) */
+.group-card .group-members { display: flex; flex-direction: column; gap: 4px; margin-top: var(--s-2); }
+.group-card .group-members li { font-size: 12.5px; color: var(--textMid); line-height: 1.45; }
+.group-card .cohesion { font-variant-numeric: tabular-nums; }
+
+@media (max-width: 940px) {
+  .review-layout { grid-template-columns: 1fr; }
+  .review-rail {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    border-left: 0;
+    max-height: none;
+    overflow: visible;
+  }
+  .review-rail .rail-head { width: 100%; padding-left: 0; }
+  .review-rail button {
+    width: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--r-pill);
+    margin-left: 0;
+    padding: 6px 12px;
+  }
+  .review-rail button.active { border-color: var(--olive); }
+}

@@ -17,6 +17,8 @@ import { startScheduler, scheduleInfo } from "./scheduler.js";
 import { ARCHETYPES, draftScenario, embedScenario } from "./scenarios.js";
 import { simulate, previewDistribution, makeSampler } from "./montecarlo.js";
 import { chatHandler } from "./chat.js";
+import { groupPendingQueue } from "./cluster.js";
+import { getReport, generateReport, reportStatus, reportComposition, canGenerate } from "./report.js";
 import { perplexityEnabled } from "./perplexity.js";
 import { firecrawlEnabled } from "./firecrawl.js";
 
@@ -173,22 +175,91 @@ app.get("/api/signals/:id", (req, res) => {
   res.json({ ...s, similar });
 });
 
+// ---------- the live synthesis report ----------
+// Reading never generates. Generation is a high-effort model call on a site
+// with no auth, so it is a deliberate human action and rate-limited; a report
+// whose inputs have moved reports itself as stale rather than silently
+// refreshing at a reader's expense.
+app.get("/api/report", (_req, res) => {
+  const report = getReport();
+  const comp = reportComposition();
+  res.json({
+    report,
+    hash: comp.hash,
+    inputs: comp.parts,
+    stale: !!report && report.hash !== comp.hash,
+    changed: report ? Object.keys(comp.parts).filter((k) => (report.inputs || {})[k] !== comp.parts[k]) : [],
+    generating: reportStatus().generating,
+    available: llmEnabled(),
+  });
+});
+
+app.post("/api/report/regenerate", (_req, res) => {
+  const gate = canGenerate();
+  if (!gate.ok) return res.status(gate.status).json({ error: gate.error });
+  generateReport().catch((e) => console.error("[report] generation failed:", e.message));
+  res.json({ ok: true, started: true });
+});
+
 // ---------- review queue (human-in-the-loop gate) ----------
-app.get("/api/review/queue", (_req, res) => {
-  const pending = d.pendingSignals.all().map((s) => {
+// Paged and cluster-filterable. The queue reached 1352 pending, at which
+// point shipping every row to the browser and offering only "approve all"
+// left no reviewable middle ground — see PRD §3.
+app.get("/api/review/queue", (req, res) => {
+  const limit = Math.min(200, Math.max(1, +req.query.limit || 40));
+  const page = Math.max(1, +req.query.page || 1);
+  const cluster = req.query.cluster || "";
+  const { total, rows } = d.querySignals({ status: "pending", cluster, page, limit, sort: "newest" });
+  const signals = rows.map((s) => {
     let nearest = null;
     try { nearest = JSON.parse(s.raw_json || "{}").nearest || null; } catch {}
     const near = nearest ? { ...d.getSignal.get(nearest.id), score: Math.round(nearest.score * 1000) / 1000 } : null;
     return { ...s, nearest: near };
   });
-  res.json({ signals: pending, scenario_drafts: d.draftScenarios.all() });
+  res.json({
+    total, page, limit, cluster,
+    signals,
+    facets: d.facets("pending"),
+    scenario_drafts: d.draftScenarios.all(),
+  });
 });
 
-app.post("/api/review/approve-all", (_req, res) => {
-  const pending = d.pendingSignals.all();
+// Batch decision. The unit of judgment is recorded (`basis`) so the audit
+// trail says what the human actually reviewed — a cluster, a group, or a
+// hand-picked selection — rather than implying 200 individual reads.
+app.post("/api/review/batch", (req, res) => {
+  const { ids, action, basis = "selection" } = req.body || {};
+  if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ error: "ids required" });
+  if (ids.length > 500) return res.status(400).json({ error: "at most 500 ids per batch" });
+  if (action !== "approve" && action !== "reject") return res.status(400).json({ error: "action must be approve or reject" });
   const ts = d.now();
-  for (const s of pending) d.setSignalStatus.run("approved", ts, s.id);
-  res.json({ ok: true, approved: pending.length });
+  const status = action === "approve" ? "approved" : "rejected";
+  let changed = 0;
+  d.db.exec("BEGIN");
+  try {
+    for (const raw of ids) {
+      const s = d.getSignal.get(+raw);
+      if (!s || s.status !== "pending") continue;
+      d.setSignalStatus.run(status, ts, s.id);
+      changed++;
+    }
+    d.db.exec("COMMIT");
+  } catch (e) {
+    d.db.exec("ROLLBACK");
+    return res.status(500).json({ error: e.message });
+  }
+  res.json({ ok: true, action, basis, requested: ids.length, changed });
+});
+
+// Group the queue by embedding proximity, so a reviewer can decide about a
+// theme rather than a row. Cached on queue membership; the first call after a
+// scan or a batch pays for the grouping.
+app.get("/api/review/groups", async (_req, res) => {
+  try {
+    res.json(await groupPendingQueue());
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.post("/api/review/signals/:id/approve", (req, res) => {
@@ -484,7 +555,7 @@ app.post("/api/chat", chatHandler);
 // ---------- static frontend ----------
 app.use(express.static(join(HERE, "public")));
 app.get("/signals", (_req, res) => res.sendFile(join(HERE, "public", "index.html")));
-["review", "scenarios", "scenario", "scenario-config", "simulation", "chat", "sources", "drivers", "driver-config", "map", "artifacts", "present", "triangle", "triangle-config", "activity", "radar"].forEach((p) =>
+["report", "review", "scenarios", "scenario", "scenario-config", "simulation", "chat", "sources", "drivers", "driver-config", "map", "artifacts", "present", "triangle", "triangle-config", "activity", "radar"].forEach((p) =>
   app.get("/" + p, (_req, res) => res.sendFile(join(HERE, "public", p + ".html"))));
 
 // ---------- boot ----------
