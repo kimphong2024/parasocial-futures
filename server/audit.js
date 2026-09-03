@@ -31,6 +31,7 @@ const ACTIONS = [
   [/^POST \/api\/review\/batch$/, "review.batch"],
   [/^PUT \/api\/report\/sections\/[a-z_]+$/, "report.author"],
   [/^DELETE \/api\/report\/sections\/[a-z_]+$/, "report.revert"],
+  [/^POST \/api\/report\/sections\/[a-z_]+\/keep$/, "report.keep-mine"],
   [/^POST \/api\/report\/critique$/, "report.critique"],
   [/^POST \/api\/report\/regenerate$/, "report.regenerate"],
   [/^POST \/api\/quotes\/backfill$/, "quotes.backfill"],
@@ -98,6 +99,7 @@ function describe(action, { entityId, name, before, after, diff, body, path }) {
     case "review.reject": return `Rejected pending ${sig} from the review queue`;
     case "review.edit": return `Edited pending ${sig}${diff ? " — " + diffPhrase(diff) : ""}`;
     case "report.author": return `Authored the report section “${brief(String(path || "").split("/").pop(), 40)}” by hand`;
+    case "report.keep-mine": return `Read the newer draft of “${brief(String(path || "").split("/").slice(-2)[0], 40)}” and kept the authored version`;
     case "report.revert": return `Reverted the report section “${brief(String(path || "").split("/").pop(), 40)}” to the machine draft`;
     case "report.critique": return `Ran a “${brief(body?.mode || "?", 24)}” critique on the report section “${brief(body?.section || "?", 40)}”`;
     case "report.regenerate": return "Requested a fresh report draft";

@@ -200,6 +200,10 @@ db.exec(`CREATE TABLE IF NOT EXISTS report_critiques (
   addressed_at TEXT
 )`);
 db.exec("CREATE INDEX IF NOT EXISTS idx_critiques_section ON report_critiques(section_key)");
+// base_text_sha is the machine draft the author started from. base_hash tracks
+// the evidence, which does not move when the report is merely regenerated —
+// so on its own it never noticed a new draft.
+try { db.exec("ALTER TABLE report_sections ADD COLUMN base_text_sha TEXT"); } catch { /* already migrated */ }
 
 db.exec("CREATE INDEX IF NOT EXISTS idx_quotes_signal ON quotes(signal_id)");
 db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_quotes_hash ON quotes(signal_id, sha256)");
@@ -278,8 +282,11 @@ export const quotesForSignal = db.prepare("SELECT * FROM quotes WHERE signal_id 
 // ---- authored report sections + critiques ----
 export const allSectionEdits = db.prepare("SELECT * FROM report_sections");
 export const getSectionEdit = db.prepare("SELECT * FROM report_sections WHERE section_key = ?");
-export const putSectionEdit = db.prepare(`INSERT INTO report_sections (section_key, text, base_hash, updated_at) VALUES (?,?,?,?)
-  ON CONFLICT(section_key) DO UPDATE SET text = excluded.text, base_hash = excluded.base_hash, updated_at = excluded.updated_at`);
+export const putSectionEdit = db.prepare(`INSERT INTO report_sections (section_key, text, base_hash, base_text_sha, updated_at) VALUES (?,?,?,?,?)
+  ON CONFLICT(section_key) DO UPDATE SET text = excluded.text, base_hash = excluded.base_hash, base_text_sha = excluded.base_text_sha, updated_at = excluded.updated_at`);
+// Re-baseline without touching the authored text: "I have seen the new draft
+// and I am keeping mine."
+export const rebaseSectionEdit = db.prepare("UPDATE report_sections SET base_hash = ?, base_text_sha = ?, updated_at = ? WHERE section_key = ?");
 export const dropSectionEdit = db.prepare("DELETE FROM report_sections WHERE section_key = ?");
 export const insertCritique = db.prepare("INSERT INTO report_critiques (section_key, mode, body_json, created_at) VALUES (?,?,?,?)");
 export const listCritiques = db.prepare("SELECT * FROM report_critiques ORDER BY id DESC LIMIT 200");

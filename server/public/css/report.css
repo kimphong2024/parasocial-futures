@@ -380,6 +380,30 @@
 }
 .fal-row textarea { grid-column: 1 / -1; }
 
+/* ---- compare: yours beside the draft ---- */
+.cmp {
+  grid-column: 1 / -1;
+  margin-top: var(--s-4, 16px);
+  padding: var(--s-5, 24px);
+  background: var(--cream);
+  border-radius: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(20px, 3vw, 44px);
+}
+.cmp-col { min-width: 0; }
+.cmp-head { display: flex; flex-direction: column; gap: 3px; padding-bottom: 8px; margin-bottom: var(--s-3, 12px); border-bottom: 1px solid var(--ink); }
+.cmp-col.draft .cmp-head { border-bottom-color: var(--creamLine); }
+.cmp-label { font-size: var(--rt-secondary); font-weight: 700; color: var(--ink); }
+.cmp-col.draft .cmp-label { color: var(--chart-mid); }
+.cmp-note { font-family: var(--font-mono); font-size: var(--rt-label); color: var(--chart-mid); }
+.cmp .report-prose { max-width: none; }
+.cmp .report-prose p { font-size: var(--rt-secondary); line-height: 1.6; }
+.cmp-col.draft .report-prose p { color: #4A4A3C; }
+.cmp-actions { grid-column: 1 / -1; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding-top: var(--s-3, 12px); border-top: 1px solid var(--creamLine); }
+
+@media (max-width: 900px) { .cmp { grid-template-columns: 1fr; } }
+
 /* ---- critique ---- */
 /* Deliberately not styled as part of the report: it is apparatus, sitting on
    the paper beside the argument rather than inside it. */

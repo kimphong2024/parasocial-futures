@@ -29,7 +29,8 @@ const INPUT_LABEL = {
 
 let data = null;
 let timer = null;
-let editing = null;   // section key currently open in the editor
+let editing = null;    // section key currently open in the editor
+let comparing = null;  // section key currently showing draft-vs-yours
 
 // An authored section wins over the machine draft. `draft_moved` means the
 // evidence has shifted since it was written — surfaced, never auto-applied.
@@ -141,6 +142,7 @@ function toolbar(key) {
   return `<div class="sec-tools">
     ${a ? `<span class="sec-badge${a.draft_moved ? " moved" : ""}" title="${a.draft_moved ? "The evidence has moved since you wrote this" : "Your text, not the machine draft"}">${a.draft_moved ? "authored · draft moved" : "authored"}</span>` : ""}
     ${open ? `<span class="sec-badge open">${open} open</span>` : ""}
+    ${a ? `<button type="button" class="sec-btn" data-compare="${key}">${comparing === key ? "Hide draft" : "Compare draft"}</button>` : ""}
     <button type="button" class="sec-btn" data-edit="${key}">Edit</button>
     <div class="sec-menu">
       <button type="button" class="sec-btn" data-menu="${key}">Critique</button>
@@ -148,6 +150,35 @@ function toolbar(key) {
         ${Object.entries(data.modes || {}).map(([m, label]) =>
           `<button type="button" class="sec-mode" data-critique="${key}" data-mode="${m}">${esc(label)}</button>`).join("")}
       </div>
+    </div>
+  </div>`;
+}
+
+
+// Yours beside the machine's. No diff algorithm: these are two pieces of
+// written argument, not two versions of a config file, and a word-level diff
+// of rewritten prose is noise. The reader compares them by reading them.
+function comparePanel(key) {
+  const a = authoredOf(key) || (EDIT_KEYS[key] || []).map(authoredOf).find(Boolean);
+  if (!a) return "";
+  const keys = editKeysFor(key);
+  const asText = (v) => (typeof v === "string" ? v
+    : Array.isArray(v) ? v.map((f) => `${(f.direction || "").toUpperCase()} — ${f.watch}\n${f.meaning}`).join("\n\n")
+    : JSON.stringify(v, null, 2));
+  const col = (label, note, body, cls) => `
+    <div class="cmp-col ${cls}">
+      <div class="cmp-head"><span class="cmp-label">${esc(label)}</span><span class="cmp-note">${esc(note)}</span></div>
+      <div class="report-prose">${body}</div>
+    </div>`;
+  const yours = keys.map((k) => paras(asText(authoredOf(k)?.value ?? valueOf(k)))).join("");
+  const draft = keys.map((k) => paras(asText(data.report[k]))).join("");
+  return `<div class="cmp" data-compare-for="${key}">
+    ${col("Your version", `edited ${fmtWhen(a.updated_at)}`, yours, "mine")}
+    ${col("Current machine draft", a.draft_moved ? "regenerated since you wrote yours" : "unchanged since you wrote yours", draft, "draft")}
+    <div class="cmp-actions">
+      ${a.draft_moved ? `<button type="button" class="btn btn-sm" data-keep="${key}">Keep mine</button>` : ""}
+      <button type="button" class="sec-btn danger" data-revert="${key}">Use the new draft</button>
+      <button type="button" class="sec-btn" data-compare="${key}">Close</button>
     </div>
   </div>`;
 }
@@ -297,6 +328,7 @@ function drawReport() {
         ${toolbar(key)}
       </div>
       ${editing === key ? editorFor(key) : (RENDER[key] ? RENDER[key]() : `<div class="report-prose">${paras(valueOf(key))}</div>`)}
+      ${comparing === key ? comparePanel(key) : ""}
       ${fig[key] || ""}
       ${critiquesFor(key)}
     </section>`).join("");
@@ -438,7 +470,14 @@ document.addEventListener("click", async (e) => {
   if (!t) { closeMenus(); return; }
 
   // ---- edit ----
-  if (t.dataset.edit) { editing = t.dataset.edit; closeMenus(); drawReport(); return; }
+  if (t.dataset.edit) { editing = t.dataset.edit; comparing = null; closeMenus(); drawReport(); return; }
+  if (t.dataset.compare) { comparing = comparing === t.dataset.compare ? null : t.dataset.compare; editing = null; closeMenus(); drawReport(); return; }
+  if (t.dataset.keep) {
+    await api(`/api/report/sections/${encodeURIComponent(t.dataset.keep)}/keep`, { method: "POST" });
+    comparing = null;
+    await load();
+    return;
+  }
   if (t.dataset.cancel !== undefined) { editing = null; drawReport(); return; }
 
   if (t.dataset.save) {
@@ -461,6 +500,7 @@ document.addEventListener("click", async (e) => {
       try { await api(`/api/report/sections/${encodeURIComponent(k)}`, { method: "DELETE" }); } catch {}
     }
     editing = null;
+    comparing = null;
     await load();
     return;
   }

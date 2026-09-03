@@ -19,7 +19,7 @@ import { simulate, previewDistribution, makeSampler } from "./montecarlo.js";
 import { chatHandler } from "./chat.js";
 import { groupPendingQueue } from "./cluster.js";
 import { runBackfill, backfillStatus, abortBackfill, startBackfillDrainer } from "./backfill.js";
-import { getReport, generateReport, reportStatus, reportComposition, canGenerate, authoredSections } from "./report.js";
+import { getReport, generateReport, reportStatus, reportComposition, canGenerate, authoredSections, sectionFingerprint } from "./report.js";
 import { critiqueSection, MODES as CRITIQUE_MODES } from "./critique.js";
 import { perplexityEnabled } from "./perplexity.js";
 import { firecrawlEnabled } from "./firecrawl.js";
@@ -236,7 +236,20 @@ app.put("/api/report/sections/:key", (req, res) => {
   const text = typeof raw === "string" ? raw : JSON.stringify(raw ?? "");
   if (!text.trim()) return res.status(400).json({ error: "text required" });
   if (text.length > 20000) return res.status(400).json({ error: "section too long" });
-  d.putSectionEdit.run(key, text, reportComposition().hash, d.now());
+  // Record the machine draft this was written against, so a later
+  // regeneration can be recognised as a new draft rather than guessed at.
+  const draft = (getReport() || {})[key];
+  d.putSectionEdit.run(key, text, reportComposition().hash, sectionFingerprint(draft), d.now());
+  res.json({ ok: true, authored: authoredSections()[key] });
+});
+
+// "I have read the new draft and I am keeping mine." Clears the flag without
+// touching the authored text.
+app.post("/api/report/sections/:key/keep", (req, res) => {
+  const key = req.params.key;
+  if (!d.getSectionEdit.get(key)) return res.status(404).json({ error: "nothing authored here" });
+  const draft = (getReport() || {})[key];
+  d.rebaseSectionEdit.run(reportComposition().hash, sectionFingerprint(draft), d.now(), key);
   res.json({ ok: true, authored: authoredSections()[key] });
 });
 

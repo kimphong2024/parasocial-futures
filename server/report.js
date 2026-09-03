@@ -48,18 +48,30 @@ export function reportComposition() {
 // the page can say when the evidence has moved underneath it. Regeneration
 // writes a new draft and leaves authored text alone — the same shape scenarios
 // already use, where the model proposes and the human decides.
+// A stable fingerprint of one machine section, whatever shape it holds.
+export const sectionFingerprint = (v) =>
+  v === undefined || v === null ? null
+    : createHash("sha256").update(typeof v === "string" ? v : JSON.stringify(v)).digest("hex").slice(0, 16);
+
 export function authoredSections() {
   const comp = reportComposition();
+  const report = getReport() || {};
   const out = {};
   for (const row of d.allSectionEdits.all()) {
     let value = row.text;
     try { const parsed = JSON.parse(row.text); if (parsed && typeof parsed === "object") value = parsed; } catch { /* plain prose */ }
+    const nowSha = sectionFingerprint(report[row.section_key]);
     out[row.section_key] = {
       value,
       updated_at: row.updated_at,
       base_hash: row.base_hash,
-      // "the draft I wrote this against is no longer the current one"
-      draft_moved: !!row.base_hash && row.base_hash !== comp.hash,
+      base_text_sha: row.base_text_sha,
+      // The question is whether the machine draft has changed since this was
+      // written, not whether the evidence has. Regeneration rewrites the prose
+      // without necessarily moving the evidence hash, so comparing the draft
+      // text is the only thing that actually answers it.
+      draft_moved: !!row.base_text_sha && !!nowSha && row.base_text_sha !== nowSha,
+      evidence_moved: !!row.base_hash && row.base_hash !== comp.hash,
     };
   }
   return out;
