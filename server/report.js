@@ -182,10 +182,30 @@ const REPORT_SCHEMA = {
     scenario_space: SECTION("The four archetypes and what genuinely separates them — the fork, not the summary.", 200),
     odds: SECTION("What the simulation says, stated as a conditional artifact of human-set ranges rather than a forecast. MUST state the residual and what it means.", 150),
     sensitivity: SECTION("Which drivers actually move the odds, and which turn out not to.", 130),
-    what_would_change_our_mind: SECTION("The falsifiers: specific developments that would break the current reading, named concretely enough to watch for.", 150),
-    so_what: SECTION("Implications, split for the two audiences: public-policy makers working on AI governance, and strategy/trust teams at AI companies.", 200),
+    // Structured rather than prose: these two were the only sections with no
+    // shape to lay out, and a falsifier list and an audience split are both
+    // genuinely structured content being flattened into paragraphs.
+    what_would_change_our_mind: {
+      type: "array",
+      description: "Four to six falsifiers — specific, watchable developments that would change the reading.",
+      items: {
+        type: "object",
+        properties: {
+          watch: { type: "string", description: "The observable itself, 6-12 words, concrete enough to actually watch for. No hedging." },
+          direction: { type: "string", enum: ["strengthens", "weakens"], description: "Whether observing this strengthens or weakens the current reading" },
+          meaning: { type: "string", description: "One sentence on what it would imply. Cite with [S<id>] or [SC:<slug>] where the evidence supports it." },
+        },
+        required: ["watch", "direction", "meaning"],
+      },
+    },
+    // Two flat fields rather than a nested object: asked for as an object, the
+    // model returned a single string and satisfied the schema anyway — tool
+    // inputs are not hard-validated, so a shape the model reliably produces
+    // beats a tidier one it ignores.
+    so_what_policy: SECTION("Implications for public-policy makers working on AI governance: what follows, and which lever actually moves. Do not address industry here.", 110),
+    so_what_industry: SECTION("Implications for strategy and trust teams inside AI companies: what follows, including where the same evidence cuts against them. Do not address policymakers here.", 110),
   },
-  required: ["headline", "state_of_evidence", "triangle_reading", "scenario_space", "odds", "sensitivity", "what_would_change_our_mind", "so_what"],
+  required: ["headline", "state_of_evidence", "triangle_reading", "scenario_space", "odds", "sensitivity", "what_would_change_our_mind", "so_what_policy", "so_what_industry"],
 };
 
 const SYSTEM = `You write the live synthesis report for "Futures of Parasocial AI", a foresight instrument on how AI reshapes human social relations by 2040, built from a human-reviewed signal library.
@@ -240,19 +260,32 @@ export async function generateReport() {
 
     let dropped = 0, quotesChecked = 0, quotesStripped = 0;
     const quoteDetails = [];
+
+    // Sections are no longer all flat strings — what_would_change_our_mind is
+    // an array of objects and so_what is a pair. Both gates walk the whole
+    // structure, otherwise a citation inside a nested field would skip them.
+    const clean = (value) => {
+      if (typeof value === "string") {
+        const r = stripUnknownCitations(value, allowedSignalIds, allowedSlugs);
+        dropped += r.dropped;
+        // Second gate: anything presented as a quotation must be found
+        // verbatim in retained source text, or the words come out and only
+        // the citation stays. Deterministic, and it fails closed.
+        const q = enforceVerbatim(r.text);
+        quotesChecked += q.checked;
+        quotesStripped += q.stripped;
+        quoteDetails.push(...q.details);
+        return q.text;
+      }
+      if (Array.isArray(value)) return value.map(clean);
+      if (value && typeof value === "object") {
+        return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, clean(v)]));
+      }
+      return value;
+    };
+
     const sections = {};
-    for (const k of Object.keys(REPORT_SCHEMA.properties)) {
-      const r = stripUnknownCitations(out[k], allowedSignalIds, allowedSlugs);
-      dropped += r.dropped;
-      // Second gate: anything presented as a quotation must be found verbatim
-      // in retained source text, or the words come out and only the citation
-      // stays. Deterministic, and it fails closed.
-      const q = enforceVerbatim(r.text);
-      sections[k] = q.text;
-      quotesChecked += q.checked;
-      quotesStripped += q.stripped;
-      quoteDetails.push(...q.details);
-    }
+    for (const k of Object.keys(REPORT_SCHEMA.properties)) sections[k] = clean(out[k]);
     if (dropped) console.warn(`[report] stripped ${dropped} citation(s) not present in the evidence pack`);
     if (quotesStripped) console.warn(`[report] stripped ${quotesStripped}/${quotesChecked} unverifiable quotation(s)`, quoteDetails);
 

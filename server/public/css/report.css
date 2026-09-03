@@ -313,6 +313,80 @@
 }
 .report-figure svg { display: block; width: 100%; height: auto; }
 
+/* ---------- falsifier watch-list ---------- */
+/* The direction chip carries the colour; no side stripes. Rows, because a
+   falsifier is a thing you watch for, not a paragraph you read past. */
+.watchlist { list-style: none; margin: 0; padding: 0; }
+.watch {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr);
+  gap: 4px 20px;
+  padding: 16px 0;
+  border-top: 1px solid var(--creamLine);
+}
+.watch:last-child { border-bottom: 1px solid var(--creamLine); }
+.watch-dir {
+  grid-row: 1 / span 2;
+  align-self: start;
+  justify-self: start;
+  font-family: var(--font-mono);
+  font-size: var(--rt-label);
+  letter-spacing: 0.4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.watch[data-dir="strengthens"] .watch-dir { background: #DDE3D2; color: #33421F; }
+.watch[data-dir="weakens"]     .watch-dir { background: #F1D9D4; color: #8C2C1F; }
+/* Both lines share one measure so the row reads as a block rather than a
+   wide headline over a narrow note. */
+.watch-obs {
+  font-size: var(--rt-body);
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+  max-width: 62ch;
+  text-wrap: balance;
+}
+.watch-mean {
+  font-size: var(--rt-secondary);
+  line-height: 1.6;
+  color: #3A3A2E;
+  margin: 0;
+  max-width: 62ch;
+  text-wrap: pretty;
+}
+
+/* ---------- audience split ---------- */
+.aud-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(24px, 3.5vw, 56px);
+}
+.aud-label {
+  font-size: var(--rt-secondary);
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--ink);
+}
+.aud-who {
+  font-family: var(--font-mono);
+  font-size: var(--rt-label);
+  line-height: 1.5;
+  color: var(--chart-mid);
+  margin: 10px 0 14px;
+}
+.aud .report-prose { max-width: none; }
+
+@media (max-width: 860px) {
+  .aud-split { grid-template-columns: 1fr; }
+  .watch { grid-template-columns: 1fr; gap: 8px; }
+  .watch-dir { grid-row: auto; }
+}
+
 /* ---------- method note: an aside, deliberately quieter ---------- */
 .report-method {
   margin-top: var(--s-8, 64px);

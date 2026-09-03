@@ -315,17 +315,17 @@ conference wifi. Have a recorded fallback or end on `/simulation`.
 
 ## 6. Risks and open items
 
-**6.1 The app is light; the docs said it was dark — resolved.** `TRANSPARENCY.md` §10 states *"the whole product is
+**6.1 The app is light; the docs said it was dark — resolved.** `TRANSPARENCY.md` §11 states *"the whole product is
 dark"* via an `app-dark.css` token remap, and `css/app-dark.css` exists and describes itself as *"Loaded ONLY
 by app pages (+ login)"*. **No HTML file links it.** Verified locally and against the live `/review`, which
 loads only `style.css`, `fib.css`, `motion.css`. `DESIGN.md`'s light-app description is the accurate one. The
-dark theme was written and never wired up, and `TRANSPARENCY.md` §10 is wrong on a point of fact today. Resolved by
+dark theme was written and never wired up, and that claim was wrong on a point of fact. Resolved by
 correcting `TRANSPARENCY.md` §11 rather than wiring the theme: the report page follows the light app register
 with every other page, and the dormant sheet is now described as dormant.
 
-(The same file's "+ login" reference is also stale: `TRANSPARENCY.md` §11 records that there is no auth.)
+(The same file's "+ login" reference is also stale: `TRANSPARENCY.md` §12 records that there is no auth.)
 
-**6.2 No auth, by design — resolved.** Every endpoint is publicly writable. `POST /api/report/regenerate` is a
+**6.2 No auth, by design — resolved.** Every endpoint is publicly writable (`TRANSPARENCY.md` §12). `POST /api/report/regenerate` is a
 high-effort LLM call exposed to the internet, as is `POST /api/scan/run` today. Resolved by making generation
 manual and rate-limited to one run per ten minutes, and by ensuring the read path never generates. The wider
 question of authentication on a public write surface is untouched and remains open.

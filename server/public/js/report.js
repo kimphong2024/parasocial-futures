@@ -71,6 +71,38 @@ function breakUp(block, target = 55) {
   return out;
 }
 
+// Falsifiers as a watch-list rather than a paragraph: the observable, which
+// way it cuts, and what it would mean. Falls back to prose for reports cached
+// before the section was structured.
+function falsifierList(v) {
+  if (typeof v === "string" || !Array.isArray(v)) return `<div class="report-prose">${paras(v)}</div>`;
+  return `<ul class="watchlist">${v.map((f) => `
+    <li class="watch" data-dir="${f.direction === "weakens" ? "weakens" : "strengthens"}">
+      <span class="watch-dir">${f.direction === "weakens" ? "weakens" : "strengthens"}</span>
+      <p class="watch-obs">${pills(f.watch || "")}</p>
+      <p class="watch-mean">${pills(f.meaning || "")}</p>
+    </li>`).join("")}</ul>`;
+}
+
+// Two audiences, kept apart. Blending them into one paragraph was the reason
+// this section read as undifferentiated advice.
+function audienceSplit(r) {
+  const policy = r.so_what_policy, industry = r.so_what_industry;
+  // Reports cached before the split keep their single prose block; never
+  // fabricate a division the model did not make.
+  if (!policy && !industry) return `<div class="report-prose">${paras(r.so_what)}</div>`;
+  const col = (label, who, text) => `
+    <div class="aud">
+      <h4 class="aud-label">${esc(label)}</h4>
+      <p class="aud-who">${esc(who)}</p>
+      <div class="report-prose">${paras(text)}</div>
+    </div>`;
+  return `<div class="aud-split">
+    ${col("For policy", "Public-policy makers working on AI governance", policy)}
+    ${col("For industry", "Strategy and trust teams inside AI companies", industry)}
+  </div>`;
+}
+
 const paras = (s) => (s || "")
   .split(/\n{2,}/)
   .flatMap((block) => breakUp(block.trim()))
@@ -135,6 +167,11 @@ function drawReport() {
   if (r.citations_dropped) bits.push(`<b>${r.citations_dropped}</b> citation${r.citations_dropped === 1 ? "" : "s"} dropped`);
   $("repMeta").innerHTML = bits.map((b) => `<span>${b}</span>`).join("\n");
 
+  const RENDER = {
+    what_would_change_our_mind: falsifierList,
+    so_what: audienceSplit,
+  };
+
   const fig = {
     state_of_evidence: evidenceFigure(ctx),
     triangle_reading: triangleFigure(ctx.triangle),
@@ -146,7 +183,7 @@ function drawReport() {
   $("repBody").innerHTML = SECTIONS.map(([key, title]) => `
     <section class="report-section${fig[key] ? " has-figure" : ""}" data-section="${key}">
       <h3>${esc(title)}</h3>
-      <div class="report-prose">${paras(r[key])}</div>
+      ${RENDER[key] ? RENDER[key](key === "so_what" ? r : r[key]) : `<div class="report-prose">${paras(r[key])}</div>`}
       ${fig[key] || ""}
     </section>`).join("");
 

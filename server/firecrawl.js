@@ -11,14 +11,42 @@ const BASE = "https://api.firecrawl.dev/v2";
 export const DEFAULT_FOLLOW_LIMIT = Number(process.env.FOLLOW_LIMIT || 3);
 export const firecrawlEnabled = () => !!KEY;
 
-async function fc(path, body) {
-  const r = await fetch(BASE + path, {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: "Bearer " + KEY },
-    body: JSON.stringify(body),
-  });
-  if (!r.ok) throw new Error(`firecrawl ${path} ${r.status} ${(await r.text()).slice(0, 160)}`);
-  return r.json();
+const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
+
+// Firecrawl rate-limits hard when 16 sources fire back to back: run 57 lost
+// five sources to 429 in one pass, which is also why no article text was ever
+// retained for the verbatim check. Retry on 429/5xx with backoff, honour
+// Retry-After when the API sends it, and pace requests so a run stops
+// starving itself.
+const PACE_MS = Number(process.env.FIRECRAWL_PACE_MS || 1200);
+const MAX_RETRY = Number(process.env.FIRECRAWL_RETRIES || 4);
+let lastCall = 0;
+
+async function fc(path, body, { retries = MAX_RETRY } = {}) {
+  for (let attempt = 0; ; attempt++) {
+    const wait = lastCall + PACE_MS - Date.now();
+    if (wait > 0) await sleep(wait);
+    lastCall = Date.now();
+
+    const r = await fetch(BASE + path, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: "Bearer " + KEY },
+      body: JSON.stringify(body),
+    });
+    if (r.ok) return r.json();
+
+    const retryable = r.status === 429 || r.status >= 500;
+    const text = (await r.text()).slice(0, 160);
+    if (!retryable || attempt >= retries) {
+      throw new Error(`firecrawl ${path} ${r.status} ${text}`);
+    }
+    const header = Number(r.headers.get("retry-after"));
+    const backoff = Number.isFinite(header) && header > 0
+      ? Math.min(header * 1000, 30_000)
+      : Math.min(2000 * 2 ** attempt, 30_000);
+    console.warn(`[firecrawl] ${r.status} on ${path}, retry ${attempt + 1}/${retries} in ${backoff}ms`);
+    await sleep(backoff);
+  }
 }
 
 async function scrape(url) {
@@ -121,6 +149,12 @@ export async function firecrawlScan(sources, isKnown, followLimit = DEFAULT_FOLL
       for (const page of pages) {
         if (!page.markdown.trim()) continue;
         const sigs = await extractSignals(src.name, page.url, page.markdown);
+        // A crawled page is the article itself, so its text is checkable
+        // source material. Scraped pages are front-page teasers — only the
+        // follow-through below reaches real article text for those.
+        if (src.kind === "crawl") {
+          for (const sig of sigs) if (sig.url === page.url) sig.article_text = page.markdown;
+        }
         if (src.kind !== "crawl" && followLimit > 0) await followArticles(src, sigs, isKnown, followLimit);
         candidates.push(...sigs.map((s) => ({ ...s, source_id: src.id })));
         found += sigs.length;
