@@ -18,7 +18,7 @@ import { ARCHETYPES, draftScenario, embedScenario } from "./scenarios.js";
 import { simulate, previewDistribution, makeSampler } from "./montecarlo.js";
 import { chatHandler } from "./chat.js";
 import { groupPendingQueue } from "./cluster.js";
-import { runBackfill, backfillStatus, abortBackfill } from "./backfill.js";
+import { runBackfill, backfillStatus, abortBackfill, startBackfillDrainer } from "./backfill.js";
 import { getReport, generateReport, reportStatus, reportComposition, canGenerate } from "./report.js";
 import { perplexityEnabled } from "./perplexity.js";
 import { firecrawlEnabled } from "./firecrawl.js";

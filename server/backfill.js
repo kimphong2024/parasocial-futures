@@ -54,6 +54,10 @@ async function directFetch(url) {
     });
     if (!r.ok) return { ok: false, reason: `http ${r.status}` };
     const ct = r.headers.get("content-type") || "";
+    // A PDF is not a failure, it is the paid stage's job — Firecrawl parses
+    // them. arxiv alone accounts for 47 signals, and papers are exactly the
+    // sources worth quoting exactly.
+    if (/pdf/i.test(ct)) return { ok: false, reason: "pdf — needs parsing" };
     if (!/html|text/i.test(ct)) return { ok: false, reason: `content-type ${ct.split(";")[0]}` };
     return { ok: true, text: htmlToText(await r.text()) };
   } catch (e) {
@@ -89,6 +93,31 @@ const note = (reason) => { state.reasons[reason] = (state.reasons[reason] || 0) 
 export function abortBackfill() {
   if (state?.running) { state.aborted = true; return true; }
   return false;
+}
+
+// ---------------- automatic draining ----------------
+
+// A signal without retained source text is an unfinished scan, not a task for
+// a person. The corpus fills itself: a bounded batch every interval, skipped
+// while a scan is running so the two never compete for Firecrawl's rate limit.
+const DRAIN_INTERVAL_MS = Number(process.env.BACKFILL_INTERVAL_MS || 10 * 60 * 1000);
+const DRAIN_BATCH = Number(process.env.BACKFILL_BATCH || 120);
+
+export function startBackfillDrainer(isBusy = () => false) {
+  const tick = async () => {
+    if (state?.running || isBusy()) return;
+    const missing = d.countMissingText.get().n;
+    if (!missing) return;
+    try {
+      const r = await runBackfill({ limit: DRAIN_BATCH });
+      console.log(`[backfill] drained ${r.stored}/${r.target} (${r.direct_hits} free, ${r.firecrawl_hits} paid) — ${r.remaining} left`);
+    } catch (e) {
+      console.error("[backfill] drain failed:", e.message);
+    }
+  };
+  setTimeout(tick, 90_000);            // let boot settle first
+  setInterval(tick, DRAIN_INTERVAL_MS);
+  console.log(`[backfill] drainer on — ${DRAIN_BATCH} signals every ${Math.round(DRAIN_INTERVAL_MS / 60000)} min while any remain`);
 }
 
 /**
