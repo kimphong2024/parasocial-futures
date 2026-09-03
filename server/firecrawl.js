@@ -49,7 +49,7 @@ async function fc(path, body, { retries = MAX_RETRY } = {}) {
   }
 }
 
-async function scrape(url) {
+export async function scrape(url) {
   const j = await fc("/scrape", { url, formats: ["markdown"], onlyMainContent: true });
   const page = j.data || j;
   return [{ url: page.metadata?.sourceURL || url, markdown: page.markdown || "" }];

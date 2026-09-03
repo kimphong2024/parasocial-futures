@@ -240,6 +240,18 @@ export const setSignalContentHash = db.prepare("UPDATE signals SET content_sha25
 export const putArticleText = db.prepare("INSERT INTO article_text (signal_id, text, sha256, chars, created_at) VALUES (?,?,?,?,?) ON CONFLICT(signal_id) DO UPDATE SET text = excluded.text, sha256 = excluded.sha256, chars = excluded.chars, created_at = excluded.created_at");
 export const getArticleText = db.prepare("SELECT * FROM article_text WHERE signal_id = ?");
 export const countArticleText = db.prepare("SELECT COUNT(*) AS n FROM article_text");
+// Backfill queue: signals with no retained source text yet, approved first
+// because only approved signals are ever quotable.
+export const signalsMissingText = db.prepare(`
+  SELECT s.id, s.url, s.status FROM signals s
+  LEFT JOIN article_text a ON a.signal_id = s.id
+  WHERE a.signal_id IS NULL AND s.url LIKE 'http%'
+  ORDER BY CASE s.status WHEN 'approved' THEN 0 WHEN 'pending' THEN 1 ELSE 2 END, s.id
+  LIMIT ?`);
+export const countMissingText = db.prepare(`
+  SELECT COUNT(*) AS n FROM signals s
+  LEFT JOIN article_text a ON a.signal_id = s.id
+  WHERE a.signal_id IS NULL AND s.url LIKE 'http%'`);
 export const putQuote = db.prepare("INSERT OR IGNORE INTO quotes (signal_id, text, sha256, start_offset, end_offset, created_at) VALUES (?,?,?,?,?,?)");
 export const quotesForSignal = db.prepare("SELECT * FROM quotes WHERE signal_id = ?");
 export const setSignalTriangle = db.prepare("UPDATE signals SET triangle = ?, triangle_reasoning = ? WHERE id = ?");

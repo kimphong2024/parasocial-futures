@@ -29,6 +29,8 @@ const ENTITIES = [
 const ACTIONS = [
   [/^PATCH \/api\/signals\/\d+\/note$/, "signal.note"],
   [/^POST \/api\/review\/batch$/, "review.batch"],
+  [/^POST \/api\/quotes\/backfill$/, "quotes.backfill"],
+  [/^POST \/api\/quotes\/backfill\/abort$/, "quotes.backfill-abort"],
   [/^POST \/api\/review\/signals\/\d+\/approve$/, "review.approve"],
   [/^POST \/api\/review\/signals\/\d+\/reject$/, "review.reject"],
   [/^PATCH \/api\/review\/signals\/\d+$/, "review.edit"],
@@ -91,6 +93,8 @@ function describe(action, { entityId, name, before, after, diff, body }) {
     case "review.approve": return `Approved pending ${sig} into the library`;
     case "review.reject": return `Rejected pending ${sig} from the review queue`;
     case "review.edit": return `Edited pending ${sig}${diff ? " — " + diffPhrase(diff) : ""}`;
+    case "quotes.backfill": return `Started a verbatim-corpus backfill (${body?.limit ?? "?"} signals${body?.useFirecrawl === false ? ", free pass only" : ""})`;
+    case "quotes.backfill-abort": return "Aborted the verbatim-corpus backfill";
     case "review.batch": {
       // The basis is the point of the record: it says what the human read
       // before deciding, so a 200-signal approval stays an inspectable claim.

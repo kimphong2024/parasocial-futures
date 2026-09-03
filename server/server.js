@@ -18,6 +18,7 @@ import { ARCHETYPES, draftScenario, embedScenario } from "./scenarios.js";
 import { simulate, previewDistribution, makeSampler } from "./montecarlo.js";
 import { chatHandler } from "./chat.js";
 import { groupPendingQueue } from "./cluster.js";
+import { runBackfill, backfillStatus, abortBackfill } from "./backfill.js";
 import { getReport, generateReport, reportStatus, reportComposition, canGenerate } from "./report.js";
 import { perplexityEnabled } from "./perplexity.js";
 import { firecrawlEnabled } from "./firecrawl.js";
@@ -174,6 +175,26 @@ app.get("/api/signals/:id", (req, res) => {
   const similar = similarTo(s.id, 5).map((h) => ({ ...d.getSignal.get(h.id), score: Math.round(h.score * 1000) / 1000 }));
   res.json({ ...s, similar });
 });
+
+// ---------- verbatim corpus backfill ----------
+// Walks the library fetching source text the verbatim gate can check against.
+// Resumable by construction: the queue is "signals with no retained text", so
+// re-running continues where the last run stopped.
+app.get("/api/quotes/coverage", (_req, res) => {
+  const total = d.db.prepare("SELECT COUNT(*) AS n FROM signals WHERE url LIKE 'http%'").get().n;
+  const have = d.countArticleText.get().n;
+  res.json({ total, retained: have, missing: d.countMissingText.get().n, status: backfillStatus() });
+});
+
+app.post("/api/quotes/backfill", (req, res) => {
+  if (backfillStatus().running) return res.status(409).json({ error: "a backfill is already running" });
+  const limit = Math.min(500, Math.max(1, +req.body?.limit || 200));
+  const useFirecrawl = req.body?.useFirecrawl !== false;
+  runBackfill({ limit, useFirecrawl }).catch((e) => console.error("[backfill] failed:", e.message));
+  res.json({ ok: true, started: true, limit, useFirecrawl });
+});
+
+app.post("/api/quotes/backfill/abort", (_req, res) => res.json({ ok: abortBackfill() }));
 
 // ---------- the live synthesis report ----------
 // Reading never generates. Generation is a high-effort model call on a site
