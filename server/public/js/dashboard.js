@@ -1,6 +1,7 @@
 import { api, esc, fmtDate } from "./api.js";
 import { renderNav } from "./nav.js";
 import { noteCard, wireNoteCard } from "./signal-note.js";
+import { sourceText, wireSourceText } from "./signal-text.js";
 import { hbar } from "./charts.js";
 
 const state = { q: "", semantic: false, cluster: "", type: "", horizon: "", provenance: "", sort: "newest", page: 1 };
@@ -124,6 +125,7 @@ async function openDrawer(id) {
     </div>
     ${s.topic_tags ? `<p class="caption">${esc(s.topic_tags.split(";").join(" · "))}</p>` : ""}
     ${noteCard(s)}
+      ${sourceText(s)}
     ${s.horizon_reasoning ? `
       <h4 class="mt-4">Horizon ${esc(s.horizon)} — judged with reasoning</h4>
       <p class="caption" style="line-height:1.7">${esc(s.horizon_reasoning)}</p>
@@ -137,7 +139,7 @@ async function openDrawer(id) {
         <h4 style="font-size:13px">${esc(x.title)}</h4>
         <div class="signal-meta"><span>${esc(x.cluster)}</span><span>cos ${x.score}</span></div>
       </div>`).join("") : ""}`;
-  wireNoteCard($("drawer"));
+  wireNoteCard($("drawer")); wireSourceText($("drawer"));
   document.body.classList.add("drawer-open");
   $("dclose").addEventListener("click", closeDrawer);
 }

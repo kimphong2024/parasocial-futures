@@ -170,11 +170,29 @@ app.patch("/api/signals/:id/note", (req, res) => {
   res.json({ ok: true, note, note_updated_at: ts });
 });
 
+// The retained article behind a signal — the text a quotation is checked
+// against. Fetched on demand rather than with the signal, because these run to
+// tens of thousands of characters.
+app.get("/api/signals/:id/text", (req, res) => {
+  const row = d.getArticleText.get(+req.params.id);
+  if (!row) {
+    const a = d.getTextAttempt.get(+req.params.id);
+    return res.status(404).json({
+      error: "no source text retained for this signal",
+      attempts: a?.attempts || 0,
+      last_reason: a?.last_reason || null,
+      given_up: !!a && a.next_try_at === null,
+    });
+  }
+  res.json(row);
+});
+
 app.get("/api/signals/:id", (req, res) => {
   const s = d.getSignal.get(+req.params.id);
   if (!s) return res.status(404).json({ error: "not found" });
   const similar = similarTo(s.id, 5).map((h) => ({ ...d.getSignal.get(h.id), score: Math.round(h.score * 1000) / 1000 }));
-  res.json({ ...s, similar });
+  const t = d.getArticleText.get(s.id);
+  res.json({ ...s, similar, text_chars: t?.chars || 0, text_sha256: t?.sha256 || null });
 });
 
 // ---------- verbatim corpus backfill ----------
@@ -184,7 +202,14 @@ app.get("/api/signals/:id", (req, res) => {
 app.get("/api/quotes/coverage", (_req, res) => {
   const total = d.db.prepare("SELECT COUNT(*) AS n FROM signals WHERE url LIKE 'http%'").get().n;
   const have = d.countArticleText.get().n;
-  res.json({ total, retained: have, missing: d.countMissingText.get().n, status: backfillStatus() });
+  const now = d.now();
+  res.json({
+    total, retained: have,
+    missing: d.countMissingText.get().n,
+    retryable: d.countRetryable.get(now).n,
+    given_up: d.countGivenUp.get().n,
+    status: backfillStatus(),
+  });
 });
 
 app.post("/api/quotes/backfill", (req, res) => {

@@ -18,6 +18,23 @@ import * as d from "./db.js";
 import { articleTextVerdict, storeArticleText } from "./quotes.js";
 import { scrape as firecrawlScrapeOne, firecrawlEnabled } from "./firecrawl.js";
 
+// How long before a failed signal is worth trying again, by attempt number.
+// After the last tier it is given up on: a 404 is not going to become a 200,
+// and re-serving it forever is how 840 calls were spent on nothing.
+const RETRY_AFTER_H = [2, 12, 72];
+const nextTry = (attempts) => {
+  const h = RETRY_AFTER_H[attempts];        // attempts is the count BEFORE this one
+  return h === undefined ? null : new Date(Date.now() + h * 3600_000).toISOString();
+};
+
+// Firecrawl answering 402 means the credits are gone; every further call this
+// run is guaranteed to fail the same way. Stop asking, and stop asking for a
+// while afterwards.
+const PAID_COOLDOWN_MS = 6 * 3600_000;
+let paidBlockedUntil = 0;
+let paidBlockedReason = "";
+const paidBlocked = () => Date.now() < paidBlockedUntil;
+
 const UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
 const DIRECT_TIMEOUT_MS = 15_000;
 const DIRECT_CONCURRENCY = 4;
@@ -75,6 +92,8 @@ export const backfillStatus = () => (state ? { ...state, running: state.running 
 const blank = (target) => ({
   running: true,
   aborted: false,
+  paid_blocked: false,
+  paid_blocked_reason: "",
   started_at: new Date().toISOString(),
   finished_at: null,
   target,
@@ -106,8 +125,10 @@ const DRAIN_BATCH = Number(process.env.BACKFILL_BATCH || 120);
 export function startBackfillDrainer(isBusy = () => false) {
   const tick = async () => {
     if (state?.running || isBusy()) return;
-    const missing = d.countMissingText.get().n;
-    if (!missing) return;
+    // Only signals actually due — a queue that is entirely backed off or given
+    // up on is not work, and running anyway is what caused the waste.
+    const due = d.countRetryable.get(d.now()).n;
+    if (!due) return;
     try {
       const r = await runBackfill({ limit: DRAIN_BATCH });
       console.log(`[backfill] drained ${r.stored}/${r.target} (${r.direct_hits} free, ${r.firecrawl_hits} paid) — ${r.remaining} left`);
@@ -142,7 +163,7 @@ export function startBackfillDrainer(isBusy = () => false) {
  */
 export async function runBackfill({ limit = 200, useFirecrawl = true } = {}) {
   if (state?.running) return { skipped: true, reason: "backfill already running" };
-  const rows = d.signalsMissingText.all(limit);
+  const rows = d.signalsMissingText.all(d.now(), limit);
   state = blank(rows.length);
   if (!rows.length) { state.running = false; state.finished_at = new Date().toISOString(); return state; }
 
@@ -158,6 +179,7 @@ export async function runBackfill({ limit = 200, useFirecrawl = true } = {}) {
         if (verdict.ok) {
           try {
             storeArticleText(row.id, res.text);
+            d.clearTextAttempt.run(row.id);
             state.stored++; state.direct_hits++;
           } catch (e) { state.errors.push({ id: row.id, message: e.message.slice(0, 80) }); }
           state.done++;
@@ -174,29 +196,52 @@ export async function runBackfill({ limit = 200, useFirecrawl = true } = {}) {
 
   // Stage 2 — Firecrawl only for what the free pass could not get. Serial,
   // because fc() paces and backs off globally.
-  if (useFirecrawl && firecrawlEnabled() && !state.aborted) {
+  const fail = (row, reason) => {
+    const prior = d.getTextAttempt.get(row.id)?.attempts || 0;
+    d.recordTextAttempt.run(row.id, d.now(), String(reason).slice(0, 160), nextTry(prior));
+    state.skipped++; note(reason);
+  };
+
+  if (useFirecrawl && firecrawlEnabled() && !state.aborted && !paidBlocked()) {
     for (const row of needsPaid) {
       if (state.aborted) break;
+      if (paidBlocked()) { fail(row, row.why); continue; }
       state.firecrawl_calls++;
       try {
         const [page] = await firecrawlScrapeOne(row.url);
         const verdict = articleTextVerdict(page?.markdown || "");
         if (verdict.ok) {
           storeArticleText(row.id, page.markdown);
+          d.clearTextAttempt.run(row.id);
           state.stored++; state.firecrawl_hits++;
         } else {
-          state.skipped++; note(verdict.reason);
+          fail(row, verdict.reason);
         }
       } catch (e) {
-        state.skipped++; note("firecrawl: " + e.message.slice(0, 40));
+        const msg = e.message || String(e);
+        // 402 payment required / 401 unauthorised are account-level, not
+        // about this URL. Retrying the other 119 is pure waste.
+        if (/\b(402|401)\b/.test(msg)) {
+          paidBlockedUntil = Date.now() + PAID_COOLDOWN_MS;
+          paidBlockedReason = /402/.test(msg) ? "Firecrawl credits exhausted (402)" : "Firecrawl rejected the key (401)";
+          state.paid_blocked = true;
+          state.paid_blocked_reason = paidBlockedReason;
+          console.warn(`[backfill] ${paidBlockedReason} — pausing paid fetches for 6h`);
+          fail(row, paidBlockedReason);
+        } else {
+          fail(row, "firecrawl: " + msg.slice(0, 60));
+        }
       }
     }
   } else {
-    for (const row of needsPaid) { state.skipped++; note(row.why); }
+    if (paidBlocked()) { state.paid_blocked = true; state.paid_blocked_reason = paidBlockedReason; }
+    for (const row of needsPaid) fail(row, paidBlocked() ? paidBlockedReason : row.why);
   }
 
   state.running = false;
   state.finished_at = new Date().toISOString();
   state.remaining = d.countMissingText.get().n;
+  state.retryable = d.countRetryable.get(d.now()).n;
+  state.given_up = d.countGivenUp.get().n;
   return state;
 }

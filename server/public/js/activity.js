@@ -95,10 +95,12 @@ async function renderCorpus() {
       <div class="corpus-bar"><span style="width:${pct}%"></span></div>
       <p class="corpus-line">
         <strong>${c.retained}</strong> of ${c.total} signals have retained source text (${pct}%) ·
-        ${c.missing ? `${c.missing} still to fetch` : "complete"}
+        ${c.missing ? `${c.missing} without` : "complete"}${c.given_up ? `, ${c.given_up} unreachable` : ""}
         ${running
           ? ` · <span class="corpus-live">fetching now — ${s.done ?? 0}/${s.target ?? 0} this batch, ${s.stored ?? 0} kept</span>`
-          : c.missing ? " · next batch within ten minutes" : ""}
+          : c.retryable ? ` · ${c.retryable} due, next batch within ten minutes`
+          : c.missing ? " · nothing due; the rest are backed off or unreachable" : ""}
+        ${s.paid_blocked ? `<span class="corpus-warn">${esc(s.paid_blocked_reason || "paid fetching paused")} — free fetches continue</span>` : ""}
       </p>`;
   } catch { $("corpusStrip").hidden = true; }
 }

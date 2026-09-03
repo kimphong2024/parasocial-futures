@@ -1,6 +1,7 @@
 import { api, esc } from "./api.js";
 import { renderNav } from "./nav.js";
 import { noteCard, wireNoteCard } from "./signal-note.js";
+import { sourceText, wireSourceText } from "./signal-text.js";
 import { probabilityBars, tornado, ARCH_COLOR } from "./charts.js";
 import { evidenceFigure, triangleFigure, triangleBridge, scenarioLedger } from "./report-figures.js";
 
@@ -448,8 +449,9 @@ async function openSignal(id) {
         <div class="quote"><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.url)}</a></div>
         <div class="source">${esc(s.source || "unknown source")}</div>
       </div>
-      ${noteCard(s)}`;
-    wireNoteCard(dr);
+      ${noteCard(s)}
+      ${sourceText(s)}`;
+    wireNoteCard(dr); wireSourceText(dr);
     dr.querySelector(".drawer-close")?.addEventListener("click", closeDrawer);
   } catch (e) {
     dr.innerHTML = `<button class="drawer-close" aria-label="Close">×</button><div class="error-note">${esc(e.message)}</div>`;

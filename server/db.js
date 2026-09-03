@@ -205,6 +205,20 @@ db.exec("CREATE INDEX IF NOT EXISTS idx_critiques_section ON report_critiques(se
 // so on its own it never noticed a new draft.
 try { db.exec("ALTER TABLE report_sections ADD COLUMN base_text_sha TEXT"); } catch { /* already migrated */ }
 
+// Without this the backfill queue re-served the same permanently-failing rows
+// every ten minutes forever: seven consecutive runs kept nothing and spent 840
+// Firecrawl calls on the identical 120 signals. An attempt is now recorded
+// whether or not it worked, with the time it may next be tried — and null
+// means give up.
+db.exec(`CREATE TABLE IF NOT EXISTS text_attempts (
+  signal_id INTEGER PRIMARY KEY,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  last_at TEXT NOT NULL,
+  last_reason TEXT,
+  next_try_at TEXT
+)`);
+db.exec("CREATE INDEX IF NOT EXISTS idx_attempts_next ON text_attempts(next_try_at)");
+
 db.exec("CREATE INDEX IF NOT EXISTS idx_quotes_signal ON quotes(signal_id)");
 db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_quotes_hash ON quotes(signal_id, sha256)");
 
@@ -266,12 +280,36 @@ export const getArticleText = db.prepare("SELECT * FROM article_text WHERE signa
 export const countArticleText = db.prepare("SELECT COUNT(*) AS n FROM article_text");
 // Backfill queue: signals with no retained source text yet, approved first
 // because only approved signals are ever quotable.
+// Only rows that are due: never tried, or past their next_try_at. Rows that
+// have exhausted their attempts have next_try_at NULL and drop out for good.
 export const signalsMissingText = db.prepare(`
   SELECT s.id, s.url, s.status FROM signals s
   LEFT JOIN article_text a ON a.signal_id = s.id
+  LEFT JOIN text_attempts t ON t.signal_id = s.id
   WHERE a.signal_id IS NULL AND s.url LIKE 'http%'
-  ORDER BY CASE s.status WHEN 'approved' THEN 0 WHEN 'pending' THEN 1 ELSE 2 END, s.id
+    AND (t.signal_id IS NULL OR (t.next_try_at IS NOT NULL AND t.next_try_at <= ?))
+  ORDER BY CASE s.status WHEN 'approved' THEN 0 WHEN 'pending' THEN 1 ELSE 2 END,
+           COALESCE(t.attempts, 0), s.id
   LIMIT ?`);
+
+export const recordTextAttempt = db.prepare(`
+  INSERT INTO text_attempts (signal_id, attempts, last_at, last_reason, next_try_at)
+  VALUES (?, 1, ?, ?, ?)
+  ON CONFLICT(signal_id) DO UPDATE SET
+    attempts = attempts + 1, last_at = excluded.last_at,
+    last_reason = excluded.last_reason, next_try_at = excluded.next_try_at`);
+export const clearTextAttempt = db.prepare("DELETE FROM text_attempts WHERE signal_id = ?");
+export const getTextAttempt = db.prepare("SELECT * FROM text_attempts WHERE signal_id = ?");
+export const countRetryable = db.prepare(`
+  SELECT COUNT(*) AS n FROM signals s
+  LEFT JOIN article_text a ON a.signal_id = s.id
+  LEFT JOIN text_attempts t ON t.signal_id = s.id
+  WHERE a.signal_id IS NULL AND s.url LIKE 'http%'
+    AND (t.signal_id IS NULL OR (t.next_try_at IS NOT NULL AND t.next_try_at <= ?))`);
+export const countGivenUp = db.prepare(`
+  SELECT COUNT(*) AS n FROM text_attempts t
+  LEFT JOIN article_text a ON a.signal_id = t.signal_id
+  WHERE a.signal_id IS NULL AND t.next_try_at IS NULL`);
 export const countMissingText = db.prepare(`
   SELECT COUNT(*) AS n FROM signals s
   LEFT JOIN article_text a ON a.signal_id = s.id

@@ -1,6 +1,7 @@
 import { api, esc } from "./api.js";
 import { renderNav } from "./nav.js";
 import { noteCard, wireNoteCard } from "./signal-note.js";
+import { sourceText, wireSourceText } from "./signal-text.js";
 
 const id = new URLSearchParams(location.search).get("id");
 const $ = (id) => document.getElementById(id);
@@ -236,8 +237,9 @@ function wire() {
           <div class="quote">${esc(s.source || "")} · ${s.year || ""}</div>
           <div class="source"><a href="${esc(s.url)}" target="_blank" rel="noopener">source link</a></div>
         </div>
-        ${noteCard(s)}`;
-      wireNoteCard($("drawer"));
+        ${noteCard(s)}
+      ${sourceText(s)}`;
+      wireNoteCard($("drawer")); wireSourceText($("drawer"));
       document.body.classList.add("drawer-open");
       $("dclose").addEventListener("click", () => document.body.classList.remove("drawer-open"));
     }));

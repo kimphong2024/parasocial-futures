@@ -437,3 +437,33 @@ svg text { font-family: var(--font-sans); }
 .corpus-line { margin-top: 8px; font-size: 12.5px; line-height: 1.6; color: var(--textMid); }
 .corpus-line strong { color: var(--charcoal); font-variant-numeric: tabular-nums; }
 .corpus-live { color: var(--brown); }
+.corpus-warn {
+  display: inline-block; margin-left: 8px; padding: 2px 9px;
+  border-radius: var(--r-pill); background: var(--redLight);
+  color: var(--urgentRed); font-size: 11px; font-weight: 600;
+}
+
+/* ---------- retained source text (signal drawers) ---------- */
+/* The article a quotation is checked against. Behind a disclosure because a
+   retained article runs to tens of thousands of characters. */
+.src-text { margin-top: var(--s-4); border-top: 1px solid var(--borderLight); padding-top: var(--s-3); }
+.src-text > summary {
+  cursor: pointer; list-style: none;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.src-text > summary::-webkit-details-marker { display: none; }
+.src-text > summary:focus-visible { outline: 2px solid var(--charcoal); outline-offset: 3px; }
+.src-meta { font-size: 11px; color: var(--textDim); line-height: 1.5; }
+.src-text > summary::after {
+  content: "Read the retained article ▸"; font-size: 11px; color: var(--olive); margin-top: 2px;
+}
+.src-text[open] > summary::after { content: "Hide ▾"; }
+.src-hash { font-family: ui-monospace, monospace; font-size: 10px; margin: 8px 0; }
+.src-scroll {
+  max-height: 340px; overflow-y: auto;
+  padding: var(--s-3); border: 1px solid var(--borderLight); border-radius: var(--r-box);
+  background: var(--cream);
+}
+.src-scroll p { font-size: 12.5px; line-height: 1.65; color: var(--charcoal); }
+.src-scroll p + p { margin-top: 0.8em; }
+.src-none .note-label { display: block; margin-bottom: 4px; }
