@@ -209,6 +209,7 @@
    sits on the paper inside a hairline instead, so five figures do not read as
    five identical boxes. */
 .report-figure {
+  min-width: 0;
   margin-top: var(--s-5, 24px);
   padding: var(--s-5, 24px);
   background: var(--cream);
@@ -298,10 +299,54 @@
 .bridge-read { grid-column: 2; font-size: var(--rt-caption); color: var(--chart-mid); margin: 2px 0 0; }
 .bridge-bar .segbar-legend { margin-top: 7px; }
 
-/* --- scenarios: a block each, with the CLA layers the method rests on --- */
-.sc-blocks { display: flex; flex-direction: column; gap: var(--s-5, 24px); }
-.sc-block { padding-top: var(--s-4, 16px); border-top: 1px solid var(--creamLine); }
-.sc-block:first-child { border-top: 0; padding-top: 0; }
+/* --- scenarios: a rail, because four full CLA sets stacked ran to 5,900px ---
+   The four are alternatives to each other, so side by side is the honest
+   arrangement: you compare them by moving between them, not by scrolling past
+   them. Uses the house drag-scroll strip; snap points do the positioning. */
+.sc-rail-wrap { position: relative; min-width: 0; }
+.sc-rail {
+  display: flex;
+  gap: 20px;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 2px;
+  padding-bottom: 6px;
+  /* No scroll-behavior: smooth. Lenis owns page scrolling and cancels native
+     smooth scrolls on nested elements — with it set, even a direct scrollLeft
+     assignment animates and then gets killed, so the rail never moved. The
+     glide below is hand-rolled instead. */
+}
+.sc-rail:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 12px; }
+
+.sc-block {
+  flex: 0 0 clamp(280px, 74vw, 440px);
+  scroll-snap-align: start;
+  display: flex; flex-direction: column;
+  max-height: min(68vh, 620px);
+  overflow-y: auto;
+  padding: var(--s-4, 16px);
+  background: var(--paperWhite);
+  border-radius: 14px;
+  /* the drag strip disables pointer events on children mid-drag, so text
+     selection inside a panel still works when you are not dragging */
+  user-select: text;
+}
+
+.sc-rail-nav {
+  display: flex; align-items: center; gap: 12px;
+  margin-top: var(--s-4, 16px);
+}
+.sc-rail-nav .sec-btn { opacity: 1; min-width: 34px; }
+.sc-rail-nav .sec-btn:disabled { opacity: 0.35; cursor: default; }
+.sc-rail-dots { display: flex; gap: 6px; align-items: center; }
+.sc-dot {
+  border: 0; background: none; padding: 5px 3px; cursor: pointer; line-height: 0;
+}
+.sc-dot i {
+  display: block; width: 22px; height: 4px; border-radius: 2px;
+  opacity: 0.28; transition: opacity 180ms var(--ease-epoch), width 180ms var(--ease-epoch);
+}
+.sc-dot.here i { opacity: 1; width: 34px; }
+.sc-dot:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
 .sc-top {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(140px, 240px);
@@ -309,8 +354,8 @@
   align-items: center;
 }
 .sc-summary {
-  font-size: var(--rt-secondary); line-height: 1.62; color: #23231A;
-  margin: var(--s-3, 12px) 0 0; max-width: 68ch;
+  font-size: var(--rt-caption); line-height: 1.62; color: #23231A;
+  margin: var(--s-3, 12px) 0 0;
 }
 /* Open by default — the layers are the method, not an appendix — but the
    scenario set is the longest thing on the page, so each one folds. */
@@ -329,13 +374,15 @@
 .cla-wrap > summary:hover { color: var(--ink); }
 .cla-wrap > summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 
+/* Inside a rail panel the two-column CLA grid has no room; the layers stack. */
 .cla {
   margin: var(--s-4, 16px) 0 0;
   display: grid;
-  grid-template-columns: 132px minmax(0, 1fr);
-  gap: 8px 20px;
-  align-items: baseline;
+  grid-template-columns: 1fr;
+  gap: 3px 0;
 }
+.cla dt { margin-top: 10px; }
+.cla dt:first-child { margin-top: 0; }
 .cla dt { display: flex; flex-direction: column; gap: 1px; }
 .cla-label { font-size: var(--rt-caption); font-weight: 700; color: var(--ink); }
 .cla-gloss { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.3px; color: var(--chart-mid); line-height: 1.4; }
@@ -618,14 +665,15 @@
 @media (max-width: 860px) {
   .sc-top { grid-template-columns: 1fr; }
   .sc-prob { max-width: 240px; }
-  .cla, .sc-residual-note { grid-template-columns: 1fr; gap: 3px 0; }
-  .cla dd { margin-bottom: 10px; }
+  .sc-residual-note { grid-template-columns: 1fr; gap: 3px 0; }
   .bridge-row { grid-template-columns: 1fr; }
   .bridge-read { grid-column: 1; }
 }
 
 @media (max-width: 900px) {
-  .report-section { grid-template-columns: 1fr; gap: 0; }
+  /* minmax(0,1fr), not 1fr: a bare 1fr is minmax(auto,1fr), so a child that
+     scrolls horizontally widens the page instead of scrolling itself. */
+  .report-section { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .report-section h3 { position: static; margin-bottom: var(--s-4, 16px); }
   .report-section .report-prose,
   .report-section .report-figure { grid-column: 1; }

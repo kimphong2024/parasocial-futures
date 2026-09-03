@@ -185,7 +185,7 @@ export function scenarioLedger(scenarios, sim) {
 
   const block = (s) => {
     const p = prob[s.slug];
-    return `<article class="sc-block" style="--sc:${ARCH_COLOR[s.archetype] || "#6B7264"}">
+    return `<article class="sc-block" style="--sc:${ARCH_COLOR[s.archetype] || "#6B7264"}" aria-label="${esc(s.title)}">
       <header class="sc-top">
         <div class="sc-id">
           <span class="sc-arch">${esc(s.archetype)}</span>
@@ -216,7 +216,17 @@ export function scenarioLedger(scenarios, sim) {
       <h4>The four archetypes, and what falls outside them</h4>
       <p class="fig-sub">Dator's archetypes, each structured with Causal Layered Analysis</p>
     </div>
-    <div class="sc-blocks">${scenarios.map(block).join("")}</div>
+    <div class="sc-rail-wrap">
+      <div class="sc-rail" data-drag-scroll data-lenis-prevent role="region" aria-label="The four scenarios, side by side" tabindex="0">
+        ${scenarios.map(block).join("")}
+      </div>
+      <div class="sc-rail-nav">
+        <button type="button" class="sec-btn" data-rail="prev" aria-label="Previous scenario">←</button>
+        <span class="sc-rail-dots">${scenarios.map((sc, i) =>
+          `<button type="button" class="sc-dot" data-rail-to="${i}" aria-label="${esc(sc.title)}" title="${esc(sc.title)}"><i style="background:${ARCH_COLOR[sc.archetype] || "#6B7264"}"></i></button>`).join("")}</span>
+        <button type="button" class="sec-btn" data-rail="next" aria-label="Next scenario">→</button>
+      </div>
+    </div>
     ${res != null ? `<div class="sc-residual-note">
       <span class="sc-arch" style="--sc:#8A8778">residual</span>
       <p><strong>${(res * 100).toFixed(1)}%</strong> of sampled futures match none of the four. Reported rather than hidden — it is the measure of what the archetypes do not cover.</p>

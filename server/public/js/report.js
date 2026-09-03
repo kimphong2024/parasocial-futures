@@ -378,6 +378,7 @@ function drawReport() {
     </section>`).join("");
 
   drawCharts(ctx);
+  wireRail();
 }
 
 // Everything the figures draw is fetched live rather than taken from the
@@ -494,6 +495,85 @@ $("regenerate").addEventListener("click", async () => {
 });
 
 
+
+// Scenario rail. Snap points do the positioning; these just move by one panel
+// or jump to one, and respect a reduced-motion preference.
+// Hand-rolled glide. Native smooth scrolling is unavailable here: Lenis
+// drives page scroll and cancels programmatic smooth scrolls on nested
+// elements, so `behavior: "smooth"` silently never arrives and even a plain
+// scrollLeft assignment animates-then-dies while CSS scroll-behavior is set.
+let railAnim = null, railSettle = null;
+function railGlide(rail, target) {
+  const max = rail.scrollWidth - rail.clientWidth;
+  const to = Math.max(0, Math.min(max, target));
+  const land = () => { rail.scrollLeft = to; markRailPosition(); };
+
+  // No frames are coming in a hidden or throttled tab, so animating would
+  // leave the rail exactly where it was. Movement must never depend on the
+  // animation arriving — the same rule the section reveals learned.
+  if (document.hidden || matchMedia("(prefers-reduced-motion: reduce)").matches) return land();
+
+  cancelAnimationFrame(railAnim);
+  clearTimeout(railSettle);
+  const from = rail.scrollLeft, t0 = performance.now(), dur = 380;
+  const ease = (p) => 1 - Math.pow(1 - p, 4);   // ease-out-quart, house curve
+  let done = false;
+  const frame = (now) => {
+    const p = Math.min(1, (now - t0) / dur);
+    rail.scrollLeft = from + (to - from) * ease(p);
+    if (p < 1) railAnim = requestAnimationFrame(frame);
+    else { done = true; markRailPosition(); }
+  };
+  railAnim = requestAnimationFrame(frame);
+  // Safety net: if the frames never landed, put it where it was asked to go.
+  railSettle = setTimeout(() => { if (!done) land(); }, dur + 120);
+}
+
+function railStep(dir) {
+  const rail = document.querySelector(".sc-rail");
+  if (!rail) return;
+  const panel = rail.querySelector(".sc-block");
+  const step = panel ? panel.getBoundingClientRect().width + 20 : rail.clientWidth * 0.8;
+  railGlide(rail, rail.scrollLeft + dir * step);
+}
+function railTo(i) {
+  const rail = document.querySelector(".sc-rail");
+  const panel = rail?.querySelectorAll(".sc-block")[i];
+  if (!panel) return;
+  railGlide(rail, panel.offsetLeft - rail.offsetLeft);
+}
+
+// Which panel is in view, so the dots say where you are.
+function markRailPosition() {
+  const rail = document.querySelector(".sc-rail");
+  if (!rail) return;
+  const panels = [...rail.querySelectorAll(".sc-block")];
+  // Nearest to the LEFT edge, not the centre: panels snap to start and more
+  // than one is visible at a time, so centre-matching marked panel 1 as
+  // current while the rail was still at position zero.
+  let best = 0, bestD = Infinity;
+  panels.forEach((p, i) => {
+    const dd = Math.abs((p.offsetLeft - rail.offsetLeft) - rail.scrollLeft);
+    if (dd < bestD) { bestD = dd; best = i; }
+  });
+  // At the end of the rail the last panel cannot reach the left edge, so
+  // left-edge matching under-reports. If we are at the end, we are on the last.
+  if (rail.scrollLeft >= rail.scrollWidth - rail.clientWidth - 2) best = panels.length - 1;
+  document.querySelectorAll(".sc-dot").forEach((d, i) => d.classList.toggle("here", i === best));
+  const prev = document.querySelector('[data-rail="prev"]');
+  const next = document.querySelector('[data-rail="next"]');
+  if (prev) prev.disabled = rail.scrollLeft <= 2;
+  if (next) next.disabled = rail.scrollLeft >= rail.scrollWidth - rail.clientWidth - 2;
+}
+
+function wireRail() {
+  const rail = document.querySelector(".sc-rail");
+  if (!rail || rail._wired) return;
+  rail._wired = true;
+  rail.addEventListener("scroll", markRailPosition, { passive: true });
+  markRailPosition();
+}
+
 // ---------------- authoring interactions ----------------
 
 const closeMenus = () => document.querySelectorAll(".sec-modes").forEach((m) => (m.hidden = true));
@@ -517,6 +597,9 @@ document.addEventListener("click", async (e) => {
   if (!t) { closeMenus(); return; }
 
   // ---- edit ----
+  if (t.dataset.rail) { railStep(t.dataset.rail === "next" ? 1 : -1); return; }
+  if (t.dataset.railTo !== undefined) { railTo(+t.dataset.railTo); return; }
+
   if (t.dataset.edit) { editing = t.dataset.edit; comparing = null; closeMenus(); drawReport(); return; }
   if (t.dataset.compare) { comparing = comparing === t.dataset.compare ? null : t.dataset.compare; editing = null; closeMenus(); drawReport(); return; }
   if (t.dataset.keep) {
