@@ -31,6 +31,12 @@ let data = null;
 let timer = null;
 let editing = null;    // section key currently open in the editor
 let comparing = null;  // section key currently showing draft-vs-yours
+let tick = null;       // local 1s clock so elapsed time moves between polls
+
+const mmss = (ms) => {
+  const t = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
+};
 
 // An authored section wins over the machine draft. `draft_moved` means the
 // evidence has shifted since it was written — surfaced, never auto-applied.
@@ -252,13 +258,36 @@ const editorActions = (key) => `
     <span class="sec-msg"></span>
   </div>`;
 
+function startClock(fromMs) {
+  stopClock();
+  const t0 = Date.now() - fromMs;
+  tick = setInterval(() => {
+    const el = $("genClock");
+    if (!el) return stopClock();
+    el.textContent = mmss(Date.now() - t0);
+  }, 1000);
+}
+function stopClock() { if (tick) { clearInterval(tick); tick = null; } }
+
 function drawStatus() {
   const st = $("repStatus");
   const r = data.report;
+  const s = data.status || {};
   if (data.generating) {
     st.hidden = false;
     st.classList.remove("is-error");
-    st.textContent = "A fresh synthesis is generating — this page updates when it lands.";
+    // Named stage plus a clock, because the writing step alone runs for
+    // minutes and a static sentence cannot be told apart from a hang.
+    st.innerHTML = `<span>Writing a fresh report — <strong>${esc(s.stage || "starting")}</strong>${s.note ? ` (${esc(s.note)})` : ""} · <span id="genClock">${mmss(s.elapsed_ms || 0)}</span></span>`;
+    startClock(s.elapsed_ms || 0);
+    return;
+  }
+  stopClock();
+  // A failure used to leave the previous report on screen with nothing said.
+  if (s.error && s.failed_at) {
+    st.hidden = false;
+    st.classList.add("is-error");
+    st.textContent = `The last attempt to write a report failed after ${mmss(s.elapsed_ms || 0)} — ${s.error}. The report below is the previous one.`;
     return;
   }
   if (!r) {
@@ -427,7 +456,7 @@ async function load() {
   drawStatus();
   drawReport();
   clearTimeout(timer);
-  if (data.generating) timer = setTimeout(load, 3000);
+  if (data.generating) timer = setTimeout(load, 2000);
 }
 
 $("regenerate").addEventListener("click", async () => {
@@ -436,7 +465,7 @@ $("regenerate").addEventListener("click", async () => {
   $("repState").textContent = "requesting…";
   try {
     await api("/api/report/regenerate", { method: "POST" });
-    $("repState").textContent = "generating — this takes a minute or two";
+    $("repState").textContent = "";
     clearTimeout(timer);
     timer = setTimeout(load, 2000);
   } catch (e) {

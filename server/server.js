@@ -222,6 +222,7 @@ app.get("/api/report", (_req, res) => {
     stale: !!report && report.hash !== comp.hash,
     changed: report ? Object.keys(comp.parts).filter((k) => (report.inputs || {})[k] !== comp.parts[k]) : [],
     generating: reportStatus().generating,
+    status: reportStatus(),
     available: llmEnabled(),
   });
 });

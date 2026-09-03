@@ -83,7 +83,46 @@ export function getReport() {
 
 let generating = false;
 let lastStartedAt = 0;
-export const reportStatus = () => ({ generating, lastStartedAt });
+
+// Generation is one long model call with real work either side of it. A bare
+// "generating" boolean told a reader nothing for two minutes, and a failure
+// was indistinguishable from nothing having happened — the error only reached
+// the server console while the page went on showing the previous report.
+let progress = { stage: null, note: "", startedAt: 0, ms: 0, error: null, failed_at: null };
+
+// SDK errors arrive as "401 {…json…}". A reader needs the sentence inside,
+// not the envelope.
+function humanError(e) {
+  const raw = String(e?.message || e || "unknown error");
+  const m = raw.match(/\{[\s\S]*\}/);
+  if (m) {
+    try {
+      const j = JSON.parse(m[0]);
+      const msg = j?.error?.message || j?.message;
+      if (msg) {
+        const code = (raw.match(/^\s*(\d{3})/) || [])[1];
+        return code ? `${msg} (HTTP ${code})` : msg;
+      }
+    } catch { /* fall through to the raw text */ }
+  }
+  return raw.length > 200 ? raw.slice(0, 200) + "…" : raw;
+}
+
+const setStage = (stage, note = "") => {
+  progress.stage = stage;
+  progress.note = note;
+  console.log(`[report] ${stage}${note ? " — " + note : ""}`);
+};
+
+export const reportStatus = () => ({
+  generating,
+  lastStartedAt,
+  stage: progress.stage,
+  note: progress.note,
+  elapsed_ms: generating && progress.startedAt ? Date.now() - progress.startedAt : progress.ms,
+  error: progress.error,
+  failed_at: progress.failed_at,
+});
 
 // Checked by the route before it fires generation off, so the rate limit can
 // be answered with a real 429 rather than disappearing into a background
@@ -281,8 +320,11 @@ export async function generateReport() {
 
   generating = true;
   lastStartedAt = Date.now();
+  progress = { stage: null, note: "", startedAt: Date.now(), ms: 0, error: null, failed_at: null };
   try {
+    setStage("assembling the evidence");
     const { prompt, allowedSignalIds, allowedSlugs } = buildPrompt();
+    setStage("writing", `${allowedSignalIds.size} signals in the evidence pack`);
     const out = await askTool({
       system: SYSTEM,
       prompt: `${prompt}\n\nWrite the report.`,
@@ -292,6 +334,7 @@ export async function generateReport() {
       effort: "high",
     });
 
+    setStage("checking citations");
     let dropped = 0, quotesChecked = 0, quotesStripped = 0;
     const quoteDetails = [];
 
@@ -323,6 +366,7 @@ export async function generateReport() {
     if (dropped) console.warn(`[report] stripped ${dropped} citation(s) not present in the evidence pack`);
     if (quotesStripped) console.warn(`[report] stripped ${quotesStripped}/${quotesChecked} unverifiable quotation(s)`, quoteDetails);
 
+    setStage("saving");
     const comp = reportComposition();
     const record = {
       ...sections,
@@ -337,8 +381,17 @@ export async function generateReport() {
       verbatim_corpus: verbatimCoverage(),
     };
     d.setSetting(REPORT_KEY, JSON.stringify(record));
+    setStage("done");
     return record;
+  } catch (e) {
+    // Kept so the page can say what went wrong instead of silently showing
+    // the previous report as though nothing had been asked for.
+    progress.error = humanError(e);
+    progress.failed_at = d.now();
+    progress.stage = "failed";
+    throw e;
   } finally {
     generating = false;
+    progress.ms = progress.startedAt ? Date.now() - progress.startedAt : 0;
   }
 }
