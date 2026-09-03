@@ -12,6 +12,34 @@
    / --chart-mid), which re-skins the product pages after style.css.
    ============================================================ */
 
+
+/* ---------- type scale ----------
+   The page had thirteen sizes between 10px and 19px, several of them half a
+   pixel apart — the muddy-hierarchy failure. Seven steps now, each far enough
+   from its neighbour to read as a decision, in rem so browser text settings
+   still work. Anton at 54px (fib.css .page-head h2) is the display step above
+   these; nothing here competes with it.
+
+   label 11 · caption 13 · secondary 15 · body 17 · heading 20 · lede 24-34   */
+.report-page {
+  --rt-label:     0.6875rem;   /* 11px  mono instrument labels, legends */
+  --rt-caption:   0.8125rem;   /* 13px  captions, figure sublines */
+  --rt-secondary: 0.9375rem;   /* 15px  figure titles, myth lines, aside prose */
+  --rt-body:      1.0625rem;   /* 17px  the reading size */
+  --rt-heading:   1.25rem;     /* 20px  section headings */
+  --rt-lede:      clamp(1.5rem, 2.6vw, 2.125rem);
+
+  /* Numerals in this page are data: align them. */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Shared app classes land off the scale on this page: .subtitle clamps to
+   14px, .btn-sm and .caption sit at 12px. Pulled onto the ramp here only —
+   other pages keep their own sizing. */
+.report-page .subtitle { font-size: var(--rt-secondary); line-height: 1.65; }
+.report-page .caption { font-size: var(--rt-caption); line-height: 1.6; }
+.report-page .btn-sm { font-size: var(--rt-caption); }
+
 /* ---------- notice ---------- */
 /* Full border and a marker square, echoing the page-head label rule.
    No side stripe.
@@ -31,7 +59,7 @@
   border-radius: 14px;
   background: var(--cream);
   color: var(--ink);
-  font-size: 13.5px;
+  font-size: var(--rt-caption);
   line-height: 1.6;
 }
 .report-status::before {
@@ -48,11 +76,11 @@
 .report-standfirst {
   padding-bottom: var(--s-6, 32px);
   border-bottom: 1px solid var(--ink);
-  margin-bottom: var(--s-6, 32px);
+  margin-bottom: var(--s-7, 48px);
 }
 .report-headline {
-  font-size: clamp(1.35rem, 2.5vw, 1.95rem);
-  line-height: 1.3;
+  font-size: var(--rt-lede);
+  line-height: 1.28;
   font-weight: 700;
   letter-spacing: -0.015em;
   color: var(--ink);
@@ -64,17 +92,33 @@
    ones from stranding a single word on line two. */
 @supports not (text-wrap: balance) { .report-headline { max-width: 30ch; } }
 
+/* Instrument strip — the house's Fragment Mono annotation register, carrying
+   real platform values (DESIGN.md). Separators are drawn between items rather
+   than typed into the string, so any item can be absent. */
 .report-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 16px;
+  gap: 6px 0;
   margin-top: var(--s-4, 16px);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--rt-label);
   letter-spacing: 0.4px;
   color: var(--chart-mid);
 }
+/* Plain inline, not inline-flex: a flex container drops the whitespace
+   between its text nodes, which ran "471" into "approved signals". */
+.report-meta span { display: inline; }
+.report-meta span + span::before {
+  content: "";
+  display: inline-block;
+  vertical-align: middle;
+  width: 1px; height: 11px;
+  margin: 0 12px;
+  background: var(--creamLine);
+}
+.report-meta b { font-weight: 400; color: var(--ink); }
+
 .report-actions {
   display: flex;
   align-items: center;
@@ -82,7 +126,7 @@
   flex-wrap: wrap;
   margin-top: var(--s-4, 16px);
 }
-.report-state { color: var(--chart-mid); font-size: 12.5px; }
+.report-state { color: var(--chart-mid); font-size: var(--rt-caption); }
 
 /* ---------- sections ---------- */
 /* Heading in a left rail, prose in the measure. A 66ch column inside a
@@ -96,15 +140,17 @@
   gap: 8px 48px;
   align-items: start;
 }
+/* Rhythm: generous between sections, tight within them. Uniform 32px
+   everywhere read as a list of blocks rather than a document. */
 .report-section + .report-section {
   border-top: 1px solid var(--creamLine);
-  margin-top: var(--s-6, 32px);
-  padding-top: var(--s-6, 32px);
+  margin-top: var(--s-7, 48px);
+  padding-top: var(--s-7, 48px);
 }
 .report-section h3 {
   grid-column: 1;
-  font-size: clamp(1.05rem, 1.4vw, 1.2rem);
-  line-height: 1.3;
+  font-size: var(--rt-heading);
+  line-height: 1.25;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--ink);
@@ -122,8 +168,8 @@
    on the paragraph itself. */
 .report-prose { max-width: 66ch; }
 .report-prose p {
-  font-size: 15.5px;
-  line-height: 1.72;
+  font-size: var(--rt-body);
+  line-height: 1.7;
   color: #23231A;
   text-wrap: pretty;
   margin: 0;
@@ -138,7 +184,7 @@
 .cite-pill {
   display: inline-block;
   font: inherit;
-  font-size: 0.78em;
+  font-size: var(--rt-caption);
   font-weight: 600;
   line-height: 1;
   padding: 5px 8px;
@@ -158,27 +204,35 @@
 .cite-pill[data-scenario] { background: #DDE3D2; color: #33421F; }
 .cite-pill[data-scenario]:hover { background: var(--deepGreen); border-color: var(--deepGreen); color: var(--paperWhite); }
 
-/* ---------- figures: the one place a card is the right answer ---------- */
+/* ---------- figures ---------- */
+/* Panels for the ones that are data surfaces; the triangle is a drawing and
+   sits on the paper inside a hairline instead, so five figures do not read as
+   five identical boxes. */
 .report-figure {
   margin-top: var(--s-5, 24px);
   padding: var(--s-5, 24px);
   background: var(--cream);
   border-radius: 18px;
 }
+.fig-triangle {
+  background: none;
+  border: 1px solid var(--creamLine);
+  border-radius: 18px;
+}
 /* Figure heading: the figure states its own claim, so a reader who scans
    only the pictures still gets the argument. */
 .fig-head { margin-bottom: var(--s-4, 16px); }
 .fig-head h4 {
-  font-size: 15px; font-weight: 700; letter-spacing: -0.005em;
+  font-size: var(--rt-secondary); font-weight: 700; letter-spacing: 0;
   color: var(--ink); margin: 0;
 }
 .fig-sub {
   font-family: var(--font-mono);
-  font-size: 11px; letter-spacing: 0.3px; line-height: 1.5;
+  font-size: var(--rt-label); letter-spacing: 0.3px; line-height: 1.5;
   color: var(--chart-mid); margin: 6px 0 0;
 }
 .fig-label {
-  font-size: 11px; font-weight: 700; letter-spacing: 0.6px;
+  font-size: var(--rt-caption); font-weight: 700; letter-spacing: 0;
   color: var(--chart-mid); margin: 0 0 10px; text-transform: none;
 }
 
@@ -186,7 +240,7 @@
 .fig-split { display: grid; grid-template-columns: 1.35fr 1fr; gap: clamp(24px, 3vw, 48px); align-items: start; }
 .fig-strips { display: flex; flex-direction: column; gap: var(--s-5, 24px); }
 .fig-strips .caption { margin-top: 8px; }
-.fig-evidence .hbar-label { color: var(--ink); font-size: 12.5px; }
+.fig-evidence .hbar-label { color: var(--ink); font-size: var(--rt-caption); }
 .fig-evidence .hbar-value { color: var(--chart-mid); }
 .fig-evidence .hbar-track { height: 12px; background: rgba(19,19,9,0.05); border-radius: 0 4px 4px 0; }
 
@@ -197,18 +251,27 @@
 }
 .segbar-part { display: grid; place-items: center; min-width: 3px; transition: filter 180ms var(--ease-epoch); }
 .segbar-part:hover { filter: brightness(1.12); }
-.segbar-inline { font-family: var(--font-mono); font-size: 10px; color: inherit; letter-spacing: 0.3px; }
+.segbar-inline { font-family: var(--font-mono); font-size: var(--rt-label); color: inherit; letter-spacing: 0.2px; }
 .segbar-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; }
-.segbar-key { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--chart-mid); }
+.segbar-key { display: inline-flex; align-items: center; gap: 6px; font-size: var(--rt-caption); color: var(--chart-mid); }
 .segbar-key i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
 .segbar-key b { font-family: var(--font-mono); font-weight: 400; color: var(--ink); }
 
 /* --- triangle --- */
-.fig-triangle-body { display: grid; grid-template-columns: minmax(280px, 460px) 1fr; gap: clamp(20px, 3vw, 44px); align-items: center; }
+/* Both columns share the panel proportionally — a fixed 460px diagram beside
+   a 44ch column left a quarter of the width empty. */
+.fig-triangle-body {
+  display: grid;
+  grid-template-columns: minmax(300px, 1.1fr) minmax(0, 1fr);
+  gap: clamp(20px, 3vw, 48px);
+  align-items: center;
+}
 .fig-triangle svg { width: 100%; height: auto; }
-.tri-fig-n { font-family: var(--font-mono); font-size: 19px; }
-.tri-fig-name { font-size: 11.5px; }
-.fig-read { font-size: 14px; line-height: 1.65; color: #23231A; max-width: 44ch; margin: 0; }
+/* SVG text sizes are viewBox drawing units, not page type — they scale with
+   the diagram rather than with the reader's text setting, so they stay px. */
+.tri-fig-n { font-family: var(--font-mono); font-size: 20px; }
+.tri-fig-name { font-size: 12px; }
+.fig-read { font-size: var(--rt-secondary); line-height: 1.62; color: #23231A; max-width: 52ch; margin: 0; }
 .fig-read strong { font-weight: 700; }
 
 /* --- scenario ledger: rows, because the probabilities are the point --- */
@@ -226,22 +289,22 @@
    page-head label uses — and the probability bar. Not a side stripe. */
 .sc-arch {
   display: flex; align-items: center; gap: 7px;
-  font-family: var(--font-mono); font-size: 10.5px;
+  font-family: var(--font-mono); font-size: var(--rt-label);
   letter-spacing: 0.6px; color: var(--chart-mid); margin-bottom: 4px;
 }
 .sc-arch::before { content: ""; width: 8px; height: 8px; flex: none; background: var(--sc); }
-.sc-id h5 { font-size: 14.5px; font-weight: 700; color: var(--ink); margin: 0; line-height: 1.3; }
-.sc-myth { font-size: 13px; line-height: 1.6; color: #3A3A2E; margin: 0; }
+.sc-id h5 { font-size: var(--rt-secondary); font-weight: 700; color: var(--ink); margin: 0; line-height: 1.3; }
+.sc-myth { font-size: var(--rt-caption); line-height: 1.62; color: #3A3A2E; margin: 0; }
 .sc-prob { display: flex; align-items: center; gap: 10px; }
 .sc-bar { flex: 1; height: 8px; background: rgba(19,19,9,0.06); border-radius: 0 4px 4px 0; position: relative; }
 .sc-bar span { position: absolute; inset: 0 auto 0 0; background: var(--sc); border-radius: 0 4px 4px 0; min-width: 2px; }
-.sc-pct { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink); min-width: 46px; text-align: right; }
+.sc-pct { font-family: var(--font-mono); font-size: var(--rt-caption); color: var(--ink); min-width: 48px; text-align: right; font-variant-numeric: tabular-nums; }
 .sc-none { color: var(--chart-mid); }
 .sc-residual .sc-id h5, .sc-residual .sc-myth { color: var(--chart-mid); }
 
 .report-figure figcaption {
   margin-top: var(--s-3, 12px);
-  font-size: 12.5px;
+  font-size: var(--rt-caption);
   line-height: 1.55;
   color: var(--chart-mid);
   max-width: 60ch;
@@ -257,7 +320,7 @@
 }
 .report-method h3 {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--rt-label);
   letter-spacing: 1.5px;
   text-transform: uppercase;
   font-weight: 400;
@@ -265,8 +328,8 @@
   margin: 0 0 var(--s-3, 12px);
 }
 .report-method p {
-  font-size: 13px;
-  line-height: 1.7;
+  font-size: var(--rt-secondary);
+  line-height: 1.68;
   color: #3A3A2E;
   max-width: 72ch;
   margin: 0;
@@ -294,8 +357,15 @@
   .report-section .report-figure { grid-column: 1; }
 }
 
+/* The strip wraps to four lines on a phone, which strands the drawn
+   separators at line starts. Stack it instead and drop them. */
+@media (max-width: 560px) {
+  .report-meta { display: grid; gap: 3px; }
+  .report-meta span + span::before { display: none; }
+}
+
 @media (max-width: 720px) {
-  .report-prose p { font-size: 15px; }
+  .report-prose p { font-size: 1rem; }
   .report-figure, .report-method { padding: var(--s-4, 16px); }
   .report-headline { max-width: none; }
 }

@@ -125,9 +125,15 @@ function drawReport() {
 
   $("repMethod").hidden = false;
   $("repHeadline").innerHTML = pills(r.headline || "");
-  $("repMeta").textContent =
-    `Written from ${r.signal_count} human-approved signals · ${fmtWhen(r.updated_at)}` +
-    (r.citations_dropped ? ` · ${r.citations_dropped} unverifiable citation${r.citations_dropped === 1 ? "" : "s"} removed` : "");
+  // Instrument strip: real platform values in the house mono register, each
+  // item its own element so the drawn separators fall between them.
+  const bits = [`<b>${r.signal_count}</b> approved signals`];
+  if (ctx.overview) bits.push(`<b>${ctx.overview.clusters.length}</b> clusters`);
+  if (ctx.scenarios) bits.push(`<b>${ctx.scenarios.length}</b> scenarios`);
+  if (ctx.sim) bits.push(`<b>${(ctx.sim.residual * 100).toFixed(1)}%</b> residual`);
+  bits.push(fmtWhen(r.updated_at));
+  if (r.citations_dropped) bits.push(`<b>${r.citations_dropped}</b> citation${r.citations_dropped === 1 ? "" : "s"} dropped`);
+  $("repMeta").innerHTML = bits.map((b) => `<span>${b}</span>`).join("\n");
 
   const fig = {
     state_of_evidence: evidenceFigure(ctx),
