@@ -19,7 +19,8 @@ import { simulate, previewDistribution, makeSampler } from "./montecarlo.js";
 import { chatHandler } from "./chat.js";
 import { groupPendingQueue } from "./cluster.js";
 import { runBackfill, backfillStatus, abortBackfill, startBackfillDrainer } from "./backfill.js";
-import { getReport, generateReport, reportStatus, reportComposition, canGenerate } from "./report.js";
+import { getReport, generateReport, reportStatus, reportComposition, canGenerate, authoredSections } from "./report.js";
+import { critiqueSection, MODES as CRITIQUE_MODES } from "./critique.js";
 import { perplexityEnabled } from "./perplexity.js";
 import { firecrawlEnabled } from "./firecrawl.js";
 
@@ -204,8 +205,18 @@ app.post("/api/quotes/backfill/abort", (_req, res) => res.json({ ok: abortBackfi
 app.get("/api/report", (_req, res) => {
   const report = getReport();
   const comp = reportComposition();
+  const critiques = {};
+  for (const c of d.listCritiques.all()) {
+    (critiques[c.section_key] ||= []).push({
+      id: c.id, mode: c.mode, created_at: c.created_at, addressed_at: c.addressed_at,
+      body: JSON.parse(c.body_json),
+    });
+  }
   res.json({
     report,
+    authored: authoredSections(),
+    critiques,
+    modes: Object.fromEntries(Object.entries(CRITIQUE_MODES).map(([k, v]) => [k, v.label])),
     hash: comp.hash,
     inputs: comp.parts,
     stale: !!report && report.hash !== comp.hash,
@@ -213,6 +224,65 @@ app.get("/api/report", (_req, res) => {
     generating: reportStatus().generating,
     available: llmEnabled(),
   });
+});
+
+// ---------- authoring ----------
+// Editing is the point: the model drafts, a human writes. Saving records which
+// draft it was written against so a later regeneration can flag divergence
+// rather than silently discarding the authored text.
+app.put("/api/report/sections/:key", (req, res) => {
+  const key = req.params.key;
+  const raw = req.body?.text;
+  const text = typeof raw === "string" ? raw : JSON.stringify(raw ?? "");
+  if (!text.trim()) return res.status(400).json({ error: "text required" });
+  if (text.length > 20000) return res.status(400).json({ error: "section too long" });
+  d.putSectionEdit.run(key, text, reportComposition().hash, d.now());
+  res.json({ ok: true, authored: authoredSections()[key] });
+});
+
+app.delete("/api/report/sections/:key", (req, res) => {
+  d.dropSectionEdit.run(req.params.key);
+  res.json({ ok: true });
+});
+
+// ---------- critique ----------
+app.post("/api/report/critique", async (req, res) => {
+  const { section, mode } = req.body || {};
+  if (!CRITIQUE_MODES[mode] && mode !== "signals") return res.status(400).json({ error: "unknown critique mode" });
+  const report = getReport();
+  if (!report) return res.status(400).json({ error: "no report to critique yet" });
+  const authored = authoredSections()[section];
+  const value = authored ? authored.value : report[section];
+  if (value === undefined) return res.status(404).json({ error: "unknown section" });
+  // A short brief of the rest keeps the critique aware of the whole argument
+  // without paying to send all of it. Human titles, not storage keys — the
+  // model quotes these back, and "so_what_policy" in a critique reads as a
+  // leaked internal.
+  const TITLES = {
+    headline: "Headline", state_of_evidence: "The state of the evidence",
+    triangle_reading: "The triangle reading", scenario_space: "The scenario space",
+    odds: "The odds", sensitivity: "What moves them",
+    what_would_change_our_mind: "What would change our mind",
+    so_what_policy: "So what — for policy", so_what_industry: "So what — for industry",
+  };
+  const brief = Object.entries(report)
+    .filter(([k, v]) => k !== section && TITLES[k] && typeof v === "string" && v.length > 40)
+    .map(([k, v]) => `${TITLES[k]}: ${v.slice(0, 220)}…`).join("\n");
+  try {
+    const out = await critiqueSection({ mode, sectionKey: section, title: TITLES[section] || section.replace(/_/g, " "), value, brief });
+    res.json({ ok: true, critique: out });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post("/api/report/critiques/:id/addressed", (req, res) => {
+  d.markCritiqueAddressed.run(d.now(), +req.params.id);
+  res.json({ ok: true });
+});
+app.delete("/api/report/critiques/:id", (req, res) => {
+  d.deleteCritique.run(+req.params.id);
+  res.json({ ok: true });
 });
 
 app.post("/api/report/regenerate", (_req, res) => {

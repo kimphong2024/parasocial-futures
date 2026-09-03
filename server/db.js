@@ -181,6 +181,26 @@ db.exec(`CREATE TABLE IF NOT EXISTS quotes (
   end_offset INTEGER NOT NULL,
   created_at TEXT NOT NULL
 )`);
+// The report is drafted by the model and then authored by a human, the same
+// shape scenarios already use. An authored section wins over the machine draft
+// and is never overwritten by regeneration; base_hash records which draft it
+// was written against, so the page can say when a newer one exists.
+db.exec(`CREATE TABLE IF NOT EXISTS report_sections (
+  section_key TEXT PRIMARY KEY,
+  text TEXT NOT NULL,
+  base_hash TEXT,
+  updated_at TEXT NOT NULL
+)`);
+db.exec(`CREATE TABLE IF NOT EXISTS report_critiques (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  section_key TEXT NOT NULL,
+  mode TEXT NOT NULL,
+  body_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  addressed_at TEXT
+)`);
+db.exec("CREATE INDEX IF NOT EXISTS idx_critiques_section ON report_critiques(section_key)");
+
 db.exec("CREATE INDEX IF NOT EXISTS idx_quotes_signal ON quotes(signal_id)");
 db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_quotes_hash ON quotes(signal_id, sha256)");
 
@@ -254,6 +274,18 @@ export const countMissingText = db.prepare(`
   WHERE a.signal_id IS NULL AND s.url LIKE 'http%'`);
 export const putQuote = db.prepare("INSERT OR IGNORE INTO quotes (signal_id, text, sha256, start_offset, end_offset, created_at) VALUES (?,?,?,?,?,?)");
 export const quotesForSignal = db.prepare("SELECT * FROM quotes WHERE signal_id = ?");
+
+// ---- authored report sections + critiques ----
+export const allSectionEdits = db.prepare("SELECT * FROM report_sections");
+export const getSectionEdit = db.prepare("SELECT * FROM report_sections WHERE section_key = ?");
+export const putSectionEdit = db.prepare(`INSERT INTO report_sections (section_key, text, base_hash, updated_at) VALUES (?,?,?,?)
+  ON CONFLICT(section_key) DO UPDATE SET text = excluded.text, base_hash = excluded.base_hash, updated_at = excluded.updated_at`);
+export const dropSectionEdit = db.prepare("DELETE FROM report_sections WHERE section_key = ?");
+export const insertCritique = db.prepare("INSERT INTO report_critiques (section_key, mode, body_json, created_at) VALUES (?,?,?,?)");
+export const listCritiques = db.prepare("SELECT * FROM report_critiques ORDER BY id DESC LIMIT 200");
+export const getCritique = db.prepare("SELECT * FROM report_critiques WHERE id = ?");
+export const markCritiqueAddressed = db.prepare("UPDATE report_critiques SET addressed_at = ? WHERE id = ?");
+export const deleteCritique = db.prepare("DELETE FROM report_critiques WHERE id = ?");
 export const setSignalTriangle = db.prepare("UPDATE signals SET triangle = ?, triangle_reasoning = ? WHERE id = ?");
 export const triangleSignals = db.prepare("SELECT id, title, cluster, signal_type, urgency, horizon, triangle, triangle_reasoning FROM signals WHERE status = 'approved' ORDER BY id");
 export const triangleUnclassified = db.prepare("SELECT id, title, summary, cluster, signal_type FROM signals WHERE status = 'approved' AND (triangle IS NULL OR triangle = '') ORDER BY id");

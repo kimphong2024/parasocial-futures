@@ -29,6 +29,10 @@ const ENTITIES = [
 const ACTIONS = [
   [/^PATCH \/api\/signals\/\d+\/note$/, "signal.note"],
   [/^POST \/api\/review\/batch$/, "review.batch"],
+  [/^PUT \/api\/report\/sections\/[a-z_]+$/, "report.author"],
+  [/^DELETE \/api\/report\/sections\/[a-z_]+$/, "report.revert"],
+  [/^POST \/api\/report\/critique$/, "report.critique"],
+  [/^POST \/api\/report\/regenerate$/, "report.regenerate"],
   [/^POST \/api\/quotes\/backfill$/, "quotes.backfill"],
   [/^POST \/api\/quotes\/backfill\/abort$/, "quotes.backfill-abort"],
   [/^POST \/api\/review\/signals\/\d+\/approve$/, "review.approve"],
@@ -74,7 +78,7 @@ const diffPhrase = (diff, max = 3) => {
 };
 
 // descriptive one-line summaries per action
-function describe(action, { entityId, name, before, after, diff, body }) {
+function describe(action, { entityId, name, before, after, diff, body, path }) {
   const sig = name ? `signal ${entityId} “${name}”` : `signal ${entityId}`;
   switch (action) {
     case "signal.note": {
@@ -93,6 +97,10 @@ function describe(action, { entityId, name, before, after, diff, body }) {
     case "review.approve": return `Approved pending ${sig} into the library`;
     case "review.reject": return `Rejected pending ${sig} from the review queue`;
     case "review.edit": return `Edited pending ${sig}${diff ? " — " + diffPhrase(diff) : ""}`;
+    case "report.author": return `Authored the report section “${brief(String(path || "").split("/").pop(), 40)}” by hand`;
+    case "report.revert": return `Reverted the report section “${brief(String(path || "").split("/").pop(), 40)}” to the machine draft`;
+    case "report.critique": return `Ran a “${brief(body?.mode || "?", 24)}” critique on the report section “${brief(body?.section || "?", 40)}”`;
+    case "report.regenerate": return "Requested a fresh report draft";
     case "quotes.backfill": return `Started a verbatim-corpus backfill (${body?.limit ?? "?"} signals${body?.useFirecrawl === false ? ", free pass only" : ""})`;
     case "quotes.backfill-abort": return "Aborted the verbatim-corpus backfill";
     case "review.batch": {
@@ -172,7 +180,7 @@ export function auditMiddleware(req, res, next) {
       } else if (action === "audit.clear") {
         summary = `Cleared the activity log (${payload?.removed ?? "all"} earlier entries removed)`;
       } else {
-        summary = describe(action, { entityId, name, before, after, diff, body: req.body })
+        summary = describe(action, { entityId, name, before, after, diff, body: req.body, path: req.path })
           || (shape && name
             ? `${shape.entity} ${entityId} “${name}” — ${action}${diff ? ": " + diffPhrase(diff) : ""}`
             : action.replace(".", " "));

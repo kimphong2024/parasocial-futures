@@ -43,6 +43,28 @@ export function reportComposition() {
   return { hash, parts, approvedCount: approved.n };
 }
 
+// The machine draft is never mutated. An authored section is stored beside it
+// and wins on read; base_hash records which draft it was written against, so
+// the page can say when the evidence has moved underneath it. Regeneration
+// writes a new draft and leaves authored text alone — the same shape scenarios
+// already use, where the model proposes and the human decides.
+export function authoredSections() {
+  const comp = reportComposition();
+  const out = {};
+  for (const row of d.allSectionEdits.all()) {
+    let value = row.text;
+    try { const parsed = JSON.parse(row.text); if (parsed && typeof parsed === "object") value = parsed; } catch { /* plain prose */ }
+    out[row.section_key] = {
+      value,
+      updated_at: row.updated_at,
+      base_hash: row.base_hash,
+      // "the draft I wrote this against is no longer the current one"
+      draft_moved: !!row.base_hash && row.base_hash !== comp.hash,
+    };
+  }
+  return out;
+}
+
 export function getReport() {
   try { return JSON.parse(d.getSetting(REPORT_KEY, "null")); } catch { return null; }
 }

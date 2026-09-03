@@ -313,6 +313,111 @@
 }
 .report-figure svg { display: block; width: 100%; height: auto; }
 
+/* ---------- authoring: toolbar, editor, critique ---------- */
+/* The controls sit in the heading rail and stay quiet until the section is
+   hovered or something in it has focus — the page is a document first. */
+.sec-head { grid-column: 1; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.report-section h3 { grid-column: auto; }
+
+.sec-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; opacity: 0; transition: opacity 160ms var(--ease-epoch); }
+.report-section:hover .sec-tools,
+.report-section:focus-within .sec-tools,
+.report-standfirst:hover .sec-tools,
+.report-standfirst:focus-within .sec-tools { opacity: 1; }
+@media (hover: none) { .sec-tools { opacity: 1; } }
+
+.sec-btn {
+  font: inherit; font-size: var(--rt-label); letter-spacing: 0.3px;
+  padding: 4px 10px; min-height: 24px;
+  border: 1px solid var(--creamLine); border-radius: 999px;
+  background: var(--paperWhite); color: var(--chart-mid); cursor: pointer;
+  transition: border-color 160ms var(--ease-epoch), color 160ms var(--ease-epoch);
+}
+.sec-btn:hover { border-color: var(--ink); color: var(--ink); }
+.sec-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.sec-btn.danger { color: #A03325; border-color: #E4C9C3; }
+
+.sec-badge {
+  font-family: var(--font-mono); font-size: var(--rt-label);
+  padding: 3px 9px; border-radius: 999px;
+  background: #DDE3D2; color: #33421F; white-space: nowrap;
+}
+.sec-badge.moved { background: var(--gold); color: var(--ink); }
+.sec-badge.open { background: #E9D9BD; color: #6B4A12; }
+
+.sec-menu { position: relative; }
+/* Same trap as .report-status: an explicit display beats the UA's
+   [hidden] { display: none }, so the menu rendered permanently open. */
+.sec-modes[hidden] { display: none; }
+.sec-modes {
+  position: absolute; z-index: 20; top: calc(100% + 6px); left: 0;
+  display: flex; flex-direction: column; min-width: 190px;
+  background: var(--paperWhite); border: 1px solid var(--creamLine);
+  border-radius: 12px; padding: 5px; box-shadow: 0 8px 28px rgba(19,19,9,0.10);
+}
+.sec-mode {
+  font: inherit; font-size: var(--rt-caption); text-align: left;
+  padding: 8px 10px; border: 0; border-radius: 8px;
+  background: none; color: var(--ink); cursor: pointer; white-space: nowrap;
+}
+.sec-mode:hover { background: var(--cream); }
+.sec-mode:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+
+/* ---- editor ---- */
+.sec-editor { grid-column: 2; display: flex; flex-direction: column; gap: 10px; }
+.sec-editor textarea { width: 100%; font-size: var(--rt-secondary); line-height: 1.6; }
+.sec-editor .field-label { margin-top: 4px; }
+.sec-editor-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sec-msg { font-size: var(--rt-caption); color: var(--chart-mid); }
+
+.fal-row {
+  display: grid;
+  grid-template-columns: 1fr 140px auto;
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px solid var(--creamLine);
+  align-items: start;
+}
+.fal-row textarea { grid-column: 1 / -1; }
+
+/* ---- critique ---- */
+/* Deliberately not styled as part of the report: it is apparatus, sitting on
+   the paper beside the argument rather than inside it. */
+.crit {
+  grid-column: 1 / -1;
+  margin-top: var(--s-4, 16px);
+  padding: var(--s-4, 16px) var(--s-5, 24px);
+  border: 1px dashed var(--creamLine);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--cream) 45%, transparent);
+}
+.crit.done { opacity: 0.6; }
+.crit.pending .crit-when { font-style: italic; }
+.crit-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.crit-head .spacer { flex: 1 1 auto; }
+.crit-label { font-size: var(--rt-caption); font-weight: 700; color: var(--ink); }
+.crit-when { font-family: var(--font-mono); font-size: var(--rt-label); color: var(--chart-mid); }
+.crit-verdict {
+  font-size: var(--rt-secondary); line-height: 1.55; color: var(--ink);
+  margin: 10px 0 0; max-width: 70ch; font-weight: 600;
+}
+.crit-list { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.crit-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 8px; }
+.crit-point { font-size: var(--rt-secondary); font-weight: 600; color: var(--ink); }
+.crit-detail { font-size: var(--rt-caption); line-height: 1.6; color: #3A3A2E; flex: 1 1 100%; max-width: 74ch; }
+.crit-stance {
+  font-family: var(--font-mono); font-size: var(--rt-label);
+  padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+}
+.crit-stance[data-stance="supports"]    { background: #DDE3D2; color: #33421F; }
+.crit-stance[data-stance="complicates"] { background: #E9D9BD; color: #6B4A12; }
+.crit-stance[data-stance="contradicts"] { background: #F1D9D4; color: #8C2C1F; }
+
+@media (max-width: 900px) {
+  .sec-editor, .crit { grid-column: 1; }
+  .fal-row { grid-template-columns: 1fr; }
+}
+
 /* ---------- falsifier watch-list ---------- */
 /* The direction chip carries the colour; no side stripes. Rows, because a
    falsifier is a thing you watch for, not a paragraph you read past. */

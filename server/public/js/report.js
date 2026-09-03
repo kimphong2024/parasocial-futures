@@ -29,6 +29,15 @@ const INPUT_LABEL = {
 
 let data = null;
 let timer = null;
+let editing = null;   // section key currently open in the editor
+
+// An authored section wins over the machine draft. `draft_moved` means the
+// evidence has shifted since it was written — surfaced, never auto-applied.
+const authoredOf = (key) => data?.authored?.[key];
+const valueOf = (key) => {
+  const a = authoredOf(key);
+  return a ? a.value : data.report[key];
+};
 
 // Same citation affordance as the chat page, but rendered as real buttons:
 // these are the primary control on the page, and a span with a click handler
@@ -115,6 +124,103 @@ function fmtWhen(iso) {
   return isNaN(d) ? iso : d.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
+
+// ---------------- authoring toolbar, editor, critiques ----------------
+
+// `so_what` is two stored fields behind one heading, so the editor works on
+// whichever key the author is actually touching.
+const EDIT_KEYS = {
+  so_what: ["so_what_policy", "so_what_industry"],
+};
+const editKeysFor = (key) => EDIT_KEYS[key] || [key];
+
+function toolbar(key) {
+  const a = authoredOf(key) || (EDIT_KEYS[key] || []).map(authoredOf).find(Boolean);
+  const list = (data.critiques?.[key] || []);
+  const open = list.filter((c) => !c.addressed_at).length;
+  return `<div class="sec-tools">
+    ${a ? `<span class="sec-badge${a.draft_moved ? " moved" : ""}" title="${a.draft_moved ? "The evidence has moved since you wrote this" : "Your text, not the machine draft"}">${a.draft_moved ? "authored · draft moved" : "authored"}</span>` : ""}
+    ${open ? `<span class="sec-badge open">${open} open</span>` : ""}
+    <button type="button" class="sec-btn" data-edit="${key}">Edit</button>
+    <div class="sec-menu">
+      <button type="button" class="sec-btn" data-menu="${key}">Critique</button>
+      <div class="sec-modes" id="modes-${key}" hidden>
+        ${Object.entries(data.modes || {}).map(([m, label]) =>
+          `<button type="button" class="sec-mode" data-critique="${key}" data-mode="${m}">${esc(label)}</button>`).join("")}
+      </div>
+    </div>
+  </div>`;
+}
+
+function critiqueCard(c) {
+  const b = c.body || {};
+  const done = !!c.addressed_at;
+  const label = (data.modes || {})[c.mode] || c.mode;
+  const inner = c.mode === "signals"
+    ? `<ul class="crit-list">${(b.picks || []).map((p) => `
+        <li><span class="crit-stance" data-stance="${esc(p.stance)}">${esc(p.stance)}</span>
+          <span class="crit-point">${esc(p.title)}</span>
+          <button type="button" class="cite-pill" data-sig="${p.id}" aria-label="Open signal ${p.id}">S${p.id}</button>
+          <span class="crit-detail">${esc(p.why)}</span></li>`).join("")
+        || `<li><span class="crit-detail">Nothing in the library bears on this that the section has not already cited.</span></li>`}</ul>`
+    : `<ul class="crit-list">${(b.points || []).map((p) => `
+        <li><span class="crit-point">${pills(p.point)}</span>
+          <span class="crit-detail">${pills(p.detail)}</span></li>`).join("")}</ul>`;
+  return `<aside class="crit${done ? " done" : ""}" data-crit="${c.id}">
+    <div class="crit-head">
+      <span class="crit-label">${esc(label)}</span>
+      <span class="crit-when">${fmtWhen(c.created_at)}${done ? " · addressed" : ""}</span>
+      <span class="spacer"></span>
+      ${done ? "" : `<button type="button" class="sec-btn" data-addressed="${c.id}">Mark addressed</button>`}
+      <button type="button" class="sec-btn" data-dismiss="${c.id}">Dismiss</button>
+    </div>
+    ${b.verdict ? `<p class="crit-verdict">${pills(b.verdict)}</p>` : ""}
+    ${inner}
+  </aside>`;
+}
+
+const critiquesFor = (key) => (data.critiques?.[key] || []).map(critiqueCard).join("");
+
+// The falsifier list keeps its fields rather than collapsing to a textarea —
+// the watch-list layout depends on the structure.
+function editorFor(key) {
+  const keys = editKeysFor(key);
+  if (key === "what_would_change_our_mind") {
+    const items = valueOf(key);
+    const rows = Array.isArray(items) ? items : [];
+    return `<div class="sec-editor" data-editor="${key}">
+      <div id="falsifierRows">${rows.map(falsifierRow).join("")}</div>
+      <button type="button" class="sec-btn" id="addFalsifier">Add a falsifier</button>
+      ${editorActions(key)}
+    </div>`;
+  }
+  return `<div class="sec-editor" data-editor="${key}">
+    ${keys.map((k) => `
+      ${keys.length > 1 ? `<label class="field-label">${esc(k.replace("so_what_", ""))}</label>` : ""}
+      <textarea data-field-key="${k}" rows="${keys.length > 1 ? 8 : 12}">${esc(typeof valueOf(k) === "string" ? valueOf(k) : "")}</textarea>`).join("")}
+    ${editorActions(key)}
+  </div>`;
+}
+
+const falsifierRow = (f = { watch: "", direction: "strengthens", meaning: "" }) => `
+  <div class="fal-row">
+    <input type="text" data-fal="watch" value="${esc(f.watch || "")}" placeholder="The observable, 6-12 words">
+    <select data-fal="direction">
+      <option ${f.direction !== "weakens" ? "selected" : ""}>strengthens</option>
+      <option ${f.direction === "weakens" ? "selected" : ""}>weakens</option>
+    </select>
+    <textarea data-fal="meaning" rows="2" placeholder="What it would imply">${esc(f.meaning || "")}</textarea>
+    <button type="button" class="sec-btn" data-del-fal>Remove</button>
+  </div>`;
+
+const editorActions = (key) => `
+  <div class="sec-editor-actions">
+    <button type="button" class="btn btn-sm" data-save="${key}">Save</button>
+    <button type="button" class="sec-btn" data-cancel>Cancel</button>
+    ${editKeysFor(key).some(authoredOf) ? `<button type="button" class="sec-btn danger" data-revert="${key}">Revert to draft</button>` : ""}
+    <span class="sec-msg"></span>
+  </div>`;
+
 function drawStatus() {
   const st = $("repStatus");
   const r = data.report;
@@ -156,7 +262,7 @@ function drawReport() {
   }
 
   $("repMethod").hidden = false;
-  $("repHeadline").innerHTML = pills(r.headline || "");
+  $("repHeadline").innerHTML = pills(valueOf("headline") || "");
   // Instrument strip: real platform values in the house mono register, each
   // item its own element so the drawn separators fall between them.
   const bits = [`<b>${r.signal_count}</b> approved signals`];
@@ -168,8 +274,12 @@ function drawReport() {
   $("repMeta").innerHTML = bits.map((b) => `<span>${b}</span>`).join("\n");
 
   const RENDER = {
-    what_would_change_our_mind: falsifierList,
-    so_what: audienceSplit,
+    what_would_change_our_mind: () => falsifierList(valueOf("what_would_change_our_mind")),
+    so_what: () => audienceSplit({
+      so_what_policy: valueOf("so_what_policy"),
+      so_what_industry: valueOf("so_what_industry"),
+      so_what: valueOf("so_what"),
+    }),
   };
 
   const fig = {
@@ -182,9 +292,13 @@ function drawReport() {
 
   $("repBody").innerHTML = SECTIONS.map(([key, title]) => `
     <section class="report-section${fig[key] ? " has-figure" : ""}" data-section="${key}">
-      <h3>${esc(title)}</h3>
-      ${RENDER[key] ? RENDER[key](key === "so_what" ? r : r[key]) : `<div class="report-prose">${paras(r[key])}</div>`}
+      <div class="sec-head">
+        <h3>${esc(title)}</h3>
+        ${toolbar(key)}
+      </div>
+      ${editing === key ? editorFor(key) : (RENDER[key] ? RENDER[key]() : `<div class="report-prose">${paras(valueOf(key))}</div>`)}
       ${fig[key] || ""}
+      ${critiquesFor(key)}
     </section>`).join("");
 
   drawCharts(ctx);
@@ -297,6 +411,98 @@ $("regenerate").addEventListener("click", async () => {
     $("repState").textContent = e.message;
   } finally {
     btn.disabled = false;
+  }
+});
+
+
+// ---------------- authoring interactions ----------------
+
+const closeMenus = () => document.querySelectorAll(".sec-modes").forEach((m) => (m.hidden = true));
+
+function collectEdit(key) {
+  if (key === "what_would_change_our_mind") {
+    const rows = [...document.querySelectorAll("#falsifierRows .fal-row")].map((r) => ({
+      watch: r.querySelector('[data-fal="watch"]').value.trim(),
+      direction: r.querySelector('[data-fal="direction"]').value,
+      meaning: r.querySelector('[data-fal="meaning"]').value.trim(),
+    })).filter((f) => f.watch || f.meaning);
+    return { [key]: JSON.stringify(rows) };
+  }
+  const out = {};
+  document.querySelectorAll("[data-field-key]").forEach((el) => { out[el.dataset.fieldKey] = el.value; });
+  return out;
+}
+
+document.addEventListener("click", async (e) => {
+  const t = e.target.closest("button");
+  if (!t) { closeMenus(); return; }
+
+  // ---- edit ----
+  if (t.dataset.edit) { editing = t.dataset.edit; closeMenus(); drawReport(); return; }
+  if (t.dataset.cancel !== undefined) { editing = null; drawReport(); return; }
+
+  if (t.dataset.save) {
+    const key = t.dataset.save;
+    const msg = t.closest(".sec-editor-actions").querySelector(".sec-msg");
+    msg.textContent = "saving…";
+    try {
+      for (const [k, text] of Object.entries(collectEdit(key))) {
+        await api(`/api/report/sections/${encodeURIComponent(k)}`, { method: "PUT", body: { text } });
+      }
+      editing = null;
+      await load();
+    } catch (err) { msg.textContent = err.message; }
+    return;
+  }
+
+  if (t.dataset.revert) {
+    if (!confirm("Discard your text for this section and go back to the machine draft?")) return;
+    for (const k of editKeysFor(t.dataset.revert)) {
+      try { await api(`/api/report/sections/${encodeURIComponent(k)}`, { method: "DELETE" }); } catch {}
+    }
+    editing = null;
+    await load();
+    return;
+  }
+
+  // ---- critique ----
+  if (t.dataset.menu) {
+    const m = $("modes-" + t.dataset.menu);
+    const wasHidden = m.hidden;
+    closeMenus();
+    m.hidden = !wasHidden;
+    return;
+  }
+
+  if (t.dataset.critique) {
+    const key = t.dataset.critique, mode = t.dataset.mode;
+    closeMenus();
+    const sec = document.querySelector(`[data-section="${key}"]`) || document.querySelector(".report-standfirst");
+    sec.insertAdjacentHTML("beforeend", `<aside class="crit pending" id="critPending"><div class="crit-head"><span class="crit-label">${esc((data.modes || {})[mode] || mode)}</span><span class="crit-when">reading the section…</span></div></aside>`);
+    try {
+      await api("/api/report/critique", { method: "POST", body: { section: key, mode } });
+      await load();
+    } catch (err) {
+      const p = $("critPending");
+      if (p) p.innerHTML = `<div class="error-note">${esc(err.message)}</div>`;
+    }
+    return;
+  }
+
+  if (t.dataset.addressed) {
+    await api(`/api/report/critiques/${t.dataset.addressed}/addressed`, { method: "POST" });
+    await load();
+    return;
+  }
+  if (t.dataset.dismiss) {
+    await api(`/api/report/critiques/${t.dataset.dismiss}`, { method: "DELETE" });
+    await load();
+    return;
+  }
+  if (t.dataset.delFal !== undefined) { t.closest(".fal-row").remove(); return; }
+  if (t.id === "addFalsifier") {
+    $("falsifierRows").insertAdjacentHTML("beforeend", falsifierRow());
+    return;
   }
 });
 
