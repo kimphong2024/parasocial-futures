@@ -16,14 +16,32 @@ const $ = (id) => document.getElementById(id);
 // outcome, the other names what would have to happen in the world for the
 // reading to be wrong. Renamed so the difference is on the page, and the
 // watch-list moved to the close, where a forward-looking list belongs.
+// A section can carry more than one written part — merging the fork and the
+// odds into one movement, and splitting "so what" by audience, meant the
+// section id stopped being the thing you edit. Parts are what get authored
+// and critiqued; the section is just where they sit.
 const SECTIONS = [
-  ["state_of_evidence", "The state of the evidence"],
-  ["sensitivity", "Which levers decide it"],
-  ["triangle_reading", "The triangle reading"],
-  ["scenario_space", "The scenario space and the odds"],
-  ["so_what", "So what"],
-  ["what_would_change_our_mind", "What we're watching for"],
+  ["state_of_evidence", "The state of the evidence", ["state_of_evidence"]],
+  ["sensitivity", "Which levers decide it", ["sensitivity"]],
+  ["triangle_reading", "The triangle reading", ["triangle_reading"]],
+  ["scenario_space", "The scenario space and the odds", ["scenario_space", "odds"]],
+  ["so_what", "So what", ["so_what_policy", "so_what_industry"]],
+  ["what_would_change_our_mind", "What we're watching for", ["what_would_change_our_mind"]],
 ];
+
+// Shown on the control when a section has more than one part, so it is clear
+// which piece of writing the button acts on.
+const PART_LABEL = {
+  scenario_space: "the fork",
+  odds: "the odds",
+  so_what_policy: "policy",
+  so_what_industry: "industry",
+  headline: "headline",
+};
+const partsOf = (sectionKey) => (SECTIONS.find(([k]) => k === sectionKey) || [])[2] || [sectionKey];
+// Where a part's critiques should be rendered.
+const sectionOfPart = (part) =>
+  (SECTIONS.find(([, , parts]) => parts.includes(part)) || [])[0] || part;
 
 const INPUT_LABEL = {
   signals: "the approved library",
@@ -35,8 +53,8 @@ const INPUT_LABEL = {
 
 let data = null;
 let timer = null;
-let editing = null;    // section key currently open in the editor
-let comparing = null;  // section key currently showing draft-vs-yours
+let editing = null;    // part key currently open in the editor
+let comparing = null;  // part key currently showing draft-vs-yours
 let tick = null;       // local 1s clock so elapsed time moves between polls
 
 const mmss = (ms) => {
@@ -148,57 +166,32 @@ function fmtWhen(iso) {
 
 // `so_what` is two stored fields behind one heading, so the editor works on
 // whichever key the author is actually touching.
-const EDIT_KEYS = {
-  so_what: ["so_what_policy", "so_what_industry"],
-};
-const editKeysFor = (key) => EDIT_KEYS[key] || [key];
-
-function toolbar(key) {
-  const a = authoredOf(key) || (EDIT_KEYS[key] || []).map(authoredOf).find(Boolean);
-  const list = (data.critiques?.[key] || []);
-  const open = list.filter((c) => !c.addressed_at).length;
-  return `<div class="sec-tools">
-    ${a ? `<span class="sec-badge${a.draft_moved ? " moved" : ""}" title="${a.draft_moved ? "The evidence has moved since you wrote this" : "Your text, not the machine draft"}">${a.draft_moved ? "authored · draft moved" : "authored"}</span>` : ""}
+// Controls act on a part. Where a section has several, each gets its own set
+// so nothing in the section is unreachable — the odds prose sat inside the
+// scenario section with no way to edit or critique it.
+function partControls(part, labelled) {
+  const a = authoredOf(part);
+  const open = (data.critiques?.[part] || []).filter((c) => !c.addressed_at).length;
+  const name = labelled ? ` ${PART_LABEL[part] || part}` : "";
+  return `<span class="sec-part">
+    ${a ? `<span class="sec-badge${a.draft_moved ? " moved" : ""}" title="${a.draft_moved ? "The draft has been rewritten since you authored this" : "Your text, not the machine draft"}">${labelled ? esc(PART_LABEL[part] || part) + " · " : ""}authored${a.draft_moved ? " · draft moved" : ""}</span>` : ""}
     ${open ? `<span class="sec-badge open">${open} open</span>` : ""}
-    ${a ? `<button type="button" class="sec-btn" data-compare="${key}">${comparing === key ? "Hide draft" : "Compare draft"}</button>` : ""}
-    <button type="button" class="sec-btn" data-edit="${key}">Edit</button>
-    <div class="sec-menu">
-      <button type="button" class="sec-btn" data-menu="${key}">Critique</button>
-      <div class="sec-modes" id="modes-${key}" hidden>
+    ${a ? `<button type="button" class="sec-btn" data-compare="${part}">${comparing === part ? "Hide" : "Compare"}${name}</button>` : ""}
+    <button type="button" class="sec-btn" data-edit="${part}">Edit${name}</button>
+    <span class="sec-menu">
+      <button type="button" class="sec-btn" data-menu="${part}">Critique${name}</button>
+      <span class="sec-modes" id="modes-${part}" hidden>
         ${Object.entries(data.modes || {}).map(([m, label]) =>
-          `<button type="button" class="sec-mode" data-critique="${key}" data-mode="${m}">${esc(label)}</button>`).join("")}
-      </div>
-    </div>
-  </div>`;
+          `<button type="button" class="sec-mode" data-critique="${part}" data-mode="${m}">${esc(label)}</button>`).join("")}
+      </span>
+    </span>
+  </span>`;
 }
 
-
-// Yours beside the machine's. No diff algorithm: these are two pieces of
-// written argument, not two versions of a config file, and a word-level diff
-// of rewritten prose is noise. The reader compares them by reading them.
-function comparePanel(key) {
-  const a = authoredOf(key) || (EDIT_KEYS[key] || []).map(authoredOf).find(Boolean);
-  if (!a) return "";
-  const keys = editKeysFor(key);
-  const asText = (v) => (typeof v === "string" ? v
-    : Array.isArray(v) ? v.map((f) => `${(f.direction || "").toUpperCase()} — ${f.watch}\n${f.meaning}`).join("\n\n")
-    : JSON.stringify(v, null, 2));
-  const col = (label, note, body, cls) => `
-    <div class="cmp-col ${cls}">
-      <div class="cmp-head"><span class="cmp-label">${esc(label)}</span><span class="cmp-note">${esc(note)}</span></div>
-      <div class="report-prose">${body}</div>
-    </div>`;
-  const yours = keys.map((k) => paras(asText(authoredOf(k)?.value ?? valueOf(k)))).join("");
-  const draft = keys.map((k) => paras(asText(data.report[k]))).join("");
-  return `<div class="cmp" data-compare-for="${key}">
-    ${col("Your version", `edited ${fmtWhen(a.updated_at)}`, yours, "mine")}
-    ${col("Current machine draft", a.draft_moved ? "regenerated since you wrote yours" : "unchanged since you wrote yours", draft, "draft")}
-    <div class="cmp-actions">
-      ${a.draft_moved ? `<button type="button" class="btn btn-sm" data-keep="${key}">Keep mine</button>` : ""}
-      <button type="button" class="sec-btn danger" data-revert="${key}">Use the new draft</button>
-      <button type="button" class="sec-btn" data-compare="${key}">Close</button>
-    </div>
-  </div>`;
+function toolbar(sectionKey) {
+  const parts = partsOf(sectionKey);
+  const labelled = parts.length > 1;
+  return `<div class="sec-tools">${parts.map((p) => partControls(p, labelled)).join("")}</div>`;
 }
 
 function critiqueCard(c) {
@@ -228,26 +221,35 @@ function critiqueCard(c) {
   </aside>`;
 }
 
-const critiquesFor = (key) => (data.critiques?.[key] || []).map(critiqueCard).join("");
+// Parts, plus the section id itself for critiques stored before a section was
+// split into parts — otherwise those rows would silently stop rendering.
+const critiquesFor = (sectionKey) => {
+  const keys = [...partsOf(sectionKey)];
+  if (!keys.includes(sectionKey)) keys.push(sectionKey);
+  return keys.flatMap((k) => data.critiques?.[k] || [])
+    .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
+    .map(critiqueCard).join("");
+};
 
 // The falsifier list keeps its fields rather than collapsing to a textarea —
 // the watch-list layout depends on the structure.
-function editorFor(key) {
-  const keys = editKeysFor(key);
-  if (key === "what_would_change_our_mind") {
-    const items = valueOf(key);
+function editorFor(part) {
+  if (part === "what_would_change_our_mind") {
+    const items = valueOf(part);
     const rows = Array.isArray(items) ? items : [];
-    return `<div class="sec-editor" data-editor="${key}">
+    return `<div class="sec-editor" data-editor="${part}">
       <div id="falsifierRows">${rows.map(falsifierRow).join("")}</div>
       <button type="button" class="sec-btn" id="addFalsifier">Add a falsifier</button>
-      ${editorActions(key)}
+      ${editorActions(part)}
     </div>`;
   }
-  return `<div class="sec-editor" data-editor="${key}">
-    ${keys.map((k) => `
-      ${keys.length > 1 ? `<label class="field-label">${esc(k.replace("so_what_", ""))}</label>` : ""}
-      <textarea data-field-key="${k}" rows="${keys.length > 1 ? 8 : 12}">${esc(typeof valueOf(k) === "string" ? valueOf(k) : "")}</textarea>`).join("")}
-    ${editorActions(key)}
+  // Only name the field where a section holds several — a lone label above a
+  // lone textarea is noise.
+  const named = part === "headline" || partsOf(sectionOfPart(part)).length > 1;
+  return `<div class="sec-editor" data-editor="${part}">
+    ${named ? `<label class="field-label">${esc(PART_LABEL[part] || part.replace(/_/g, " "))}</label>` : ""}
+    <textarea data-field-key="${part}" rows="${part === "headline" ? 3 : 12}">${esc(typeof valueOf(part) === "string" ? valueOf(part) : "")}</textarea>
+    ${editorActions(part)}
   </div>`;
 }
 
@@ -262,11 +264,11 @@ const falsifierRow = (f = { watch: "", direction: "strengthens", meaning: "" }) 
     <button type="button" class="sec-btn" data-del-fal>Remove</button>
   </div>`;
 
-const editorActions = (key) => `
+const editorActions = (part) => `
   <div class="sec-editor-actions">
-    <button type="button" class="btn btn-sm" data-save="${key}">Save</button>
+    <button type="button" class="btn btn-sm" data-save="${part}">Save</button>
     <button type="button" class="sec-btn" data-cancel>Cancel</button>
-    ${editKeysFor(key).some(authoredOf) ? `<button type="button" class="sec-btn danger" data-revert="${key}">Revert to draft</button>` : ""}
+    ${authoredOf(part) ? `<button type="button" class="sec-btn danger" data-revert="${part}">Revert to draft</button>` : ""}
     <span class="sec-msg"></span>
   </div>`;
 
@@ -335,6 +337,12 @@ function drawReport() {
 
   $("repMethod").hidden = false;
   $("repHeadline").innerHTML = pills(valueOf("headline") || "");
+  // The headline is written too, so it gets the same controls as any part.
+  $("repHeadTools").innerHTML = editing === "headline"
+    ? editorFor("headline")
+    : `<div class="sec-tools standfirst-tools">${partControls("headline", false)}</div>`
+      + (comparing === "headline" ? comparePanel("headline") : "")
+      + (data.critiques?.headline || []).map(critiqueCard).join("");
   // Instrument strip: real platform values in the house mono register, each
   // item its own element so the drawn separators fall between them.
   const bits = [`<b>${r.signal_count}</b> approved signals`];
@@ -371,17 +379,28 @@ function drawReport() {
       + oddsFigure,
   };
 
-  $("repBody").innerHTML = SECTIONS.map(([key, title]) => `
-    <section class="report-section${fig[key] ? " has-figure" : ""}" data-section="${key}">
+  $("repBody").innerHTML = SECTIONS.map(([key, title]) => {
+    // Editing and comparing act on a part, which may not be the section id.
+    const parts = partsOf(key);
+    const ed = parts.includes(editing) ? editing : null;
+    const cmp = parts.includes(comparing) ? comparing : null;
+    // While a part is being edited the figure is suppressed: for the merged
+    // scenario section it restates the very prose in the textarea.
+    const body = ed
+      ? editorFor(ed)
+      : (RENDER[key] ? RENDER[key]() : `<div class="report-prose">${paras(valueOf(key))}</div>`);
+    return `
+    <section class="report-section${!ed && fig[key] ? " has-figure" : ""}" data-section="${key}">
       <div class="sec-head">
         <h3>${esc(title)}</h3>
         ${toolbar(key)}
       </div>
-      ${editing === key ? editorFor(key) : (RENDER[key] ? RENDER[key]() : `<div class="report-prose">${paras(valueOf(key))}</div>`)}
-      ${comparing === key ? comparePanel(key) : ""}
-      ${fig[key] || ""}
+      ${body}
+      ${cmp ? comparePanel(cmp) : ""}
+      ${ed ? "" : (fig[key] || "")}
       ${critiquesFor(key)}
-    </section>`).join("");
+    </section>`;
+  }).join("");
 
   drawCharts(ctx);
   wireRail();
@@ -635,9 +654,7 @@ document.addEventListener("click", async (e) => {
 
   if (t.dataset.revert) {
     if (!confirm("Discard your text for this section and go back to the machine draft?")) return;
-    for (const k of editKeysFor(t.dataset.revert)) {
-      try { await api(`/api/report/sections/${encodeURIComponent(k)}`, { method: "DELETE" }); } catch {}
-    }
+    try { await api(`/api/report/sections/${encodeURIComponent(t.dataset.revert)}`, { method: "DELETE" }); } catch {}
     editing = null;
     comparing = null;
     await load();
@@ -656,7 +673,8 @@ document.addEventListener("click", async (e) => {
   if (t.dataset.critique) {
     const key = t.dataset.critique, mode = t.dataset.mode;
     closeMenus();
-    const sec = document.querySelector(`[data-section="${key}"]`) || document.querySelector(".report-standfirst");
+    const sec = document.querySelector(`[data-section="${sectionOfPart(key)}"]`)
+      || document.querySelector(".report-standfirst");
     sec.insertAdjacentHTML("beforeend", `<aside class="crit pending" id="critPending"><div class="crit-head"><span class="crit-label">${esc((data.modes || {})[mode] || mode)}</span><span class="crit-when">reading the section…</span></div></aside>`);
     try {
       await api("/api/report/critique", { method: "POST", body: { section: key, mode } });

@@ -443,6 +443,14 @@
 .report-standfirst:hover .sec-tools,
 .report-standfirst:focus-within .sec-tools { opacity: 1; }
 @media (hover: none) { .sec-tools { opacity: 1; } }
+/* One cluster of controls per written part. Where a section holds two, the
+   rule between them says which buttons belong to which piece of writing. */
+.sec-part { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.sec-part + .sec-part { padding-left: 10px; border-left: 1px solid var(--line); }
+.standfirst-tools { margin-top: 10px; }
+/* Narrow enough that the clusters wrap onto their own lines, where a rule to
+   the left of the first button reads as a stray mark. */
+@media (max-width: 640px) { .sec-part + .sec-part { padding-left: 0; border-left: 0; } }
 
 .sec-btn {
   font: inherit; font-size: var(--rt-label); letter-spacing: 0.3px;
