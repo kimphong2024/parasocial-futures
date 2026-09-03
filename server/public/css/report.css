@@ -267,9 +267,11 @@
   align-items: center;
 }
 .fig-triangle svg { width: 100%; height: auto; }
-/* SVG text sizes are viewBox drawing units, not page type — they scale with
-   the diagram rather than with the reader's text setting, so they stay px. */
-.tri-fig-n { font-family: var(--font-mono); font-size: 20px; }
+/* The diagram is capped at its natural viewBox width so it never scales UP —
+   scaling up magnifies the labels, which is how chart text ended up larger
+   than the page's headings. Scaling down on narrow screens is fine. */
+.fig-triangle svg { width: 100%; max-width: 460px; margin-inline: auto; }
+.tri-fig-n { font-family: var(--font-mono); font-size: 17px; }
 .tri-fig-name { font-size: 12px; }
 .fig-read { font-size: var(--rt-secondary); line-height: 1.62; color: #23231A; max-width: 52ch; margin: 0; }
 .fig-read strong { font-weight: 700; }
