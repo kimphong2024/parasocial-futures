@@ -160,6 +160,8 @@
   top: 24px;
 }
 .report-section .report-prose { grid-column: 2; }
+.report-section .part-block,
+.report-section > .part-tools { grid-column: 2; }
 .report-section .report-figure { grid-column: 1 / -1; }
 
 /* Body copy is the point of this page: ink, not muted gray, and set
@@ -438,19 +440,48 @@
 .report-section h3 { grid-column: auto; }
 
 .sec-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; opacity: 0; transition: opacity 160ms var(--ease-epoch); }
-.report-section:hover .sec-tools,
-.report-section:focus-within .sec-tools,
 .report-standfirst:hover .sec-tools,
 .report-standfirst:focus-within .sec-tools { opacity: 1; }
 @media (hover: none) { .sec-tools { opacity: 1; } }
-/* One cluster of controls per written part. Where a section holds two, the
-   rule between them says which buttons belong to which piece of writing. */
-.sec-part { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.sec-part + .sec-part { padding-left: 10px; border-left: 1px solid var(--line); }
+/* Controls sit on the block they act on. Kept on one line so a section never
+   grows a ragged stack of pills, and revealed by the whole section so a
+   cluster inside a figure is not something you have to hunt for. */
+.part-tools {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end;
+  gap: 6px; opacity: 0; transition: opacity 160ms var(--ease-epoch);
+}
+.report-section:hover .part-tools,
+.report-section:focus-within .part-tools { opacity: 1; }
+/* The section's own cluster leads the column, so it needs to clear the prose
+   that follows without pushing the heading out of alignment. */
+.report-section > .part-tools { margin-bottom: 4px; min-height: 29px; }
+@media (hover: none) { .part-tools { opacity: 1; } }
 .standfirst-tools { margin-top: 10px; }
-/* Narrow enough that the clusters wrap onto their own lines, where a rule to
-   the left of the first button reads as a stray mark. */
-@media (max-width: 640px) { .sec-part + .sec-part { padding-left: 0; border-left: 0; } }
+
+/* The odds prose, given a head of its own so its controls have something to
+   hang from and the block reads as a distinct movement. */
+.part-block { margin-top: 2.25rem; }
+.part-block-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding-bottom: 6px; margin-bottom: 12px; border-bottom: 1px solid var(--creamLine);
+}
+.part-block-head h5 { margin: 0; font-size: var(--rt-heading); letter-spacing: -0.01em; }
+
+.aud .part-tools { margin: 8px 0 12px; }
+.sc-block .part-tools { margin: -2px 0 10px; }
+/* A cluster sharing a row with a heading must not be the thing that shrinks:
+   flex-wrap let it collapse to one button per line inside a tight header. */
+.part-block-head .part-tools, .sc-block .part-tools { flex: none; flex-wrap: nowrap; }
+.part-block-head h5 { min-width: 0; }
+/* On a phone there is not room for a heading and a cluster on one line, and
+   nowrap would push the row past the viewport. Stack instead. */
+@media (max-width: 640px) {
+  .part-block-head { flex-direction: column; align-items: stretch; }
+  .part-block-head .part-tools, .sc-block .part-tools { flex-wrap: wrap; justify-content: flex-start; }
+}
+
+.sc-editor input[type="text"] { width: 100%; }
+.crit-subject { font-family: var(--font-mono); font-size: var(--rt-label); color: var(--textDim); }
 
 .sec-btn {
   font: inherit; font-size: var(--rt-label); letter-spacing: 0.3px;
@@ -565,6 +596,7 @@
 
 @media (max-width: 900px) {
   .sec-editor, .crit { grid-column: 1; }
+  .report-section .part-block, .report-section > .part-tools { grid-column: 1; }
   .fal-row { grid-template-columns: 1fr; }
 }
 

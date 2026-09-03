@@ -39,9 +39,28 @@ const PART_LABEL = {
   headline: "headline",
 };
 const partsOf = (sectionKey) => (SECTIONS.find(([k]) => k === sectionKey) || [])[2] || [sectionKey];
-// Where a part's critiques should be rendered.
+// Where a part's critiques should be rendered. A scenario is written text that
+// lives in `scenarios` rather than in the report draft, so it is addressed as
+// "scenario:<slug>" and belongs to the section that shows the fork.
+const isScenarioPart = (part) => String(part).startsWith("scenario:");
+const scenarioOf = (part) => (ctx?.scenarios || []).find((s) => s.slug === String(part).slice(9));
 const sectionOfPart = (part) =>
-  (SECTIONS.find(([, , parts]) => parts.includes(part)) || [])[0] || part;
+  isScenarioPart(part) ? "scenario_space"
+    : (SECTIONS.find(([, , parts]) => parts.includes(part)) || [])[0] || part;
+// A section owns a part if it declares it, or if it is where scenarios live.
+const sectionOwns = (sectionKey, part) =>
+  !!part && (partsOf(sectionKey).includes(part) || (isScenarioPart(part) && sectionKey === "scenario_space"));
+
+// Controls are anchored to the block they act on rather than piled in the
+// section head — with two or three parts in a section the pile stopped saying
+// which buttons belonged to which piece of writing. A renderer emits a slot;
+// one pass after the section is in the DOM fills them in.
+const toolSlot = (part) => `<div class="part-tools" data-part-tools="${part}"></div>`;
+function fillToolSlots(root) {
+  root.querySelectorAll("[data-part-tools]").forEach((el) => {
+    el.innerHTML = partControls(el.dataset.partTools);
+  });
+}
 
 const INPUT_LABEL = {
   signals: "the approved library",
@@ -137,15 +156,16 @@ function audienceSplit(r) {
   // Reports cached before the split keep their single prose block; never
   // fabricate a division the model did not make.
   if (!policy && !industry) return `<div class="report-prose">${paras(r.so_what)}</div>`;
-  const col = (label, who, text) => `
+  const col = (label, who, text, part) => `
     <div class="aud">
       <h4 class="aud-label">${esc(label)}</h4>
       <p class="aud-who">${esc(who)}</p>
+      ${toolSlot(part)}
       <div class="report-prose">${paras(text)}</div>
     </div>`;
   return `<div class="aud-split">
-    ${col("For policy", "Public-policy makers working on AI governance", policy)}
-    ${col("For industry", "Strategy and trust teams inside AI companies", industry)}
+    ${col("For policy", "Public-policy makers working on AI governance", policy, "so_what_policy")}
+    ${col("For industry", "Strategy and trust teams inside AI companies", industry, "so_what_industry")}
   </div>`;
 }
 
@@ -166,32 +186,30 @@ function fmtWhen(iso) {
 
 // `so_what` is two stored fields behind one heading, so the editor works on
 // whichever key the author is actually touching.
-// Controls act on a part. Where a section has several, each gets its own set
-// so nothing in the section is unreachable — the odds prose sat inside the
-// scenario section with no way to edit or critique it.
-function partControls(part, labelled) {
+// One compact cluster per block: the label is the block it sits on, so the
+// buttons say only what they do.
+function partControls(part) {
   const a = authoredOf(part);
   const open = (data.critiques?.[part] || []).filter((c) => !c.addressed_at).length;
-  const name = labelled ? ` ${PART_LABEL[part] || part}` : "";
-  return `<span class="sec-part">
-    ${a ? `<span class="sec-badge${a.draft_moved ? " moved" : ""}" title="${a.draft_moved ? "The draft has been rewritten since you authored this" : "Your text, not the machine draft"}">${labelled ? esc(PART_LABEL[part] || part) + " · " : ""}authored${a.draft_moved ? " · draft moved" : ""}</span>` : ""}
+  return `${a ? `<span class="sec-badge${a.draft_moved ? " moved" : ""}" title="${a.draft_moved ? "The draft has been rewritten since you authored this" : "Your text, not the machine draft"}">authored${a.draft_moved ? " · draft moved" : ""}</span>` : ""}
     ${open ? `<span class="sec-badge open">${open} open</span>` : ""}
-    ${a ? `<button type="button" class="sec-btn" data-compare="${part}">${comparing === part ? "Hide" : "Compare"}${name}</button>` : ""}
-    <button type="button" class="sec-btn" data-edit="${part}">Edit${name}</button>
+    ${a ? `<button type="button" class="sec-btn" data-compare="${part}">${comparing === part ? "Hide" : "Compare"}</button>` : ""}
+    <button type="button" class="sec-btn" data-edit="${part}">Edit</button>
     <span class="sec-menu">
-      <button type="button" class="sec-btn" data-menu="${part}">Critique${name}</button>
+      <button type="button" class="sec-btn" data-menu="${part}">Critique</button>
       <span class="sec-modes" id="modes-${part}" hidden>
         ${Object.entries(data.modes || {}).map(([m, label]) =>
           `<button type="button" class="sec-mode" data-critique="${part}" data-mode="${m}">${esc(label)}</button>`).join("")}
       </span>
-    </span>
-  </span>`;
+    </span>`;
 }
 
+// The heading rail is 210px wide, which is why a cluster of five pills used to
+// wrap into a ragged pile there. Controls belong in the wide column, on the
+// block they act on; the rail stays typography. Sections whose prose all lives
+// in figures or columns get nothing here — those blocks carry their own.
 function toolbar(sectionKey) {
-  const parts = partsOf(sectionKey);
-  const labelled = parts.length > 1;
-  return `<div class="sec-tools">${parts.map((p) => partControls(p, labelled)).join("")}</div>`;
+  return partsOf(sectionKey)[0] === sectionKey ? toolSlot(sectionKey) : "";
 }
 
 function critiqueCard(c) {
@@ -211,6 +229,7 @@ function critiqueCard(c) {
   return `<aside class="crit${done ? " done" : ""}" data-crit="${c.id}">
     <div class="crit-head">
       <span class="crit-label">${esc(label)}</span>
+      ${isScenarioPart(c.section_key) ? `<span class="crit-subject">${esc(scenarioOf(c.section_key)?.title || c.section_key.slice(9))}</span>` : ""}
       <span class="crit-when">${fmtWhen(c.created_at)}${done ? " · addressed" : ""}</span>
       <span class="spacer"></span>
       ${done ? "" : `<button type="button" class="sec-btn" data-addressed="${c.id}">Mark addressed</button>`}
@@ -226,6 +245,9 @@ function critiqueCard(c) {
 const critiquesFor = (sectionKey) => {
   const keys = [...partsOf(sectionKey)];
   if (!keys.includes(sectionKey)) keys.push(sectionKey);
+  if (sectionKey === "scenario_space") {
+    keys.push(...Object.keys(data.critiques || {}).filter(isScenarioPart));
+  }
   return keys.flatMap((k) => data.critiques?.[k] || [])
     .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
     .map(critiqueCard).join("");
@@ -233,7 +255,38 @@ const critiquesFor = (sectionKey) => {
 
 // The falsifier list keeps its fields rather than collapsing to a textarea —
 // the watch-list layout depends on the structure.
+// The scenario fields, in the order the ledger reads them.
+const SC_FIELDS = [
+  ["summary", "Summary", 4],
+  ["litany", "Litany — the visible 2040 surface", 5],
+  ["systemic", "Systemic — the causes underneath", 5],
+  ["worldview", "Worldview", 4],
+  ["myth", "Myth and metaphor", 3],
+];
+
+// A scenario is real data, not a draft with a machine version behind it, so
+// there is nothing to compare against and nothing to revert to — it saves
+// straight to the published row, which is what makes the report go stale.
+function scenarioEditor(part) {
+  const sc = scenarioOf(part);
+  if (!sc) return `<div class="error-note">That scenario is no longer published.</div>`;
+  return `<div class="sec-editor sc-editor" data-editor="${part}">
+    <p class="caption">Editing the published <b>${esc(sc.archetype)}</b> scenario. Saving changes the scenario everywhere it is used, and marks the report stale.</p>
+    <label class="field-label">Title</label>
+    <input type="text" data-sc-field="title" value="${esc(sc.title)}">
+    ${SC_FIELDS.map(([k, label, rows]) => `
+      <label class="field-label">${esc(label)}</label>
+      <textarea data-sc-field="${k}" rows="${rows}">${esc(sc[k] || "")}</textarea>`).join("")}
+    <div class="sec-editor-actions">
+      <button type="button" class="btn btn-sm" data-save="${part}">Save the scenario</button>
+      <button type="button" class="sec-btn" data-cancel>Cancel</button>
+      <span class="sec-msg"></span>
+    </div>
+  </div>`;
+}
+
 function editorFor(part) {
+  if (isScenarioPart(part)) return scenarioEditor(part);
   if (part === "what_would_change_our_mind") {
     const items = valueOf(part);
     const rows = Array.isArray(items) ? items : [];
@@ -374,16 +427,18 @@ function drawReport() {
     // The triangle hands off to the fork instead of stopping.
     triangle_reading: triangleFigure(ctx.triangle) + triangleBridge(ctx.mix),
     // Scenario and odds are one movement: here is the fork, here is how it falls.
-    scenario_space: scenarioLedger(ctx.scenarios, ctx.sim)
-      + (data.report.odds ? `<div class="report-prose sub-prose">${paras(valueOf("odds"))}</div>` : "")
+    scenario_space: scenarioLedger(ctx.scenarios, ctx.sim, (sc) => toolSlot(`scenario:${sc.slug}`))
+      + (data.report.odds ? `<div class="part-block">
+          <div class="part-block-head"><h5>How the odds read</h5>${toolSlot("odds")}</div>
+          <div class="report-prose sub-prose">${paras(valueOf("odds"))}</div>
+        </div>` : "")
       + oddsFigure,
   };
 
   $("repBody").innerHTML = SECTIONS.map(([key, title]) => {
     // Editing and comparing act on a part, which may not be the section id.
-    const parts = partsOf(key);
-    const ed = parts.includes(editing) ? editing : null;
-    const cmp = parts.includes(comparing) ? comparing : null;
+    const ed = sectionOwns(key, editing) ? editing : null;
+    const cmp = sectionOwns(key, comparing) ? comparing : null;
     // While a part is being edited the figure is suppressed: for the merged
     // scenario section it restates the very prose in the textarea.
     const body = ed
@@ -393,8 +448,8 @@ function drawReport() {
     <section class="report-section${!ed && fig[key] ? " has-figure" : ""}" data-section="${key}">
       <div class="sec-head">
         <h3>${esc(title)}</h3>
-        ${toolbar(key)}
       </div>
+      ${toolbar(key)}
       ${body}
       ${cmp ? comparePanel(cmp) : ""}
       ${ed ? "" : (fig[key] || "")}
@@ -402,6 +457,7 @@ function drawReport() {
     </section>`;
   }).join("");
 
+  fillToolSlots($("repBody"));
   drawCharts(ctx);
   wireRail();
 }
@@ -607,6 +663,11 @@ function wireRail() {
 const closeMenus = () => document.querySelectorAll(".sec-modes").forEach((m) => (m.hidden = true));
 
 function collectEdit(key) {
+  if (isScenarioPart(key)) {
+    const out = {};
+    document.querySelectorAll("[data-sc-field]").forEach((el) => { out[el.dataset.scField] = el.value.trim(); });
+    return out;
+  }
   if (key === "what_would_change_our_mind") {
     const rows = [...document.querySelectorAll("#falsifierRows .fal-row")].map((r) => ({
       watch: r.querySelector('[data-fal="watch"]').value.trim(),
@@ -643,6 +704,18 @@ document.addEventListener("click", async (e) => {
     const msg = t.closest(".sec-editor-actions").querySelector(".sec-msg");
     msg.textContent = "saving…";
     try {
+      if (isScenarioPart(key)) {
+        // Straight to the published row: this is the scenario itself, not a
+        // report section overlaying a machine draft.
+        const sc = scenarioOf(key);
+        if (!sc) throw new Error("that scenario is no longer published");
+        const patch = collectEdit(key);
+        if (!patch.title) throw new Error("a scenario needs a title");
+        await api(`/api/scenarios/${sc.id}`, { method: "PATCH", body: patch });
+        editing = null;
+        await load();
+        return;
+      }
       for (const [k, text] of Object.entries(collectEdit(key))) {
         await api(`/api/report/sections/${encodeURIComponent(k)}`, { method: "PUT", body: { text } });
       }

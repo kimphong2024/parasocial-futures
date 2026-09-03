@@ -178,7 +178,7 @@ const CLA = [
   ["myth", "Myth", "the story it tells itself"],
 ];
 
-export function scenarioLedger(scenarios, sim) {
+export function scenarioLedger(scenarios, sim, slot = () => "") {
   if (!scenarios || !scenarios.length) return "";
   const prob = Object.fromEntries((sim?.scenarios || []).map((s) => [s.slug, s.probability]));
   const maxP = Math.max(...Object.values(prob), sim?.residual || 0, 0.01);
@@ -196,6 +196,7 @@ export function scenarioLedger(scenarios, sim) {
           <span class="sc-pct">${(p * 100).toFixed(1)}%</span>` : `<span class="sc-pct sc-none">—</span>`}
         </div>
       </header>
+      ${slot(s)}
       ${s.summary ? `<p class="sc-summary">${esc(s.summary)}</p>` : ""}
       ${CLA.some(([k]) => s[k]) ? `
       <details class="cla-wrap" open>

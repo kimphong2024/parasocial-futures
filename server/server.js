@@ -312,9 +312,26 @@ app.post("/api/report/critique", async (req, res) => {
   if (!CRITIQUE_MODES[mode] && mode !== "signals") return res.status(400).json({ error: "unknown critique mode" });
   const report = getReport();
   if (!report) return res.status(400).json({ error: "no report to critique yet" });
-  const authored = authoredSections()[section];
-  const value = authored ? authored.value : report[section];
-  if (value === undefined) return res.status(404).json({ error: "unknown section" });
+  // A scenario is written text too, and it is the substance of the fork the
+  // report turns on — but it lives in `scenarios`, not in the report draft,
+  // so its subject is assembled from the row rather than looked up by key.
+  let value, subject = null;
+  if (section.startsWith("scenario:")) {
+    const sc = d.publishedScenarios.all().find((r) => r.slug === section.slice(9));
+    if (!sc) return res.status(404).json({ error: "unknown scenario" });
+    subject = sc.title;
+    value = [
+      sc.summary && `Summary: ${sc.summary}`,
+      sc.litany && `Litany (the visible surface): ${sc.litany}`,
+      sc.systemic && `Systemic (the causes underneath): ${sc.systemic}`,
+      sc.worldview && `Worldview: ${sc.worldview}`,
+      sc.myth && `Myth/metaphor: ${sc.myth}`,
+    ].filter(Boolean).join("\n\n");
+  } else {
+    const authored = authoredSections()[section];
+    value = authored ? authored.value : report[section];
+    if (value === undefined) return res.status(404).json({ error: "unknown section" });
+  }
   // A short brief of the rest keeps the critique aware of the whole argument
   // without paying to send all of it. Human titles, not storage keys — the
   // model quotes these back, and "so_what_policy" in a critique reads as a
@@ -330,7 +347,10 @@ app.post("/api/report/critique", async (req, res) => {
     .filter(([k, v]) => k !== section && TITLES[k] && typeof v === "string" && v.length > 40)
     .map(([k, v]) => `${TITLES[k]}: ${v.slice(0, 220)}…`).join("\n");
   try {
-    const out = await critiqueSection({ mode, sectionKey: section, title: TITLES[section] || section.replace(/_/g, " "), value, brief });
+    const out = await critiqueSection({
+      mode, sectionKey: section, value, brief,
+      title: subject ? `The ${subject} scenario` : (TITLES[section] || section.replace(/_/g, " ")),
+    });
     res.json({ ok: true, critique: out });
   } catch (e) {
     res.status(500).json({ error: e.message });
