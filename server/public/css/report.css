@@ -318,7 +318,9 @@
 .sc-rail:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 12px; }
 
 .sc-block {
-  flex: 0 0 clamp(280px, 74vw, 440px);
+  /* One at a time. The four are alternatives, so showing two-and-a-half of
+     them invited reading across rather than choosing between. */
+  flex: 0 0 100%;
   scroll-snap-align: start;
   display: flex; flex-direction: column;
   max-height: min(68vh, 620px);
@@ -374,7 +376,6 @@
 .cla-wrap > summary:hover { color: var(--ink); }
 .cla-wrap > summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 
-/* Inside a rail panel the two-column CLA grid has no room; the layers stack. */
 .cla {
   margin: var(--s-4, 16px) 0 0;
   display: grid;
@@ -383,6 +384,11 @@
 }
 .cla dt { margin-top: 10px; }
 .cla dt:first-child { margin-top: 0; }
+/* A full-width panel has room for the label column again. */
+@media (min-width: 900px) {
+  .cla { grid-template-columns: 132px minmax(0, 1fr); gap: 10px 20px; align-items: baseline; }
+  .cla dt { margin-top: 0; }
+}
 .cla dt { display: flex; flex-direction: column; gap: 1px; }
 .cla-label { font-size: var(--rt-caption); font-weight: 700; color: var(--ink); }
 .cla-gloss { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.3px; color: var(--chart-mid); line-height: 1.4; }
