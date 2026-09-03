@@ -2,21 +2,26 @@ import { api, esc } from "./api.js";
 import { renderNav } from "./nav.js";
 import { noteCard, wireNoteCard } from "./signal-note.js";
 import { probabilityBars, tornado, ARCH_COLOR } from "./charts.js";
-import { evidenceFigure, triangleFigure, scenarioLedger } from "./report-figures.js";
+import { evidenceFigure, triangleFigure, triangleBridge, scenarioLedger } from "./report-figures.js";
 
 const $ = (id) => document.getElementById(id);
 
 // Section order is the argument's order: what the evidence is, how it reads,
 // where the futures fork, what the odds are, what moves them, what would
 // break the reading, and what follows.
+// signals → drivers → triangle → scenario + odds → so what.
+// "What moves them" and "What would change our mind" read as the same
+// section; they are not. One names which dial in the model carries the
+// outcome, the other names what would have to happen in the world for the
+// reading to be wrong. Renamed so the difference is on the page, and the
+// watch-list moved to the close, where a forward-looking list belongs.
 const SECTIONS = [
   ["state_of_evidence", "The state of the evidence"],
+  ["sensitivity", "Which levers decide it"],
   ["triangle_reading", "The triangle reading"],
-  ["scenario_space", "The scenario space"],
-  ["odds", "The odds"],
-  ["sensitivity", "What moves them"],
-  ["what_would_change_our_mind", "What would change our mind"],
+  ["scenario_space", "The scenario space and the odds"],
   ["so_what", "So what"],
+  ["what_would_change_our_mind", "What we're watching for"],
 ];
 
 const INPUT_LABEL = {
@@ -342,12 +347,21 @@ function drawReport() {
     }),
   };
 
+  const oddsFigure = ctx.sim
+    ? `<figure class="report-figure"><div class="fig-head"><h4>How the odds fall</h4><p class="fig-sub">${ctx.sim.n.toLocaleString()} sampled futures, seed ${ctx.sim.seed}</p></div><div id="repOdds"></div></figure>`
+    : "";
+
   const fig = {
     state_of_evidence: evidenceFigure(ctx),
-    triangle_reading: triangleFigure(ctx.triangle),
-    scenario_space: scenarioLedger(ctx.scenarios, ctx.sim),
-    odds: ctx.sim ? `<figure class="report-figure"><div class="fig-head"><h4>How the odds fall</h4><p class="fig-sub">${ctx.sim.n.toLocaleString()} sampled futures, seed ${ctx.sim.seed}</p></div><div id="repOdds"></div></figure>` : "",
-    sensitivity: ctx.sim ? `<figure class="report-figure"><div class="fig-head"><h4>What actually moves them</h4><p class="fig-sub" id="repTornadoCap"></p></div><div id="repTornado"></div></figure>` : "",
+    // Drivers come before the scenarios now, so the tornado stands on its own
+    // rather than as a footnote to odds the reader has not reached.
+    sensitivity: ctx.sim ? `<figure class="report-figure"><div class="fig-head"><h4>How far each driver moves the outcome</h4><p class="fig-sub" id="repTornadoCap"></p></div><div id="repTornado"></div></figure>` : "",
+    // The triangle hands off to the fork instead of stopping.
+    triangle_reading: triangleFigure(ctx.triangle) + triangleBridge(ctx.mix),
+    // Scenario and odds are one movement: here is the fork, here is how it falls.
+    scenario_space: scenarioLedger(ctx.scenarios, ctx.sim)
+      + (data.report.odds ? `<div class="report-prose sub-prose">${paras(valueOf("odds"))}</div>` : "")
+      + oddsFigure,
   };
 
   $("repBody").innerHTML = SECTIONS.map(([key, title]) => `
@@ -373,18 +387,20 @@ let ctx = { facets: null, overview: null, triangle: null, scenarios: null, sim: 
 
 async function loadContext() {
   const get = (p) => api(p).catch(() => null);
-  const [facets, overview, triangle, scenarios, simRes] = await Promise.all([
+  const [facets, overview, triangle, scenarios, simRes, mix] = await Promise.all([
     get("/api/signals/facets?status=approved"),
     get("/api/signals/overview"),
     get("/api/triangle"),
     get("/api/scenarios?status=published"),
     get("/api/simulation/latest"),
+    get("/api/scenarios/triangle-mix"),
   ]);
   ctx = {
     facets, overview,
     triangle: triangle?.counts || null,
     scenarios: scenarios?.scenarios || null,
     sim: simRes?.latest || null,
+    mix: mix?.scenarios || null,
   };
 }
 

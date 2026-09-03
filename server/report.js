@@ -251,10 +251,12 @@ const REPORT_SCHEMA = {
   properties: {
     headline: { type: "string", description: "One sentence, 20-30 words: the single thing this library currently says about parasocial AI by 2040. No hedging verbs like 'explores' or 'examines'." },
     state_of_evidence: SECTION("What the reviewed library actually shows — where the evidence is thick, where it is thin, and what the source concentration means for confidence.", 180),
-    triangle_reading: SECTION("The triangle reading. Use the synthesis already provided; do not re-derive it from the signals.", 150),
-    scenario_space: SECTION("The four archetypes and what genuinely separates them — the fork, not the summary.", 200),
+    triangle_reading: SECTION("The triangle reading. Use the synthesis already provided; do not re-derive it from the signals. Close by naming the fork this balance implies — which way the evidence would have to break for each kind of future — so the section hands off to the scenarios that follow rather than stopping.", 170),
+    scenario_space: SECTION("The four archetypes and what genuinely separates them — the fork, not the summary. The reader has just seen which triangle force each scenario rests on, so build on that rather than restating the archetypes.", 200),
     odds: SECTION("What the simulation says, stated as a conditional artifact of human-set ranges rather than a forecast. MUST state the residual and what it means.", 150),
-    sensitivity: SECTION("Which drivers actually move the odds, and which turn out not to.", 130),
+    // This section now sits before the scenarios and the odds, so it cannot
+    // lean on probabilities the reader has not reached.
+    sensitivity: SECTION("The drivers: what the model actually varies, and which of them carry the outcome. Name the two or three that dominate and the ones that turn out not to matter. Write this so it stands on its own — the scenarios and their probabilities have NOT been introduced yet, so refer to outcomes in general terms rather than quoting percentages for named scenarios.", 150),
     // Structured rather than prose: these two were the only sections with no
     // shape to lay out, and a falsifier list and an audience split are both
     // genuinely structured content being flattened into paragraphs.

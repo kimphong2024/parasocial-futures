@@ -130,28 +130,83 @@ export function triangleFigure(counts) {
   </figure>`;
 }
 
+
+// ---------------- the triangle, handed to the fork ----------------
+
+// The triangle section used to stop, and the scenarios used to start, with
+// nothing between them. This is the join, and it is derived rather than
+// asserted: each scenario's own cited signals are looked up in the triangle
+// classification, so the bar shows which force that scenario actually rests
+// on rather than a tidy mapping of corners onto archetypes.
+export function triangleBridge(mix) {
+  if (!mix || !mix.length) return "";
+  const rows = mix.filter((m) => m.classified > 0);
+  if (!rows.length) return "";
+  return `
+  <figure class="report-figure fig-bridge">
+    <div class="fig-head">
+      <h4>Which force each scenario rests on</h4>
+      <p class="fig-sub">every scenario's own citations, looked up in the triangle classification</p>
+    </div>
+    <ul class="bridge-list">
+      ${rows.map((m) => {
+        const parts = CORNERS.map((c) => ({ label: TRI[c].name.split(" ")[0], n: m.mix[c], color: TRI[c].color }));
+        const lead = CORNERS.reduce((a, c) => (m.mix[c] > m.mix[a] ? c : a), CORNERS[0]);
+        return `<li class="bridge-row">
+          <div class="bridge-id">
+            <span class="bridge-arch" style="--sc:${ARCH_COLOR[m.archetype] || "#6B7264"}">${esc(m.archetype)}</span>
+            <h5>${esc(m.title)}</h5>
+          </div>
+          <div class="bridge-bar">${segmentBar(parts, { total: m.classified })}</div>
+          <p class="bridge-read">rests on <strong>${esc(TRI[lead].name.toLowerCase())}</strong> · ${m.classified} of ${m.cited} citations classified</p>
+        </li>`;
+      }).join("")}
+    </ul>
+  </figure>`;
+}
+
 // ---------------- how the four scenarios divide the space ----------------
 
-// Rows, not a card grid: the probability bar is the differentiator, and four
-// equal boxes would flatten exactly the difference the section is about.
+// Each scenario as a block rather than a row: the myth line alone was a label,
+// not a scenario. Summary carries what it is, the four CLA layers carry how it
+// is structured — litany, systemic, worldview, myth — which is the method the
+// scenario set is actually built on and was invisible on this page.
+const CLA = [
+  ["litany", "Litany", "the visible 2040 surface"],
+  ["systemic", "Systemic", "the causes underneath"],
+  ["worldview", "Worldview", "the beliefs that hold it up"],
+  ["myth", "Myth", "the story it tells itself"],
+];
+
 export function scenarioLedger(scenarios, sim) {
   if (!scenarios || !scenarios.length) return "";
   const prob = Object.fromEntries((sim?.scenarios || []).map((s) => [s.slug, s.probability]));
   const maxP = Math.max(...Object.values(prob), sim?.residual || 0, 0.01);
 
-  const row = (s) => {
+  const block = (s) => {
     const p = prob[s.slug];
-    return `<li class="sc-row" style="--sc:${ARCH_COLOR[s.archetype] || "#6B7264"}">
-      <div class="sc-id">
-        <span class="sc-arch">${esc(s.archetype)}</span>
-        <h5>${esc(s.title)}</h5>
-      </div>
-      <p class="sc-myth">${esc(s.myth || s.summary || "")}</p>
-      <div class="sc-prob">
-        ${p != null ? `<span class="sc-bar"><span style="width:${(p / maxP * 100).toFixed(1)}%"></span></span>
-        <span class="sc-pct">${(p * 100).toFixed(1)}%</span>` : `<span class="sc-pct sc-none">—</span>`}
-      </div>
-    </li>`;
+    return `<article class="sc-block" style="--sc:${ARCH_COLOR[s.archetype] || "#6B7264"}">
+      <header class="sc-top">
+        <div class="sc-id">
+          <span class="sc-arch">${esc(s.archetype)}</span>
+          <h5>${esc(s.title)}</h5>
+        </div>
+        <div class="sc-prob">
+          ${p != null ? `<span class="sc-bar"><span style="width:${(p / maxP * 100).toFixed(1)}%"></span></span>
+          <span class="sc-pct">${(p * 100).toFixed(1)}%</span>` : `<span class="sc-pct sc-none">—</span>`}
+        </div>
+      </header>
+      ${s.summary ? `<p class="sc-summary">${esc(s.summary)}</p>` : ""}
+      ${CLA.some(([k]) => s[k]) ? `
+      <details class="cla-wrap" open>
+        <summary>Causal Layered Analysis — litany, systemic, worldview, myth</summary>
+        <dl class="cla">
+          ${CLA.filter(([k]) => s[k]).map(([k, label, gloss]) => `
+            <dt><span class="cla-label">${label}</span><span class="cla-gloss">${gloss}</span></dt>
+            <dd>${esc(s[k])}</dd>`).join("")}
+        </dl>
+      </details>` : ""}
+    </article>`;
   };
 
   const res = sim?.residual;
@@ -159,18 +214,12 @@ export function scenarioLedger(scenarios, sim) {
   <figure class="report-figure fig-scenarios">
     <div class="fig-head">
       <h4>The four archetypes, and what falls outside them</h4>
-      <p class="fig-sub">Dator's archetypes structured with Causal Layered Analysis — the line shown is each scenario's myth</p>
+      <p class="fig-sub">Dator's archetypes, each structured with Causal Layered Analysis</p>
     </div>
-    <ul class="sc-ledger">
-      ${scenarios.map(row).join("")}
-      ${res != null ? `<li class="sc-row sc-residual" style="--sc:#8A8778">
-        <div class="sc-id"><span class="sc-arch">residual</span><h5>No scenario fits</h5></div>
-        <p class="sc-myth">Sampled futures matching none of the four. Reported rather than hidden — it is the measure of what the archetypes do not cover.</p>
-        <div class="sc-prob">
-          <span class="sc-bar"><span style="width:${(res / maxP * 100).toFixed(1)}%"></span></span>
-          <span class="sc-pct">${(res * 100).toFixed(1)}%</span>
-        </div>
-      </li>` : ""}
-    </ul>
+    <div class="sc-blocks">${scenarios.map(block).join("")}</div>
+    ${res != null ? `<div class="sc-residual-note">
+      <span class="sc-arch" style="--sc:#8A8778">residual</span>
+      <p><strong>${(res * 100).toFixed(1)}%</strong> of sampled futures match none of the four. Reported rather than hidden — it is the measure of what the archetypes do not cover.</p>
+    </div>` : ""}
   </figure>`;
 }

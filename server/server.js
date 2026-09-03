@@ -227,6 +227,28 @@ app.get("/api/report", (_req, res) => {
   });
 });
 
+// Which triangle force each scenario actually rests on. Computed from the
+// scenarios' own citations crossed with the triangle classification of those
+// signals — so the bridge from the triangle to the fork is derived, not an
+// asserted mapping of corners onto archetypes.
+app.get("/api/scenarios/triangle-mix", (_req, res) => {
+  const corner = new Map(
+    d.db.prepare("SELECT id, triangle FROM signals WHERE status = 'approved' AND triangle IS NOT NULL AND triangle != ''")
+      .all().map((r) => [r.id, r.triangle]));
+  const out = d.publishedScenarios.all().map((sc) => {
+    let ids = [];
+    try { ids = JSON.parse(sc.signal_ids || "[]"); } catch { /* malformed */ }
+    const mix = { pull: 0, push: 0, weight: 0 };
+    let classified = 0;
+    for (const id of ids) {
+      const c = corner.get(id);
+      if (c && mix[c] !== undefined) { mix[c]++; classified++; }
+    }
+    return { slug: sc.slug, title: sc.title, archetype: sc.archetype, cited: ids.length, classified, mix };
+  });
+  res.json({ scenarios: out });
+});
+
 // ---------- authoring ----------
 // Editing is the point: the model drafts, a human writes. Saving records which
 // draft it was written against so a later regeneration can flag divergence
@@ -275,8 +297,8 @@ app.post("/api/report/critique", async (req, res) => {
   const TITLES = {
     headline: "Headline", state_of_evidence: "The state of the evidence",
     triangle_reading: "The triangle reading", scenario_space: "The scenario space",
-    odds: "The odds", sensitivity: "What moves them",
-    what_would_change_our_mind: "What would change our mind",
+    odds: "The odds", sensitivity: "Which levers decide it",
+    what_would_change_our_mind: "What we're watching for",
     so_what_policy: "So what — for policy", so_what_industry: "So what — for industry",
   };
   const brief = Object.entries(report)

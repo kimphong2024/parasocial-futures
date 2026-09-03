@@ -276,17 +276,82 @@
 .fig-read { font-size: var(--rt-secondary); line-height: 1.62; color: #23231A; max-width: 52ch; margin: 0; }
 .fig-read strong { font-weight: 700; }
 
-/* --- scenario ledger: rows, because the probabilities are the point --- */
-.sc-ledger { list-style: none; margin: 0; padding: 0; }
-.sc-row {
+/* --- the bridge: which force each scenario rests on --- */
+.fig-bridge { background: none; border: 1px solid var(--creamLine); margin-top: var(--s-4, 16px); }
+.bridge-list { list-style: none; margin: 0; padding: 0; }
+.bridge-row {
   display: grid;
-  grid-template-columns: minmax(150px, 1.1fr) 2fr minmax(120px, 0.9fr);
-  gap: 6px 24px;
-  align-items: baseline;
-  padding: 16px 0;
+  grid-template-columns: minmax(160px, 1fr) minmax(0, 1.4fr);
+  gap: 6px 28px;
+  align-items: center;
+  padding: 14px 0;
   border-top: 1px solid var(--creamLine);
 }
-.sc-row:last-child { border-bottom: 1px solid var(--creamLine); }
+.bridge-row:first-child { border-top: 0; }
+.bridge-id h5 { font-size: var(--rt-secondary); font-weight: 700; color: var(--ink); margin: 2px 0 0; }
+.bridge-arch {
+  display: flex; align-items: center; gap: 7px;
+  font-family: var(--font-mono); font-size: var(--rt-label);
+  letter-spacing: 0.6px; color: var(--chart-mid);
+}
+.bridge-arch::before { content: ""; width: 8px; height: 8px; flex: none; background: var(--sc); }
+.bridge-read { grid-column: 2; font-size: var(--rt-caption); color: var(--chart-mid); margin: 2px 0 0; }
+.bridge-bar .segbar-legend { margin-top: 7px; }
+
+/* --- scenarios: a block each, with the CLA layers the method rests on --- */
+.sc-blocks { display: flex; flex-direction: column; gap: var(--s-5, 24px); }
+.sc-block { padding-top: var(--s-4, 16px); border-top: 1px solid var(--creamLine); }
+.sc-block:first-child { border-top: 0; padding-top: 0; }
+.sc-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 240px);
+  gap: 8px 24px;
+  align-items: center;
+}
+.sc-summary {
+  font-size: var(--rt-secondary); line-height: 1.62; color: #23231A;
+  margin: var(--s-3, 12px) 0 0; max-width: 68ch;
+}
+/* Open by default — the layers are the method, not an appendix — but the
+   scenario set is the longest thing on the page, so each one folds. */
+.cla-wrap { margin-top: var(--s-4, 16px); }
+.cla-wrap > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-mono); font-size: var(--rt-label);
+  letter-spacing: 0.4px; color: var(--chart-mid);
+  padding-bottom: 6px; border-bottom: 1px solid var(--creamLine);
+}
+.cla-wrap > summary::-webkit-details-marker { display: none; }
+.cla-wrap > summary::before { content: "\2212"; font-family: var(--font-mono); color: var(--ink); }
+.cla-wrap:not([open]) > summary::before { content: "+"; }
+.cla-wrap > summary:hover { color: var(--ink); }
+.cla-wrap > summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+.cla {
+  margin: var(--s-4, 16px) 0 0;
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 8px 20px;
+  align-items: baseline;
+}
+.cla dt { display: flex; flex-direction: column; gap: 1px; }
+.cla-label { font-size: var(--rt-caption); font-weight: 700; color: var(--ink); }
+.cla-gloss { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.3px; color: var(--chart-mid); line-height: 1.4; }
+.cla dd { margin: 0; font-size: var(--rt-caption); line-height: 1.62; color: #3A3A2E; max-width: 72ch; }
+
+.sc-residual-note {
+  display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 8px 20px;
+  margin-top: var(--s-5, 24px); padding-top: var(--s-4, 16px);
+  border-top: 1px solid var(--ink);
+}
+.sc-residual-note p { font-size: var(--rt-caption); line-height: 1.62; color: var(--chart-mid); margin: 0; max-width: 72ch; }
+.sc-residual-note strong { color: var(--ink); font-family: var(--font-mono); }
+
+/* The odds prose sits inside the scenario section now, so it is set slightly
+   back from the section's own opening argument. */
+.sub-prose { margin-top: var(--s-5, 24px); }
 /* Archetype colour rides a marker square on the label — the same device the
    page-head label uses — and the probability bar. Not a side stripe. */
 .sc-arch {
@@ -551,8 +616,12 @@
 /* The ledger's three tracks get cramped well before the section itself
    collapses — at 768 the myth column falls to ~33ch. Stack earlier. */
 @media (max-width: 860px) {
-  .sc-row { grid-template-columns: 1fr; gap: 8px; }
+  .sc-top { grid-template-columns: 1fr; }
   .sc-prob { max-width: 240px; }
+  .cla, .sc-residual-note { grid-template-columns: 1fr; gap: 3px 0; }
+  .cla dd { margin-bottom: 10px; }
+  .bridge-row { grid-template-columns: 1fr; }
+  .bridge-read { grid-column: 1; }
 }
 
 @media (max-width: 900px) {
