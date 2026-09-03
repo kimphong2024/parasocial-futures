@@ -32,11 +32,31 @@ export const normalise = (s) => String(s || "")
 
 const MIN_QUOTE_CHARS = 25;
 
-export function storeArticleText(signalId, text) {
+// A 200-character floor was the only gate, which let paywall stubs and bot
+// challenges through. Retaining one as authoritative source text is worse than
+// retaining nothing: a genuine quotation then fails to verify against junk and
+// is silently stripped from the report. Ported from RECOLLECTX's parse-url
+// extractor, which learned these the hard way across NYT/HBR/Reuters.
+const BOT_CHALLENGE = /enable javascript and cookies|are you a robot|verifying you are human|checking your browser|access denied|request blocked|cloudflare|captcha/i;
+const PAYWALL_GATE = /subscribe to (access|read|continue)|already a subscriber|create a free account|to continue reading|sign in to (read|continue)|become a subscriber|unlock this article|subscribe to (the )?[a-z ]{3,24} to read/i;
+
+// Exported so the same judgment can be reused by a backfill.
+export function articleTextVerdict(text) {
   const clean = normalise(text);
-  if (!clean || clean.length < 200) return null;
-  const hash = sha256(clean);
-  d.putArticleText.run(signalId, clean, hash, clean.length, d.now());
+  if (!clean) return { ok: false, reason: "empty", clean: "" };
+  if (BOT_CHALLENGE.test(clean.slice(0, 1200))) return { ok: false, reason: "bot challenge page", clean };
+  // 1500 rather than 200: HBR "Summary." blocks and newsletter footers clear a
+  // few hundred characters and are not articles.
+  if (clean.length < 1500) return { ok: false, reason: `too short (${clean.length} chars)`, clean };
+  if (PAYWALL_GATE.test(clean)) return { ok: false, reason: "paywall gate", clean };
+  return { ok: true, clean };
+}
+
+export function storeArticleText(signalId, text) {
+  const v = articleTextVerdict(text);
+  if (!v.ok) return null;
+  const hash = sha256(v.clean);
+  d.putArticleText.run(signalId, v.clean, hash, v.clean.length, d.now());
   d.setSignalContentHash.run(hash, signalId);
   return hash;
 }
