@@ -46,6 +46,12 @@ const mmss = (ms) => {
 
 // An authored section wins over the machine draft. `draft_moved` means the
 // evidence has shifted since it was written — surfaced, never auto-applied.
+// Scenario slugs are storage identifiers. Everywhere one is shown to a reader
+// it resolves to the published title — falling back to the slug only if the
+// scenario is not in the published set, which is honest rather than blank.
+const scenarioTitle = (slug) =>
+  (ctx?.scenarios || []).find((s) => s.slug === slug)?.title || slug;
+
 const authoredOf = (key) => data?.authored?.[key];
 const valueOf = (key) => {
   const a = authoredOf(key);
@@ -58,7 +64,7 @@ const valueOf = (key) => {
 const pills = (s) => esc(s)
   .replace(/\[S(\d+)\]/g, `<button type="button" class="cite-pill" data-sig="$1" aria-label="Open signal $1">S$1</button>`)
   .replace(/\[SC:([a-z0-9-]+)\]/gi, (_m, slug) =>
-    `<button type="button" class="cite-pill" data-scenario="${slug}" aria-label="Open scenario ${slug}">${slug}</button>`);
+    `<button type="button" class="cite-pill" data-scenario="${slug}" aria-label="Open scenario ${esc(scenarioTitle(slug))}">${esc(scenarioTitle(slug))}</button>`);
 
 // The model returns each section as a single block, which lands as a 150-word
 // wall. Split on sentence boundaries into roughly even paragraphs — words are
@@ -410,8 +416,11 @@ function drawCharts(c) {
   if (!c.sim) return;
   const odds = $("repOdds");
   if (odds) {
+    // Titles come from the published scenario, not the simulation snapshot:
+    // the snapshot froze whatever the titles were when the run happened, so a
+    // later rename would leave stale names on the chart.
     probabilityBars(odds, (c.sim.scenarios || []).map((s) => ({
-      label: s.title, sublabel: s.archetype, value: s.probability, color: ARCH_COLOR[s.archetype] || "#6B7264",
+      label: scenarioTitle(s.slug), sublabel: s.archetype, value: s.probability, color: ARCH_COLOR[s.archetype] || "#6B7264",
     })).concat([{ label: "No scenario fits", sublabel: "residual", value: c.sim.residual, color: "#8A8778" }]));
   }
   const tor = $("repTornado");
@@ -420,7 +429,7 @@ function drawCharts(c) {
     if (first) {
       tornado(tor, c.sim.tornado[first]);
       const cap = $("repTornadoCap");
-      if (cap) cap.innerHTML = `Driver sensitivity for <strong>${esc(first)}</strong> — each driver's top third against its bottom third. Full set on the <a href="/simulation">simulation</a> page.`;
+      if (cap) cap.innerHTML = `Driver sensitivity for <strong>${esc(scenarioTitle(first))}</strong> — each driver's top third against its bottom third. Full set on the <a href="/simulation">simulation</a> page.`;
     }
   }
 }
