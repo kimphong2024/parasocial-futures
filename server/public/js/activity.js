@@ -9,6 +9,9 @@ const whenLong = (iso) => new Date(iso).toLocaleString("en-GB", { weekday: "long
 
 // action codes -> plain words
 const ACTION_LABELS = {
+  "quotes.drain": "Source text", "quotes.backfill": "Source text", "report.author": "Report authored",
+  "report.revert": "Report reverted", "report.critique": "Report critique", "report.keep-mine": "Report kept",
+  "report.regenerate": "Report redrafted",
   "signal.note": "Field note", "triangle.reclassify": "Triangle move", "triangle.classify-all": "Triangle re-audit",
   "triangle.writeup": "Synthesis refresh", "review.approve": "Approval", "review.reject": "Rejection",
   "review.edit": "Review edit", "review.approve-all": "Bulk approval", "horizons.judge": "Horizon audit",
@@ -42,7 +45,7 @@ let entries = [];
 
 function render() {
   $("activityBody").innerHTML = entries.length
-    ? `<p class="caption mb-4">Newest first — showing the last ${entries.length}; the log keeps the most recent 5,000. Machine work (the nightly scan, classifiers) acts in-process and is recorded in its own run histories; this page is the human trail.</p>
+    ? `<p class="caption mb-4">Newest first — showing the last ${entries.length}; the log keeps the most recent 5,000. Machine work the platform does on its own — the source-text fetcher above, and the nightly scan's own run history — is recorded here too.</p>
        <table class="data"><thead><tr><th>When</th><th>Action</th><th>What changed</th></tr></thead>
        <tbody>${entries.map((a) => `
          <tr class="audit-row" data-aid="${a.id}" style="cursor:pointer">
@@ -79,11 +82,34 @@ $("activityBody").addEventListener("click", (e) => {
 });
 $("backdrop").addEventListener("click", () => document.body.classList.remove("drawer-open"));
 
+// The source-text corpus fills itself in the background with nothing to press,
+// so the only honest thing to do is say where it has got to.
+async function renderCorpus() {
+  try {
+    const c = await api("/api/quotes/coverage");
+    const s = c.status || {};
+    const pct = c.total ? Math.round((c.retained / c.total) * 100) : 0;
+    const running = !!s.running;
+    $("corpusStrip").hidden = false;
+    $("corpusStrip").innerHTML = `
+      <div class="corpus-bar"><span style="width:${pct}%"></span></div>
+      <p class="corpus-line">
+        <strong>${c.retained}</strong> of ${c.total} signals have retained source text (${pct}%) ·
+        ${c.missing ? `${c.missing} still to fetch` : "complete"}
+        ${running
+          ? ` · <span class="corpus-live">fetching now — ${s.done ?? 0}/${s.target ?? 0} this batch, ${s.stored ?? 0} kept</span>`
+          : c.missing ? " · next batch within ten minutes" : ""}
+      </p>`;
+  } catch { $("corpusStrip").hidden = true; }
+}
+
 async function load() {
   entries = (await api("/api/audit?limit=200")).entries;
   render();
+  renderCorpus();
 }
 
 renderNav("/activity");
 load();
 setInterval(load, 30000);   // the record stays current while you watch
+setInterval(renderCorpus, 8000);   // the corpus moves faster than the log

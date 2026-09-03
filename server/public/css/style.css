@@ -424,3 +424,16 @@ svg text { font-family: var(--font-sans); }
   cursor: pointer;
 }
 .note-save:hover { background: var(--charcoal, #282E2A); color: var(--mustard, #E1B83B); }
+
+/* ---------- corpus progress (Activity) ---------- */
+/* The source-text corpus fills itself with nothing to press, so this is
+   report, not control: where it has got to and whether it is moving. */
+.corpus-strip { margin-bottom: var(--s-5); }
+.corpus-bar {
+  height: 6px; border-radius: 3px; overflow: hidden;
+  background: rgba(19, 19, 9, 0.07);
+}
+.corpus-bar span { display: block; height: 100%; background: var(--olive); border-radius: 3px; transition: width 600ms ease; }
+.corpus-line { margin-top: 8px; font-size: 12.5px; line-height: 1.6; color: var(--textMid); }
+.corpus-line strong { color: var(--charcoal); font-variant-numeric: tabular-nums; }
+.corpus-live { color: var(--brown); }

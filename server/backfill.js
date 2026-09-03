@@ -111,8 +111,24 @@ export function startBackfillDrainer(isBusy = () => false) {
     try {
       const r = await runBackfill({ limit: DRAIN_BATCH });
       console.log(`[backfill] drained ${r.stored}/${r.target} (${r.direct_hits} free, ${r.firecrawl_hits} paid) — ${r.remaining} left`);
+      // The audit log is the record of the platform, and this is the platform
+      // acting on its own. It runs without a request, so the audit middleware
+      // never sees it — the row is written here instead, which also gives the
+      // run history somewhere to live across restarts.
+      const top = Object.entries(r.reasons || {}).sort((a, b) => b[1] - a[1]).slice(0, 3)
+        .map(([k, n]) => `${n} ${k}`).join(", ");
+      d.insertAudit.run(
+        d.now(), "SYSTEM", "/api/quotes/backfill", "quotes.drain", "corpus", null,
+        `Fetched source text for ${r.stored} of ${r.target} signals (${r.direct_hits} direct, ${r.firecrawl_hits} via Firecrawl from ${r.firecrawl_calls} calls) — ${r.remaining} still without text${top ? `. Unrecoverable: ${top}` : ""}`,
+        JSON.stringify({ stored: r.stored, target: r.target, direct: r.direct_hits, firecrawl: r.firecrawl_hits, calls: r.firecrawl_calls, remaining: r.remaining, reasons: r.reasons }),
+        null, 200,
+      );
     } catch (e) {
       console.error("[backfill] drain failed:", e.message);
+      try {
+        d.insertAudit.run(d.now(), "SYSTEM", "/api/quotes/backfill", "quotes.drain", "corpus", null,
+          `Source-text fetch failed — ${e.message.slice(0, 140)}`, "{}", null, 500);
+      } catch { /* logging must never take the drainer down */ }
     }
   };
   setTimeout(tick, 90_000);            // let boot settle first
