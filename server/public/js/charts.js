@@ -6,7 +6,7 @@ import { esc } from "./api.js";
 
 // Colors resolve from CSS custom properties so the same chart code renders
 // correctly on the light theme and the dark app theme (app-dark.css).
-const cssVar = (name, fb) => (getComputedStyle(document.documentElement).getPropertyValue(name) || "").trim() || fb;
+export const cssVar = (name, fb) => (getComputedStyle(document.documentElement).getPropertyValue(name) || "").trim() || fb;
 
 export const ARCH_COLOR = {
   growth: cssVar("--arch-growth", "#D3963E"),
@@ -16,8 +16,8 @@ export const ARCH_COLOR = {
 };
 
 const INK = cssVar("--chart-ink", "#282E2A"),
-  MID = cssVar("--chart-mid", "#6B7264"),
-  DIM = cssVar("--chart-dim", "#9A9A8A"),
+  MID = cssVar("--chart-mid", "#656B5E"),
+  DIM = cssVar("--chart-dim", "#6A6A5F"),
   GRID = cssVar("--chart-grid", "#EDEEE8"),
   SERIES = cssVar("--chart-series", "#4E5A2B");
 const pct = (x) => (x * 100).toFixed(1) + "%";
@@ -121,29 +121,37 @@ export function segmentBar(parts, { total } = {}) {
 // Horizontal probability bars: items = [{label, sublabel, value (0..1), color}]
 export function probabilityBars(el, items) {
   responsive(el, (W) => {
-    const ROW = 46, BAR = 22;
+    // On a phone the label gutter would leave the bars a sliver and the names
+    // truncated to a stub; stack the label above its bar instead.
+    const stacked = W < 420;
+    const ROW = stacked ? 66 : 46, BAR = 22, TOP = stacked ? 34 : 8;
     const H = items.length * ROW + 26;
     // Reserve exactly what the value strings need, then give the label gutter
     // whatever is left over. Fixed reservations overflowed narrow screens.
     const VALW = Math.ceil(Math.max(...items.map((i) => measure(pct(i.value), FONT.value, 700)))) + 14;
     const MINPLOT = 56;
-    let LAB = gutterFor(items.map((i) => i.label), W);
-    if (LAB + VALW + MINPLOT > W) LAB = Math.max(56, W - VALW - MINPLOT);
+    let LAB = stacked ? 0 : gutterFor(items.map((i) => i.label), W);
+    if (!stacked && LAB + VALW + MINPLOT > W) LAB = Math.max(56, W - VALW - MINPLOT);
     const plotW = Math.max(MINPLOT, W - LAB - VALW);
     const max = Math.max(0.0001, ...items.map((i) => i.value));
     const scale = (v) => (v / Math.max(max, 0.5)) * plotW;
     const grid = [0.25, 0.5].filter((g) => g <= Math.max(max, 0.5));
-    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Scenario probabilities">
+    const summary = items.map((i) => `${i.label} ${pct(i.value)}`).join(", ");
+    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Scenario probabilities: ${esc(summary)}">
       ${grid.map((g) => `<line x1="${LAB + scale(g)}" y1="4" x2="${LAB + scale(g)}" y2="${H - 22}" stroke="${GRID}" stroke-width="1"/>
         <text x="${LAB + scale(g)}" y="${H - 7}" font-size="${FONT.axis}" fill="${DIM}" text-anchor="middle">${g * 100}%</text>`).join("")}
       ${items.map((it, i) => {
-        const y = i * ROW + 8, w = Math.max(2, scale(it.value));
-        const label = truncate(it.label, LAB - 14, FONT.label, 600);
-        const sub = truncate(it.sublabel || "", LAB - 14, FONT.sub, 400);
+        const y = i * ROW + TOP, w = Math.max(2, scale(it.value));
+        const room = stacked ? W - 4 : LAB - 14;
+        const label = truncate(it.label, room, FONT.label, 600);
+        const sub = truncate(it.sublabel || "", room, FONT.sub, 400);
+        const head = stacked
+          ? `<text x="0" y="${i * ROW + 12}" font-size="${FONT.label}" font-weight="600" fill="${INK}" dominant-baseline="middle">${esc(label)}${sub ? `<tspan font-size="${FONT.sub}" font-weight="400" fill="${DIM}" dx="8">${esc(sub)}</tspan>` : ""}</text>`
+          : `<text x="${LAB - 14}" y="${y + BAR / 2 - 3}" font-size="${FONT.label}" font-weight="600" fill="${INK}" text-anchor="end" dominant-baseline="middle">${esc(label)}</text>
+          ${sub ? `<text x="${LAB - 14}" y="${y + BAR / 2 + 13}" font-size="${FONT.sub}" fill="${DIM}" text-anchor="end" dominant-baseline="middle">${esc(sub)}</text>` : ""}`;
         return `<g>
           <title>${esc(it.label)}${it.sublabel ? ` (${esc(it.sublabel)})` : ""}: ${pct(it.value)}</title>
-          <text x="${LAB - 14}" y="${y + BAR / 2 - 3}" font-size="${FONT.label}" font-weight="600" fill="${INK}" text-anchor="end" dominant-baseline="middle">${esc(label)}</text>
-          ${sub ? `<text x="${LAB - 14}" y="${y + BAR / 2 + 13}" font-size="${FONT.sub}" fill="${DIM}" text-anchor="end" dominant-baseline="middle">${esc(sub)}</text>` : ""}
+          ${head}
           <path d="M${LAB},${y} h${w - 4} a4,4 0 0 1 4,4 v${BAR - 8} a4,4 0 0 1 -4,4 h${4 - w} z" fill="${it.color}"/>
           <text x="${LAB + w + 10}" y="${y + BAR / 2}" font-size="${FONT.value}" font-weight="700" fill="${MID}" dominant-baseline="middle">${pct(it.value)}</text>
         </g>`;
@@ -156,16 +164,18 @@ export function probabilityBars(el, items) {
 // Cool = probability falls with the driver, warm = rises.
 export function tornado(el, rows) {
   responsive(el, (W) => {
-    const ROW = 38, BAR = 20;
+    const stacked = W < 420;
+    const ROW = stacked ? 56 : 38, BAR = 20, TOP = stacked ? 26 : 8;
     const H = rows.length * ROW + 30;
     const fmt = (d) => (d >= 0 ? "+" : "") + pct(d);
     const VALW = Math.ceil(Math.max(...rows.map((r) => measure(fmt(r.delta), FONT.value, 700)))) + 14;
     // Driver names are long; give them room but never more than 44% of the
     // chart, and truncate what still will not fit rather than letting it clip.
+    // On a phone the name sits above its bar and the plot takes the width.
     const MINPLOT = 56;
-    let LAB = gutterFor(rows.map((r) => r.name), W, { weight: 400, cap: 0.44, min: 90 });
+    let LAB = stacked ? 0 : gutterFor(rows.map((r) => r.name), W, { weight: 400, cap: 0.44, min: 90 });
     const reserved = (rows.some((r) => r.delta < 0) ? VALW : 8) + (rows.some((r) => r.delta >= 0) ? VALW : 8);
-    if (LAB + reserved + MINPLOT > W) LAB = Math.max(48, W - reserved - MINPLOT);
+    if (!stacked && LAB + reserved + MINPLOT > W) LAB = Math.max(48, W - reserved - MINPLOT);
     // The zero line sits where the data puts it, not at the midpoint. A
     // symmetric axis gave half the plot to a -1.5% worst case while +53.8%
     // fought for the other half. Both sides still share one px-per-point
@@ -178,22 +188,25 @@ export function tornado(el, rows) {
     const plotW = Math.max(MINPLOT, x1 - x0);
     const mid = x0 + plotW * (maxNeg / range);
     const scale = (v) => (v / range) * plotW;
-    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Driver sensitivity">
+    const summary = rows.map((r) => `${r.name} ${fmt(r.delta)}`).join(", ");
+    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Driver sensitivity: ${esc(summary)}">
       <line x1="${mid}" y1="4" x2="${mid}" y2="${H - 24}" stroke="${GRID}" stroke-width="1.5"/>
       <text x="${mid}" y="${H - 8}" font-size="${FONT.axis}" fill="${DIM}" text-anchor="middle">no effect</text>
       ${rows.map((r, i) => {
-        const y = i * ROW + 8;
+        const y = i * ROW + TOP;
         const w = Math.max(2, Math.abs(scale(r.delta)));
         const rising = r.delta >= 0;
         const x = rising ? mid : mid - w;
         const color = rising ? ARCH_COLOR.growth : ARCH_COLOR.discipline;
-        const name = truncate(r.name, LAB - 14, FONT.label, 400);
+        const name = truncate(r.name, stacked ? W - 4 : LAB - 14, FONT.label, 400);
         const path = rising
           ? `M${x},${y} h${w - 4} a4,4 0 0 1 4,4 v${BAR - 8} a4,4 0 0 1 -4,4 h${4 - w} z`
           : `M${x + w},${y} h${4 - w} a4,4 0 0 0 -4,4 v${BAR - 8} a4,4 0 0 0 4,4 h${w - 4} z`;
         return `<g>
           <title>${esc(r.name)}: P moves from ${pct(r.low)} (low tercile) to ${pct(r.high)} (high tercile), delta ${r.delta >= 0 ? "+" : ""}${pct(r.delta)}</title>
-          <text x="${LAB - 14}" y="${y + BAR / 2}" font-size="${FONT.label}" fill="${INK}" text-anchor="end" dominant-baseline="middle">${esc(name)}</text>
+          ${stacked
+            ? `<text x="0" y="${i * ROW + 10}" font-size="${FONT.label}" fill="${INK}" dominant-baseline="middle">${esc(name)}</text>`
+            : `<text x="${LAB - 14}" y="${y + BAR / 2}" font-size="${FONT.label}" fill="${INK}" text-anchor="end" dominant-baseline="middle">${esc(name)}</text>`}
           <path d="${path}" fill="${color}"/>
           <text x="${rising ? mid + w + 10 : mid - w - 10}" y="${y + BAR / 2}" font-size="${FONT.value}" font-weight="700" fill="${MID}" text-anchor="${rising ? "start" : "end"}" dominant-baseline="middle">${fmt(r.delta)}</text>
         </g>`;

@@ -7,6 +7,8 @@
   <meta name="description" content="One reading of the whole instrument: what the reviewed signal library shows, how the futures triangle reads, where the scenario space sits, what the odds are, and what would change our mind.">
   <link rel="icon" href="/favicon.svg">
   <meta name="pinterest" content="nopin">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/fib.css">
   <link rel="stylesheet" href="/css/motion.css">
@@ -21,14 +23,14 @@
       <div class="divider mt-4"></div>
     </div>
 
-    <div class="report-status" id="repStatus" hidden></div>
+    <div class="report-status" id="repStatus" role="status">Loading the report…</div>
 
     <div class="report-standfirst">
       <p class="report-headline" id="repHeadline"></p>
       <div class="report-meta" id="repMeta"></div>
       <div id="repHeadTools"></div>
       <div class="report-actions">
-        <button class="btn btn-sm" id="regenerate">Regenerate the report</button>
+        <button class="btn btn-sm" id="regenerate" disabled>Regenerate the report</button>
         <span class="report-state" id="repState" role="status" aria-live="polite"></span>
       </div>
     </div>

@@ -465,6 +465,16 @@ app.get("/api/horizons/status", (_req, res) => res.json(horizonStatus()));
 // The page's one-stop payload. Reading it also self-heals: unclassified
 // approved signals kick an incremental classify, and a stale write-up kicks
 // a background regeneration — both fire-and-forget.
+// The report's standfirst wants three integers; the full route above ships
+// every classified row plus the write-up and kicks reclassification. This is
+// the cheap read the report page polls.
+app.get("/api/triangle/counts", (_req, res) => {
+  const rows = d.triangleSignals.all();
+  const counts = { pull: 0, push: 0, weight: 0 };
+  for (const r of rows) if (counts[r.triangle] !== undefined) counts[r.triangle]++;
+  res.json({ counts, total: rows.length });
+});
+
 app.get("/api/triangle", (_req, res) => {
   const rows = d.triangleSignals.all();
   const corners = { pull: [], push: [], weight: [] };

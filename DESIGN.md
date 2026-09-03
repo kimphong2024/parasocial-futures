@@ -5,7 +5,7 @@ Two connected worlds: the **app** (light, Heartful Futures "Earthy Foresight") a
 ## Core tokens (`server/public/css/style.css`)
 
 - Triad: olive `#4E5A2B` (frameworks/primary), brown `#AC7222` (citations/secondary), mustard `#E1B83B` + goldenBrown `#D3963E` (insight/emphasis)
-- Ink: charcoal `#282E2A`, textMid `#6B7264`, textDim `#9A9A8A`
+- Ink: charcoal `#282E2A`, textMid `#656B5E`, textDim `#6A6A5F` (fib.css resolves these; the older `#6B7264` / `#9A9A8A` no longer reach the page)
 - Surfaces: warmWhite `#FFFEF9` (never pure white), cream `#FAF7F2`, oliveLight `#F5F6F0`, brownLight `#FBF5EC`, mustardLight `#FEF9E7`
 - Status: urgentRed `#C44536`, watchBlue `#5B8A9A`
 - Radii 14px cards / 8px boxes / 100px pills; olive-tinted shadows only; triad gradient reserved for the 3px top bar

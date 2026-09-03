@@ -39,6 +39,8 @@
   --arch-collapse: #C44536;
   --arch-discipline: #5B8A9A;
   --arch-transformation: #4E5A2B;
+  /* urgency ramp for the signal-library figures (report) */
+  --urg-critical: #A03325; --urg-high: #C4713B; --urg-medium: #AC9A4A; --urg-low: #8E9A7B;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }

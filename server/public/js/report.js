@@ -3,7 +3,7 @@ import { renderNav } from "./nav.js";
 import { noteCard, wireNoteCard } from "./signal-note.js";
 import { sourceText, wireSourceText } from "./signal-text.js";
 import { probabilityBars, tornado, ARCH_COLOR } from "./charts.js";
-import { evidenceFigure, triangleFigure, triangleBridge, scenarioLedger } from "./report-figures.js";
+import { evidenceFigure, triangleFigure, triangleBridge, scenarioLedger, CLA } from "./report-figures.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -36,7 +36,7 @@ const PART_LABEL = {
   odds: "the odds",
   so_what_policy: "policy",
   so_what_industry: "industry",
-  headline: "headline",
+  headline: "the headline",
 };
 const partsOf = (sectionKey) => (SECTIONS.find(([k]) => k === sectionKey) || [])[2] || [sectionKey];
 // Where a part's critiques should be rendered. A scenario is written text that
@@ -48,6 +48,13 @@ const sectionOfPart = (part) =>
   isScenarioPart(part) ? "scenario_space"
     : (SECTIONS.find(([, , parts]) => parts.includes(part)) || [])[0] || part;
 // A section owns a part if it declares it, or if it is where scenarios live.
+// How a part is named to the author in confirms and status lines.
+const partName = (part) =>
+  PART_LABEL[part] || (isScenarioPart(part) ? `the ${scenarioOf(part)?.title || "scenario"} scenario` : "this section");
+// Server errors name environment variables; readers get a sentence instead.
+const humanErr = (m) => /ANTHROPIC_API_KEY/.test(m) ? "Generation is unavailable — no model key is configured."
+  : /VOYAGE_API_KEY/.test(m) ? "Alternative signals needs the vector index, which is not configured."
+  : m;
 const sectionOwns = (sectionKey, part) =>
   !!part && (partsOf(sectionKey).includes(part) || (isScenarioPart(part) && sectionKey === "scenario_space"));
 
@@ -74,6 +81,9 @@ let data = null;
 let timer = null;
 let editing = null;    // part key currently open in the editor
 let comparing = null;  // part key currently showing draft-vs-yours
+let dirty = false;     // the open editor holds text that has not been saved
+let pending = {};      // part → { mode } while a critique is being written
+let critError = {};    // part → message when the last critique failed
 let tick = null;       // local 1s clock so elapsed time moves between polls
 
 const mmss = (ms) => {
@@ -192,14 +202,14 @@ function partControls(part) {
   const a = authoredOf(part);
   const open = (data.critiques?.[part] || []).filter((c) => !c.addressed_at).length;
   return `${a ? `<span class="sec-badge${a.draft_moved ? " moved" : ""}" title="${a.draft_moved ? "The draft has been rewritten since you authored this" : "Your text, not the machine draft"}">authored${a.draft_moved ? " · draft moved" : ""}</span>` : ""}
-    ${open ? `<span class="sec-badge open">${open} open</span>` : ""}
+    ${open ? `<span class="sec-badge open" title="${open} critique${open === 1 ? "" : "s"} not yet marked addressed">${open} open</span>` : ""}
     ${a ? `<button type="button" class="sec-btn" data-compare="${part}">${comparing === part ? "Hide" : "Compare"}</button>` : ""}
     <button type="button" class="sec-btn" data-edit="${part}">Edit</button>
     <span class="sec-menu">
-      <button type="button" class="sec-btn" data-menu="${part}">Critique</button>
-      <span class="sec-modes" id="modes-${part}" hidden>
+      <button type="button" class="sec-btn" data-menu="${part}" aria-haspopup="menu" aria-expanded="false" aria-controls="modes-${part}"${pending[part] ? " disabled" : ""}>Critique</button>
+      <span class="sec-modes" id="modes-${part}" role="menu" hidden>
         ${Object.entries(data.modes || {}).map(([m, label]) =>
-          `<button type="button" class="sec-mode" data-critique="${part}" data-mode="${m}">${esc(label)}</button>`).join("")}
+          `<button type="button" class="sec-mode" role="menuitem" data-critique="${part}" data-mode="${m}">${esc(label)}</button>`).join("")}
       </span>
     </span>`;
 }
@@ -210,6 +220,38 @@ function partControls(part) {
 // in figures or columns get nothing here — those blocks carry their own.
 function toolbar(sectionKey) {
   return partsOf(sectionKey)[0] === sectionKey ? toolSlot(sectionKey) : "";
+}
+
+// Yours beside the draft. Only offered where an authored version exists.
+function comparePanel(part) {
+  const a = authoredOf(part);
+  if (!a) return "";
+  const asText = (v) => (typeof v === "string" ? v
+    : Array.isArray(v) ? v.map((f) => `${(f.direction || "").toUpperCase()} — ${f.watch}\n${f.meaning}`).join("\n\n")
+    : JSON.stringify(v, null, 2));
+  const col = (label, note, body, cls) => `
+    <div class="cmp-col ${cls}">
+      <div class="cmp-head"><span class="cmp-label">${esc(label)}</span><span class="cmp-note">${esc(note)}</span></div>
+      <div class="report-prose">${body}</div>
+    </div>`;
+  return `<div class="cmp" data-compare-for="${part}">
+    ${col("Your version", `edited ${fmtWhen(a.updated_at)}`, paras(asText(a.value)), "mine")}
+    ${col("Current machine draft", a.draft_moved ? "regenerated since you wrote yours" : "unchanged since you wrote yours", paras(asText(data.report[part])), "draft")}
+    <div class="cmp-actions">
+      ${a.draft_moved ? `<button type="button" class="btn btn-sm" data-keep="${part}">Keep mine</button>` : ""}
+      <button type="button" class="sec-btn danger" data-revert="${part}">Use the new draft</button>
+      <button type="button" class="sec-btn" data-compare="${part}">Close</button>
+    </div>
+  </div>`;
+}
+
+// A critique being written, or the reason the last one failed. Held in state
+// rather than injected into the DOM, so a redraw cannot lose it.
+function critiqueState(part) {
+  const p = pending[part], e = critError[part];
+  if (p) return `<aside class="crit pending" role="status"><div class="crit-head"><span class="crit-label">${esc((data.modes || {})[p.mode] || p.mode)}</span><span class="crit-when">reading ${esc(partName(part))}…</span></div></aside>`;
+  if (e) return `<aside class="crit" role="status"><div class="crit-head"><span class="crit-label">Critique failed</span><span class="spacer"></span><button type="button" class="sec-btn" data-clear-error="${part}">Dismiss</button></div><div class="error-note">${esc(e)}</div></aside>`;
+  return "";
 }
 
 function critiqueCard(c) {
@@ -233,7 +275,7 @@ function critiqueCard(c) {
       <span class="crit-when">${fmtWhen(c.created_at)}${done ? " · addressed" : ""}</span>
       <span class="spacer"></span>
       ${done ? "" : `<button type="button" class="sec-btn" data-addressed="${c.id}">Mark addressed</button>`}
-      <button type="button" class="sec-btn" data-dismiss="${c.id}">Dismiss</button>
+      <button type="button" class="sec-btn danger" data-dismiss="${c.id}">Delete</button>
     </div>
     ${b.verdict ? `<p class="crit-verdict">${pills(b.verdict)}</p>` : ""}
     ${inner}
@@ -250,7 +292,7 @@ const critiquesFor = (sectionKey) => {
   }
   return keys.flatMap((k) => data.critiques?.[k] || [])
     .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
-    .map(critiqueCard).join("");
+    .map(critiqueCard).join("") + keys.map(critiqueState).join("");
 };
 
 // The falsifier list keeps its fields rather than collapsing to a textarea —
@@ -258,10 +300,7 @@ const critiquesFor = (sectionKey) => {
 // The scenario fields, in the order the ledger reads them.
 const SC_FIELDS = [
   ["summary", "Summary", 4],
-  ["litany", "Litany — the visible 2040 surface", 5],
-  ["systemic", "Systemic — the causes underneath", 5],
-  ["worldview", "Worldview", 4],
-  ["myth", "Myth and metaphor", 3],
+  ...CLA.map(([k, label, gloss]) => [k, `${label} — ${gloss}`, k === "myth" ? 3 : 5]),
 ];
 
 // A scenario is real data, not a draft with a machine version behind it, so
@@ -272,15 +311,15 @@ function scenarioEditor(part) {
   if (!sc) return `<div class="error-note">That scenario is no longer published.</div>`;
   return `<div class="sec-editor sc-editor" data-editor="${part}">
     <p class="caption">Editing the published <b>${esc(sc.archetype)}</b> scenario. Saving changes the scenario everywhere it is used, and marks the report stale.</p>
-    <label class="field-label">Title</label>
-    <input type="text" data-sc-field="title" value="${esc(sc.title)}">
+    <label class="field-label" for="sc-title">Title</label>
+    <input type="text" id="sc-title" data-sc-field="title" value="${esc(sc.title)}">
     ${SC_FIELDS.map(([k, label, rows]) => `
-      <label class="field-label">${esc(label)}</label>
-      <textarea data-sc-field="${k}" rows="${rows}">${esc(sc[k] || "")}</textarea>`).join("")}
+      <label class="field-label" for="sc-${k}">${esc(label)}</label>
+      <textarea id="sc-${k}" data-sc-field="${k}" rows="${rows}">${esc(sc[k] || "")}</textarea>`).join("")}
     <div class="sec-editor-actions">
       <button type="button" class="btn btn-sm" data-save="${part}">Save the scenario</button>
-      <button type="button" class="sec-btn" data-cancel>Cancel</button>
-      <span class="sec-msg"></span>
+      <button type="button" class="sec-btn" data-cancel="${part}">Cancel</button>
+      <span class="sec-msg" role="status" aria-live="polite"></span>
     </div>
   </div>`;
 }
@@ -292,7 +331,7 @@ function editorFor(part) {
     const rows = Array.isArray(items) ? items : [];
     return `<div class="sec-editor" data-editor="${part}">
       <div id="falsifierRows">${rows.map(falsifierRow).join("")}</div>
-      <button type="button" class="sec-btn" id="addFalsifier">Add a falsifier</button>
+      <button type="button" class="sec-btn" id="addFalsifier">Add something to watch for</button>
       ${editorActions(part)}
     </div>`;
   }
@@ -300,29 +339,29 @@ function editorFor(part) {
   // lone textarea is noise.
   const named = part === "headline" || partsOf(sectionOfPart(part)).length > 1;
   return `<div class="sec-editor" data-editor="${part}">
-    ${named ? `<label class="field-label">${esc(PART_LABEL[part] || part.replace(/_/g, " "))}</label>` : ""}
-    <textarea data-field-key="${part}" rows="${part === "headline" ? 3 : 12}">${esc(typeof valueOf(part) === "string" ? valueOf(part) : "")}</textarea>
+    <label class="field-label${named ? "" : " sr-only"}" for="ed-${part}">${esc(PART_LABEL[part] || part.replace(/_/g, " "))}</label>
+    <textarea id="ed-${part}" data-field-key="${part}" rows="${part === "headline" ? 3 : 12}">${esc(typeof valueOf(part) === "string" ? valueOf(part) : "")}</textarea>
     ${editorActions(part)}
   </div>`;
 }
 
 const falsifierRow = (f = { watch: "", direction: "strengthens", meaning: "" }) => `
   <div class="fal-row">
-    <input type="text" data-fal="watch" value="${esc(f.watch || "")}" placeholder="The observable, 6-12 words">
-    <select data-fal="direction">
+    <input type="text" data-fal="watch" value="${esc(f.watch || "")}" placeholder="The observable, 6-12 words" aria-label="What we would see">
+    <select data-fal="direction" aria-label="Direction — strengthens or weakens the reading">
       <option ${f.direction !== "weakens" ? "selected" : ""}>strengthens</option>
       <option ${f.direction === "weakens" ? "selected" : ""}>weakens</option>
     </select>
-    <textarea data-fal="meaning" rows="2" placeholder="What it would imply">${esc(f.meaning || "")}</textarea>
+    <textarea data-fal="meaning" rows="2" placeholder="What it would imply" aria-label="What it would mean">${esc(f.meaning || "")}</textarea>
     <button type="button" class="sec-btn" data-del-fal>Remove</button>
   </div>`;
 
 const editorActions = (part) => `
   <div class="sec-editor-actions">
     <button type="button" class="btn btn-sm" data-save="${part}">Save</button>
-    <button type="button" class="sec-btn" data-cancel>Cancel</button>
+    <button type="button" class="sec-btn" data-cancel="${part}">Cancel</button>
     ${authoredOf(part) ? `<button type="button" class="sec-btn danger" data-revert="${part}">Revert to draft</button>` : ""}
-    <span class="sec-msg"></span>
+    <span class="sec-msg" role="status" aria-live="polite"></span>
   </div>`;
 
 function startClock(fromMs) {
@@ -354,7 +393,9 @@ function drawStatus() {
   if (s.error && s.failed_at) {
     st.hidden = false;
     st.classList.add("is-error");
-    st.textContent = `The last attempt to write a report failed after ${mmss(s.elapsed_ms || 0)} — ${s.error}. The report below is the previous one.`;
+    st.textContent = r
+      ? `The last attempt to write a report failed after ${mmss(s.elapsed_ms || 0)} — ${humanErr(s.error)}. The report below is the previous one; regenerate to try again.`
+      : `The attempt to write the report failed after ${mmss(s.elapsed_ms || 0)} — ${humanErr(s.error)}. Try again when the cause is fixed.`;
     return;
   }
   if (!r) {
@@ -370,7 +411,7 @@ function drawStatus() {
     const list = what.length > 1 ? what.slice(0, -1).join(", ") + " and " + what[what.length - 1] : what[0] || "its inputs";
     st.hidden = false;
     st.classList.remove("is-error");
-    st.textContent = `This report describes an earlier state of the instrument — ${list} ${what.length > 1 ? "have" : "has"} moved since it was written. Regenerate to bring it current.`;
+    st.textContent = `This report describes an earlier state of the instrument — ${list} moved since it was written. Regenerate to bring it current.`;
     return;
   }
   st.hidden = true;
@@ -388,6 +429,15 @@ function drawReport() {
     return;
   }
 
+  // An open editor is the author's, not the server's: the live node — and
+  // everything typed into it — survives the rebuild. So do the rail position
+  // and any layers the reader folded.
+  const live = editing ? document.querySelector(`[data-editor="${CSS.escape(editing)}"]`) : null;
+  const railIndex = [...document.querySelectorAll(".sc-dot")].findIndex((d) => d.classList.contains("here"));
+  const folded = new Set([...document.querySelectorAll(".sc-block")]
+    .filter((b) => b.querySelector(".cla-wrap") && !b.querySelector(".cla-wrap").open)
+    .map((b) => b.getAttribute("aria-label")));
+
   $("repMethod").hidden = false;
   $("repHeadline").innerHTML = pills(valueOf("headline") || "");
   // The headline is written too, so it gets the same controls as any part.
@@ -395,13 +445,14 @@ function drawReport() {
     ? editorFor("headline")
     : `<div class="sec-tools standfirst-tools">${partControls("headline", false)}</div>`
       + (comparing === "headline" ? comparePanel("headline") : "")
-      + (data.critiques?.headline || []).map(critiqueCard).join("");
+      + (data.critiques?.headline || []).map(critiqueCard).join("")
+      + critiqueState("headline");
   // Instrument strip: real platform values in the house mono register, each
   // item its own element so the drawn separators fall between them.
   const bits = [`<b>${r.signal_count}</b> approved signals`];
   if (ctx.overview) bits.push(`<b>${ctx.overview.clusters.length}</b> clusters`);
   if (ctx.scenarios) bits.push(`<b>${ctx.scenarios.length}</b> scenarios`);
-  if (ctx.sim) bits.push(`<b>${(ctx.sim.residual * 100).toFixed(1)}%</b> residual`);
+  if (ctx.sim) bits.push(`<b>${(ctx.sim.residual * 100).toFixed(1)}%</b> fit no scenario`);
   bits.push(fmtWhen(r.updated_at));
   if (r.citations_dropped) bits.push(`<b>${r.citations_dropped}</b> citation${r.citations_dropped === 1 ? "" : "s"} dropped`);
   $("repMeta").innerHTML = bits.map((b) => `<span>${b}</span>`).join("\n");
@@ -445,7 +496,7 @@ function drawReport() {
       ? editorFor(ed)
       : (RENDER[key] ? RENDER[key]() : `<div class="report-prose">${paras(valueOf(key))}</div>`);
     return `
-    <section class="report-section${!ed && fig[key] ? " has-figure" : ""}" data-section="${key}">
+    <section class="report-section" data-section="${key}">
       <div class="sec-head">
         <h3>${esc(title)}</h3>
       </div>
@@ -458,8 +509,21 @@ function drawReport() {
   }).join("");
 
   fillToolSlots($("repBody"));
+  if (live) {
+    const fresh = document.querySelector(`[data-editor="${CSS.escape(editing)}"]`);
+    if (fresh && fresh !== live) fresh.replaceWith(live);
+  }
   drawCharts(ctx);
   wireRail();
+  document.querySelectorAll(".sc-block").forEach((b) => {
+    const d = b.querySelector(".cla-wrap");
+    if (d && folded.has(b.getAttribute("aria-label"))) d.open = false;
+  });
+  if (railIndex > 0) {
+    const rail = document.querySelector(".sc-rail");
+    const panel = rail?.querySelectorAll(".sc-block")[railIndex];
+    if (panel) { rail.scrollLeft = panel.offsetLeft - rail.offsetLeft; markRailPosition(); }
+  }
 }
 
 // Everything the figures draw is fetched live rather than taken from the
@@ -473,7 +537,7 @@ async function loadContext() {
   const [facets, overview, triangle, scenarios, simRes, mix] = await Promise.all([
     get("/api/signals/facets?status=approved"),
     get("/api/signals/overview"),
-    get("/api/triangle"),
+    get("/api/triangle/counts"),
     get("/api/scenarios?status=published"),
     get("/api/simulation/latest"),
     get("/api/scenarios/triangle-mix"),
@@ -511,11 +575,23 @@ function drawCharts(c) {
 
 // ---------------- drawer (citation follow-through) ----------------
 
-function closeDrawer() { document.body.classList.remove("drawer-open"); }
+let drawerOpener = null;
+function closeDrawer() {
+  document.body.classList.remove("drawer-open");
+  const dr = $("drawer");
+  dr.inert = true;
+  drawerOpener?.focus?.();
+  drawerOpener = null;
+}
 
 async function openSignal(id) {
   const dr = $("drawer");
-  dr.innerHTML = `<p class="caption">Loading signal ${esc(id)}…</p>`;
+  drawerOpener = document.activeElement;
+  dr.inert = false;
+  dr.setAttribute("role", "dialog");
+  dr.setAttribute("aria-modal", "true");
+  dr.setAttribute("aria-label", `Signal ${id}`);
+  dr.innerHTML = `<p class="caption" role="status">Loading signal ${esc(id)}…</p>`;
   document.body.classList.add("drawer-open");
   try {
     const s = await api(`/api/signals/${id}`);
@@ -538,9 +614,11 @@ async function openSignal(id) {
       ${sourceText(s)}`;
     wireNoteCard(dr); wireSourceText(dr);
     dr.querySelector(".drawer-close")?.addEventListener("click", closeDrawer);
+    dr.querySelector(".drawer-close")?.focus();
   } catch (e) {
     dr.innerHTML = `<button class="drawer-close" aria-label="Close">×</button><div class="error-note">${esc(e.message)}</div>`;
     dr.querySelector(".drawer-close")?.addEventListener("click", closeDrawer);
+    dr.querySelector(".drawer-close")?.focus();
   }
 }
 
@@ -554,12 +632,38 @@ document.addEventListener("click", (e) => {
 // ---------------- load / regenerate ----------------
 
 async function load() {
-  const [rep] = await Promise.all([api("/api/report"), loadContext()]);
-  data = rep;
-  drawStatus();
-  drawReport();
   clearTimeout(timer);
-  if (data.generating) timer = setTimeout(load, 2000);
+  try {
+    const [rep] = await Promise.all([api("/api/report"), loadContext()]);
+    data = rep;
+    drawStatus();
+    drawReport();
+  } catch (e) {
+    const st = $("repStatus");
+    st.hidden = false;
+    st.classList.add("is-error");
+    st.textContent = `The report could not be loaded — ${humanErr(e.message)}. Retrying.`;
+    timer = setTimeout(load, 4000);
+    return;
+  }
+  if (data.generating) timer = setTimeout(poll, 2000);
+}
+
+// While a report is being written only the status is asked for. A full reload
+// every two seconds rebuilt the page under the reader — and under an author
+// mid-sentence. The page is rebuilt once, when the new report has landed.
+async function poll() {
+  clearTimeout(timer);
+  try {
+    const rep = await api("/api/report");
+    const landed = rep.hash !== data?.hash || !!rep.report !== !!data?.report;
+    if (landed || !rep.generating) return load();
+    data = { ...data, generating: rep.generating, status: rep.status };
+    drawStatus();
+    timer = setTimeout(poll, 2000);
+  } catch {
+    timer = setTimeout(poll, 4000);
+  }
 }
 
 $("regenerate").addEventListener("click", async () => {
@@ -570,9 +674,9 @@ $("regenerate").addEventListener("click", async () => {
     await api("/api/report/regenerate", { method: "POST" });
     $("repState").textContent = "";
     clearTimeout(timer);
-    timer = setTimeout(load, 2000);
+    timer = setTimeout(poll, 1500);
   } catch (e) {
-    $("repState").textContent = e.message;
+    $("repState").textContent = humanErr(e.message);
   } finally {
     btn.disabled = false;
   }
@@ -643,7 +747,10 @@ function markRailPosition() {
   // At the end of the rail the last panel cannot reach the left edge, so
   // left-edge matching under-reports. If we are at the end, we are on the last.
   if (rail.scrollLeft >= rail.scrollWidth - rail.clientWidth - 2) best = panels.length - 1;
-  document.querySelectorAll(".sc-dot").forEach((d, i) => d.classList.toggle("here", i === best));
+  document.querySelectorAll(".sc-dot").forEach((d, i) => {
+    d.classList.toggle("here", i === best);
+    if (i === best) d.setAttribute("aria-current", "true"); else d.removeAttribute("aria-current");
+  });
   const prev = document.querySelector('[data-rail="prev"]');
   const next = document.querySelector('[data-rail="next"]');
   if (prev) prev.disabled = rail.scrollLeft <= 2;
@@ -660,7 +767,26 @@ function wireRail() {
 
 // ---------------- authoring interactions ----------------
 
-const closeMenus = () => document.querySelectorAll(".sec-modes").forEach((m) => (m.hidden = true));
+const closeMenus = () => {
+  document.querySelectorAll(".sec-modes").forEach((m) => (m.hidden = true));
+  document.querySelectorAll("[data-menu][aria-expanded]").forEach((b) => b.setAttribute("aria-expanded", "false"));
+};
+// Focus follows the action: a rebuild would otherwise drop it on <body>.
+const focusSel = (sel) => { const el = document.querySelector(sel); if (el) { el.focus(); return true; } return false; };
+const focusPart = (part) => focusSel(`[data-edit="${CSS.escape(part)}"]`);
+const focusEditor = (part) => focusSel(`[data-editor="${CSS.escape(part)}"] textarea, [data-editor="${CSS.escape(part)}"] input`);
+// A dirty editor is never discarded silently.
+const mayLeaveEditor = () => !dirty || confirm("You have unsaved changes here. Discard them?");
+const leaveEditor = () => { editing = null; dirty = false; };
+
+document.addEventListener("input", (e) => { if (e.target.closest("[data-editor]")) dirty = true; });
+window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  if (document.body.classList.contains("drawer-open")) { closeDrawer(); return; }
+  const open = document.querySelector(".sec-modes:not([hidden])");
+  if (open) { closeMenus(); document.querySelector(`[aria-controls="${open.id}"]`)?.focus(); }
+});
 
 function collectEdit(key) {
   if (isScenarioPart(key)) {
@@ -689,15 +815,25 @@ document.addEventListener("click", async (e) => {
   if (t.dataset.rail) { railStep(t.dataset.rail === "next" ? 1 : -1); return; }
   if (t.dataset.railTo !== undefined) { railTo(+t.dataset.railTo); return; }
 
-  if (t.dataset.edit) { editing = t.dataset.edit; comparing = null; closeMenus(); drawReport(); return; }
-  if (t.dataset.compare) { comparing = comparing === t.dataset.compare ? null : t.dataset.compare; editing = null; closeMenus(); drawReport(); return; }
+  if (t.dataset.edit) {
+    if (editing !== t.dataset.edit && !mayLeaveEditor()) return;
+    leaveEditor(); editing = t.dataset.edit; comparing = null; closeMenus(); drawReport(); focusEditor(editing); return;
+  }
+  if (t.dataset.compare) {
+    if (!mayLeaveEditor()) return;
+    const part = t.dataset.compare;
+    comparing = comparing === part ? null : part; leaveEditor(); closeMenus(); drawReport(); focusSel(`[data-compare="${CSS.escape(part)}"]`); return;
+  }
   if (t.dataset.keep) {
-    await api(`/api/report/sections/${encodeURIComponent(t.dataset.keep)}/keep`, { method: "POST" });
-    comparing = null;
-    await load();
+    const part = t.dataset.keep;
+    try { await api(`/api/report/sections/${encodeURIComponent(part)}/keep`, { method: "POST" }); comparing = null; await load(); focusPart(part); }
+    catch (err) { note(t, humanErr(err.message)); }
     return;
   }
-  if (t.dataset.cancel !== undefined) { editing = null; drawReport(); return; }
+  if (t.dataset.cancel !== undefined) {
+    if (!mayLeaveEditor()) return;
+    const part = t.dataset.cancel; leaveEditor(); drawReport(); focusPart(part); return;
+  }
 
   if (t.dataset.save) {
     const key = t.dataset.save;
@@ -711,26 +847,33 @@ document.addEventListener("click", async (e) => {
         if (!sc) throw new Error("that scenario is no longer published");
         const patch = collectEdit(key);
         if (!patch.title) throw new Error("a scenario needs a title");
+        t.disabled = true;
         await api(`/api/scenarios/${sc.id}`, { method: "PATCH", body: patch });
-        editing = null;
+        leaveEditor();
         await load();
+        focusPart(key);
         return;
       }
+      t.disabled = true;
       for (const [k, text] of Object.entries(collectEdit(key))) {
         await api(`/api/report/sections/${encodeURIComponent(k)}`, { method: "PUT", body: { text } });
       }
-      editing = null;
+      leaveEditor();
       await load();
-    } catch (err) { msg.textContent = err.message; }
+      focusPart(key);
+    } catch (err) { msg.textContent = humanErr(err.message); t.disabled = false; }
     return;
   }
 
   if (t.dataset.revert) {
-    if (!confirm("Discard your text for this section and go back to the machine draft?")) return;
-    try { await api(`/api/report/sections/${encodeURIComponent(t.dataset.revert)}`, { method: "DELETE" }); } catch {}
-    editing = null;
-    comparing = null;
-    await load();
+    const part = t.dataset.revert;
+    if (!confirm(`Discard your text for ${partName(part)} and go back to the machine draft?`)) return;
+    try {
+      await api(`/api/report/sections/${encodeURIComponent(part)}`, { method: "DELETE" });
+      leaveEditor(); comparing = null;
+      await load();
+      focusPart(part);
+    } catch (err) { note(t, humanErr(err.message)); }
     return;
   }
 
@@ -740,33 +883,39 @@ document.addEventListener("click", async (e) => {
     const wasHidden = m.hidden;
     closeMenus();
     m.hidden = !wasHidden;
+    t.setAttribute("aria-expanded", String(!m.hidden));
+    if (!m.hidden) m.querySelector(".sec-mode")?.focus();
     return;
   }
 
   if (t.dataset.critique) {
     const key = t.dataset.critique, mode = t.dataset.mode;
     closeMenus();
-    const sec = document.querySelector(`[data-section="${sectionOfPart(key)}"]`)
-      || document.querySelector(".report-standfirst");
-    sec.insertAdjacentHTML("beforeend", `<aside class="crit pending" id="critPending"><div class="crit-head"><span class="crit-label">${esc((data.modes || {})[mode] || mode)}</span><span class="crit-when">reading the section…</span></div></aside>`);
+    pending[key] = { mode }; delete critError[key];
+    drawReport();
     try {
       await api("/api/report/critique", { method: "POST", body: { section: key, mode } });
+      delete pending[key];
       await load();
     } catch (err) {
-      const p = $("critPending");
-      if (p) p.innerHTML = `<div class="error-note">${esc(err.message)}</div>`;
+      delete pending[key];
+      critError[key] = humanErr(err.message);
+      drawReport();
     }
+    focusSel(`[data-menu="${CSS.escape(key)}"]`);
     return;
   }
+  if (t.dataset.clearError) { delete critError[t.dataset.clearError]; drawReport(); focusSel(`[data-menu="${CSS.escape(t.dataset.clearError)}"]`); return; }
 
   if (t.dataset.addressed) {
-    await api(`/api/report/critiques/${t.dataset.addressed}/addressed`, { method: "POST" });
-    await load();
+    try { await api(`/api/report/critiques/${t.dataset.addressed}/addressed`, { method: "POST" }); await load(); }
+    catch (err) { note(t, humanErr(err.message)); }
     return;
   }
   if (t.dataset.dismiss) {
-    await api(`/api/report/critiques/${t.dataset.dismiss}`, { method: "DELETE" });
-    await load();
+    if (!confirm("Delete this critique? It cannot be recovered.")) return;
+    try { await api(`/api/report/critiques/${t.dataset.dismiss}`, { method: "DELETE" }); await load(); }
+    catch (err) { note(t, humanErr(err.message)); }
     return;
   }
   if (t.dataset.delFal !== undefined) { t.closest(".fal-row").remove(); return; }
@@ -776,6 +925,14 @@ document.addEventListener("click", async (e) => {
   }
 });
 
+// Actions without a message slot of their own say what went wrong beside the
+// control that was pressed.
+function note(btn, msg) {
+  btn.parentElement?.querySelector(".sec-msg")?.remove();
+  btn.insertAdjacentHTML("afterend", `<span class="sec-msg" role="status">${esc(msg)}</span>`);
+}
+
 renderNav("/report");
 $("backdrop")?.addEventListener("click", closeDrawer);
+$("drawer").inert = true;
 load();

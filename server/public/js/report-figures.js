@@ -7,19 +7,23 @@
 // from the model's sentence, so the picture cannot drift from the platform.
 
 import { esc } from "./api.js";
-import { hbar, segmentBar, ARCH_COLOR } from "./charts.js";
+import { hbar, segmentBar, ARCH_COLOR, cssVar } from "./charts.js";
 
 // The triangle page's own encoding, reused verbatim so the report reads as
 // the same instrument rather than a second opinion (js/triangle.js:10-18).
 const TRI = {
-  pull:   { name: "Pull of the future",  color: "#E1B83B", dir: [0, -1] },
-  push:   { name: "Push of the present", color: "#4E5A2B", dir: [-Math.sin(Math.PI / 3), 0.5] },
-  weight: { name: "Weight of history",   color: "#AC7222", dir: [Math.sin(Math.PI / 3), 0.5] },
+  pull:   { name: "Pull of the future",  color: cssVar("--mustard", "#E1B83B"), dir: [0, -1] },
+  push:   { name: "Push of the present", color: cssVar("--olive", "#4E5A2B"), dir: [-Math.sin(Math.PI / 3), 0.5] },
+  weight: { name: "Weight of history",   color: cssVar("--brown", "#AC7222"), dir: [Math.sin(Math.PI / 3), 0.5] },
 };
 const CORNERS = ["pull", "push", "weight"];
 
-const HORIZON_COLOR = { H1: "#4E5A2B", H2: "#AC7222", H3: "#E1B83B" };
-const URGENCY_COLOR = { critical: "#A03325", high: "#C4713B", medium: "#AC9A4A", low: "#8E9A7B" };
+const HORIZON_COLOR = { H1: cssVar("--olive", "#4E5A2B"), H2: cssVar("--brown", "#AC7222"), H3: cssVar("--mustard", "#E1B83B") };
+// The urgency ramp is declared with the archetype palette in style.css.
+const URGENCY_COLOR = {
+  critical: cssVar("--urg-critical", "#A03325"), high: cssVar("--urg-high", "#C4713B"),
+  medium: cssVar("--urg-medium", "#AC9A4A"), low: cssVar("--urg-low", "#8E9A7B"),
+};
 
 // ---------------- the library's shape ----------------
 
@@ -171,7 +175,7 @@ export function triangleBridge(mix) {
 // not a scenario. Summary carries what it is, the four CLA layers carry how it
 // is structured — litany, systemic, worldview, myth — which is the method the
 // scenario set is actually built on and was invisible on this page.
-const CLA = [
+export const CLA = [
   ["litany", "Litany", "the visible 2040 surface"],
   ["systemic", "Systemic", "the causes underneath"],
   ["worldview", "Worldview", "the beliefs that hold it up"],
@@ -200,7 +204,7 @@ export function scenarioLedger(scenarios, sim, slot = () => "") {
       ${s.summary ? `<p class="sc-summary">${esc(s.summary)}</p>` : ""}
       ${CLA.some(([k]) => s[k]) ? `
       <details class="cla-wrap" open>
-        <summary>Causal Layered Analysis — litany, systemic, worldview, myth</summary>
+        <summary><svg class="cla-mark" viewBox="0 0 12 12" aria-hidden="true"><line x1="1.5" y1="6" x2="10.5" y2="6"/><line class="v" x1="6" y1="1.5" x2="6" y2="10.5"/></svg>Causal Layered Analysis — litany, systemic, worldview, myth</summary>
         <dl class="cla">
           ${CLA.filter(([k]) => s[k]).map(([k, label, gloss]) => `
             <dt><span class="cla-label">${label}</span><span class="cla-gloss">${gloss}</span></dt>
@@ -222,10 +226,10 @@ export function scenarioLedger(scenarios, sim, slot = () => "") {
         ${scenarios.map(block).join("")}
       </div>
       <div class="sc-rail-nav">
-        <button type="button" class="sec-btn" data-rail="prev" aria-label="Previous scenario">←</button>
+        <button type="button" class="sec-btn" data-rail="prev" aria-label="Previous scenario"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
         <span class="sc-rail-dots">${scenarios.map((sc, i) =>
-          `<button type="button" class="sc-dot" data-rail-to="${i}" aria-label="${esc(sc.title)}" title="${esc(sc.title)}"><i style="background:${ARCH_COLOR[sc.archetype] || "#6B7264"}"></i></button>`).join("")}</span>
-        <button type="button" class="sec-btn" data-rail="next" aria-label="Next scenario">→</button>
+          `<button type="button" class="sc-dot" data-rail-to="${i}" aria-label="${esc(sc.title)}" title="${esc(sc.title)}"><i style="--dot:${ARCH_COLOR[sc.archetype] || "#6B7264"}"></i></button>`).join("")}</span>
+        <button type="button" class="sec-btn" data-rail="next" aria-label="Next scenario"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
       </div>
     </div>
     ${res != null ? `<div class="sc-residual-note">
