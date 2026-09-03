@@ -152,5 +152,53 @@ $("judgeHorizons").addEventListener("click", async () => {
   }
 });
 
+// ---- verbatim source-text backfill ----
+let bfPoll = null;
+
+function renderCoverage(c) {
+  const pct = c.total ? Math.round((c.retained / c.total) * 100) : 0;
+  $("coverageLine").textContent =
+    `${c.retained} of ${c.total} signals have retained source text (${pct}%) · ${c.missing} still to fetch.`;
+  const running = !!c.status?.running;
+  $("runBackfill").disabled = running || c.missing === 0;
+  $("runBackfillFree").disabled = running || c.missing === 0;
+  $("abortBackfill").style.display = running ? "" : "none";
+  const s = c.status || {};
+  if (running) {
+    $("backfillMsg").textContent =
+      `Fetching… ${s.done}/${s.target} attempted, ${s.stored} kept (${s.direct_hits} free, ${s.firecrawl_hits} via Firecrawl from ${s.firecrawl_calls} calls).`;
+  } else if (s.finished_at) {
+    $("backfillMsg").textContent =
+      `Last run: ${s.stored} kept of ${s.target} attempted — ${s.direct_hits} free, ${s.firecrawl_hits} via Firecrawl, ${s.skipped} unrecoverable.`;
+  } else if (c.missing === 0) {
+    $("backfillMsg").textContent = "Every signal with a usable source has one.";
+  }
+}
+
+async function pollCoverage() {
+  try {
+    const c = await api("/api/quotes/coverage");
+    renderCoverage(c);
+    if (!c.status?.running && bfPoll) { clearInterval(bfPoll); bfPoll = null; }
+  } catch { /* transient */ }
+}
+
+async function startBackfill(useFirecrawl) {
+  $("backfillMsg").textContent = "starting…";
+  try {
+    await api("/api/quotes/backfill", { method: "POST", body: { limit: 500, useFirecrawl } });
+    if (!bfPoll) bfPoll = setInterval(pollCoverage, 4000);
+    pollCoverage();
+  } catch (e) { $("backfillMsg").textContent = e.message; }
+}
+
+$("runBackfill").addEventListener("click", () => startBackfill(true));
+$("runBackfillFree").addEventListener("click", () => startBackfill(false));
+$("abortBackfill").addEventListener("click", async () => {
+  try { await api("/api/quotes/backfill/abort", { method: "POST" }); } catch {}
+  pollCoverage();
+});
+
 renderNav("/sources");
 load();
+pollCoverage();
