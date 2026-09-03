@@ -590,5 +590,7 @@ try {
 loadIndex();
 ensureEmbeddings().then(() => ensureScenarioEmbeddings()).catch((e) => console.warn("[boot] embeddings incomplete:", e.message));
 startScheduler();
+// The verbatim corpus fills itself in the background, paused while a scan runs.
+startBackfillDrainer(scanRunning);
 
 app.listen(PORT, () => console.log(`[server] Futures of Parasocial AI on :${PORT}`));
