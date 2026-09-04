@@ -25,9 +25,13 @@ async function retrieve(question) {
     sigHits = sigHits.slice(0, 12);
   }
 
-  const scHits = topScenarios(qv, 4)
-    .map((h) => ({ ...h, sc: getScenario.get(h.id) }))
-    .filter((h) => h.sc && h.sc.status === "published");
+  // The published set is four short summaries: send all of them, ordered by
+  // similarity, rather than the top few. Retrieval once returned three, and
+  // the model told a reader the fourth scenario did not exist.
+  const sim = new Map(topScenarios(qv, 64).map((h) => [h.id, h.score]));
+  const scHits = db.prepare("SELECT * FROM scenarios WHERE status = 'published' ORDER BY id").all()
+    .map((sc) => ({ id: sc.id, score: sim.get(sc.id) ?? 0, sc }))
+    .sort((a, b) => b.score - a.score);
 
   return { signals: sigHits, scenarios: scHits };
 }
@@ -38,6 +42,8 @@ Your users are public-policy makers working on AI governance and strategy teams 
 
 Rules:
 - Ground claims in the provided evidence. Cite signals inline as [S<id>] and scenarios as [SC:<slug>] immediately after the claim they support. Only cite ids/slugs that appear in the evidence block.
+- The scenario list in the evidence block is the complete published set. Never infer that a scenario is missing or that the set is smaller than the user says.
+- Quotation marks are a claim to have reproduced a source's exact words. Quote only from signals marked [source text retained], in double quotes immediately followed by the citation, and only words you are certain appear in the source; every such quotation is checked word-for-word against the retained text after you answer and removed if it does not match. Paraphrase everything else without quotation marks. Where a source's own phrasing carries the point, one exact quotation is worth more than a paraphrase.
 - Where evidence is thin, say so plainly — "the scan holds little on this" — rather than inventing certainty.
 - Think in futures terms: name which scenario(s) a choice is robust in, and which it bets against.
 - Voice: measured, literate, observational. No hype, no exclamation marks, no emoji.
@@ -73,11 +79,12 @@ export async function chatHandler(req, res) {
     scenarios: evidence.scenarios.map((h) => ({ id: h.sc.id, slug: h.sc.slug, title: h.sc.title, archetype: h.sc.archetype })),
   });
 
+  const withText = new Set(db.prepare("SELECT signal_id FROM article_text").all().map((r) => r.signal_id));
   const evidenceBlock = [
-    "SIGNALS (approved scan library):",
-    ...evidence.signals.map((h) => `[S${h.s.id}] (${h.s.cluster} · ${h.s.signal_type} · ${h.s.urgency} · ${h.s.horizon}) ${h.s.title} — ${h.s.summary} (${h.s.source}, ${h.s.date || h.s.year || "n.d."})`),
+    "SIGNALS (approved scan library). Only those marked [source text retained] may be quoted verbatim:",
+    ...evidence.signals.map((h) => `[S${h.s.id}] (${h.s.cluster} · ${h.s.signal_type} · ${h.s.urgency} · ${h.s.horizon}) ${h.s.title} — ${h.s.summary} (${h.s.source}, ${h.s.date || h.s.year || "n.d."})${withText.has(h.s.id) ? " [source text retained]" : ""}`),
     "",
-    "SCENARIOS (published, horizon 2040):",
+    `SCENARIOS (all ${evidence.scenarios.length} published scenarios, horizon 2040 — this is the complete set):`,
     ...evidence.scenarios.map((h) => `[SC:${h.sc.slug}] ${h.sc.title} (${h.sc.archetype}) — ${h.sc.summary}`),
   ].join("\n");
 

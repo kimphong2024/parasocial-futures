@@ -7,9 +7,11 @@ const $ = (id) => document.getElementById(id);
 const messages = []; // client-side history, sent with each request
 
 // Render assistant text: escape, then swap [S123] / [SC:slug] into pills.
+// A scenario slug is a storage identifier; readers see the published title.
+const scenarioTitle = (slug) => scenarioBySlug[slug]?.title || slug;
 const citeHtml = (text) => esc(text)
   .replace(/\[S(\d+)\]/g, `<span class="cite-pill" data-sig="$1">S$1</span>`)
-  .replace(/\[SC:([a-z0-9-]+)\]/g, `<span class="cite-pill" data-scenario="$1">$1</span>`)
+  .replace(/\[SC:([a-z0-9-]+)\]/g, (_m, slug) => `<span class="cite-pill" data-scenario="${slug}">${esc(scenarioTitle(slug))}</span>`)
   .replace(/^#{1,4} (.+)$/gm, "<strong>$1</strong>")
   .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 
@@ -42,7 +44,7 @@ function addMsg(role, html) {
 
 let scenarioBySlug = {};
 api("/api/scenarios?status=published").then((j) => {
-  scenarioBySlug = Object.fromEntries(j.scenarios.map((s) => [s.slug, s.id]));
+  scenarioBySlug = Object.fromEntries(j.scenarios.map((s) => [s.slug, { id: s.id, title: s.title }]));
 });
 
 async function send(text) {
@@ -103,7 +105,7 @@ async function send(text) {
 function showSources({ signals, scenarios }) {
   $("sourcesPanel").style.display = "";
   $("sourcesList").innerHTML =
-    scenarios.map((s) => `<li><span class="cite-pill" data-scenario="${esc(s.slug)}">${esc(s.slug)}</span> ${esc(s.title)} <span class="caption">(${esc(s.archetype)})</span></li>`).join("") +
+    scenarios.map((s) => { scenarioBySlug[s.slug] ||= { id: s.id, title: s.title }; return `<li><span class="cite-pill" data-scenario="${esc(s.slug)}">${esc(s.title)}</span> <span class="caption">${esc(s.archetype)}</span></li>`; }).join("") +
     signals.map((s) => `<li><span class="cite-pill" data-sig="${s.id}">S${s.id}</span> ${esc(s.title)} <span class="caption">${esc(s.cluster)}</span></li>`).join("");
 }
 
@@ -129,7 +131,7 @@ document.addEventListener("click", async (e) => {
     return;
   }
   const sc = e.target.closest("[data-scenario]");
-  if (sc && scenarioBySlug[sc.dataset.scenario]) location.href = "/scenario?id=" + scenarioBySlug[sc.dataset.scenario];
+  if (sc && scenarioBySlug[sc.dataset.scenario]) location.href = "/scenario?id=" + scenarioBySlug[sc.dataset.scenario].id;
   const starter = e.target.closest(".starter");
   if (starter) send(starter.textContent);
 });
