@@ -87,14 +87,18 @@ export function verifyQuote(signalId, quote, { record = true } = {}) {
 
 // A quoted span attributed to a source: it ends at the quote mark immediately
 // preceding a [S<id>] citation, which is what makes it a claim about that
-// source's actual words. The inner match is lazy and admits nested quote marks
-// on purpose — a quotation that itself contains a quotation ("...described as
-// a “meaningful attachment” to...") must still be checked in full, and an
-// earlier version of this pattern let exactly that case through unexamined.
+// source's actual words. Two alternations, one per quote style, and the span
+// may not cross a quote mark of its own style — a lazy pattern once ran from
+// one quoted fragment, across a sentence of prose, to the next fragment's
+// closing mark before a citation, and the strip deleted the prose between.
+// A nested quotation in the other style ("… a “meaningful attachment” …") is
+// still matched in full; a nested one in the same style is not attributed and
+// is left alone, which fails open for that rare shape rather than deleting
+// words that were never quoted.
 //
 // Scare quotes and terms of art carry no citation and are deliberately left
 // alone; they are not claims to have reproduced anyone's words.
-const QUOTED = /["“]([\s\S]{25,400}?)["”]\s*(?:\([^)]*\))?\s*\[S(\d+)\]/g;
+const QUOTED = /(?:"([^"]{25,400})"|“([^“”]{25,400})”)\s*(?:\([^)]*\))?\s*\[S(\d+)\]/g;
 
 // Strip any attributed quotation that does not resolve to retained source
 // text. Returns the cleaned text plus what was removed, for the audit line.
@@ -104,7 +108,8 @@ export function enforceVerbatim(text, { record = true } = {}) {
   }
   let checked = 0, stripped = 0;
   const details = [], verdicts = [];
-  const out = text.replace(QUOTED, (match, quote, id) => {
+  const out = text.replace(QUOTED, (match, straight, curly, id) => {
+    const quote = straight ?? curly;
     checked++;
     const v = verifyQuote(+id, quote, { record });
     const verdict = { signal_id: +id, quote: quote.slice(0, 160), ok: !!v.ok };
@@ -141,6 +146,45 @@ export function enforceVerbatimDeep(value, opts = {}) {
 }
 
 export const verbatimCoverage = () => d.countArticleText.get().n;
+
+// The model never sees the retained article — only the classifier's summary,
+// which is a paraphrase. Asked to quote, it can only guess, and the gate then
+// strips nine guesses in ten. So the sentences it may quote are chosen here,
+// from the retained text, and handed to it verbatim: exact slices of the
+// stored (already whitespace-normalised) text, so anything copied faithfully
+// verifies by construction. Chosen by word overlap with a cue — the question
+// in chat, the signal's own title and summary in the report — which needs no
+// model call and no embedding.
+const STOP = new Set("a an and are as at be been but by for from has have in into is it its of on or that the this to was were will with which who whom".split(" "));
+const words = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter((w) => w.length > 2 && !STOP.has(w));
+export function quotablePassages(signalId, cue, { n = 3, minLen = 40, maxLen = 240 } = {}) {
+  const row = d.getArticleText.get(signalId);
+  if (!row) return [];
+  const text = row.text;
+  const cueSet = new Set(words(cue));
+  const out = [];
+  // Sentence boundaries: terminal punctuation, optional closing mark, space,
+  // then a capital, digit or opening mark. Each candidate is an exact slice.
+  const re = /[^.!?]+[.!?]+["\u201D\u2019)]?(?=\s+(?:["\u201C(]?[A-Z0-9])|\s*$)/g;
+  let m;
+  while ((m = re.exec(text))) {
+    const s = m[0].trim();
+    if (s.length < minLen || s.length > maxLen) continue;
+    if (/^(subscribe|sign in|log in|read more|advertisement|share this|related:)/i.test(s)) continue;
+    const ws = words(s);
+    if (ws.length < 5) continue;
+    let hit = 0; for (const w of ws) if (cueSet.has(w)) hit++;
+    // A sentence carrying its own quote marks is harder to quote cleanly;
+    // prefer one without, all else equal.
+    const score = (hit / Math.sqrt(ws.length)) * (/["\u201C\u201D]/.test(s) ? 0.7 : 1);
+    if (hit) out.push({ s, score });
+  }
+  // Inner straight quotes are presented as curly so the model can wrap the
+  // whole passage in straight quotes; the comparison form folds both styles
+  // to one, so the copy still verifies against the stored text.
+  const curly = (t) => t.replace(/"([^"]*)"/g, "\u201C$1\u201D").replace(/"/g, "\u201D");
+  return out.sort((a, b) => b.score - a.score).slice(0, n).map((p) => curly(p.s));
+}
 
 // Retained rows stored before entities were decoded still carry &#8221; and
 // friends. Re-normalise them once at boot; the hash follows the text.

@@ -2,7 +2,7 @@
 // Retrieval: Voyage query embedding → cosine → optional rerank. Generation:
 // Claude, streamed over SSE. Sources event first, then deltas; citations as
 // [S<id>] and [SC:<slug>] pills the frontend resolves.
-import { enforceVerbatim } from "./quotes.js";
+import { enforceVerbatim, quotablePassages } from "./quotes.js";
 import { db, now, logChat, getScenario } from "./db.js";
 import { client, MODEL, llmEnabled } from "./ai.js";
 import { embedQuery, rerank, voyageEnabled } from "./voyage.js";
@@ -43,7 +43,7 @@ Your users are public-policy makers working on AI governance and strategy teams 
 Rules:
 - Ground claims in the provided evidence. Cite signals inline as [S<id>] and scenarios as [SC:<slug>] immediately after the claim they support. Only cite ids/slugs that appear in the evidence block.
 - The scenario list in the evidence block is the complete published set. Never infer that a scenario is missing or that the set is smaller than the user says.
-- Quotation marks are a claim to have reproduced a source's exact words. Quote only from signals marked [source text retained], in double quotes immediately followed by the citation, and only words you are certain appear in the source; every such quotation is checked word-for-word against the retained text after you answer and removed if it does not match. Paraphrase everything else without quotation marks. Where a source's own phrasing carries the point, one exact quotation is worth more than a paraphrase.
+- Quotation marks are a claim to have reproduced a source's exact words. Quote ONLY the QUOTABLE lines, copied exactly (you may quote a contiguous part of one), in double quotes immediately followed by the citation. Never put the summary text, or your own words, inside quotation marks — every quotation is checked word-for-word against the retained source after you answer, and one that does not match is removed. Where a source's own phrasing carries the point, one exact quotation is worth more than a paraphrase.
 - Where evidence is thin, say so plainly — "the scan holds little on this" — rather than inventing certainty.
 - Think in futures terms: name which scenario(s) a choice is robust in, and which it bets against.
 - Voice: measured, literate, observational. No hype, no exclamation marks, no emoji.
@@ -81,8 +81,12 @@ export async function chatHandler(req, res) {
 
   const withText = new Set(db.prepare("SELECT signal_id FROM article_text").all().map((r) => r.signal_id));
   const evidenceBlock = [
-    "SIGNALS (approved scan library). Only those marked [source text retained] may be quoted verbatim:",
-    ...evidence.signals.map((h) => `[S${h.s.id}] (${h.s.cluster} · ${h.s.signal_type} · ${h.s.urgency} · ${h.s.horizon}) ${h.s.title} — ${h.s.summary} (${h.s.source}, ${h.s.date || h.s.year || "n.d."})${withText.has(h.s.id) ? " [source text retained]" : ""}`),
+    "SIGNALS (approved scan library). Where a signal carries QUOTABLE lines, those are exact sentences from its retained source text and the only words that may be placed inside quotation marks:",
+    ...evidence.signals.map((h) => {
+      const line = `[S${h.s.id}] (${h.s.cluster} · ${h.s.signal_type} · ${h.s.urgency} · ${h.s.horizon}) ${h.s.title} — ${h.s.summary} (${h.s.source}, ${h.s.date || h.s.year || "n.d."})`;
+      const qp = withText.has(h.s.id) ? quotablePassages(h.s.id, `${question} ${h.s.title} ${h.s.summary}`, { n: 3 }) : [];
+      return qp.length ? `${line}\n    QUOTABLE: ${qp.map((p) => `"${p}"`).join(" · ")}` : line;
+    }),
     "",
     `SCENARIOS (all ${evidence.scenarios.length} published scenarios, horizon 2040 — this is the complete set):`,
     ...evidence.scenarios.map((h) => `[SC:${h.sc.slug}] ${h.sc.title} (${h.sc.archetype}) — ${h.sc.summary}`),

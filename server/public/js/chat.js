@@ -18,13 +18,15 @@ const citeHtml = (text) => esc(text)
 // Attributed quotations are marked only once the answer has finished and the
 // verbatim gate has run over it (`quotes` from the done event); while the
 // text is still streaming nothing has been checked, so nothing is marked.
-const QUOTED = /["\u201C]([\s\S]{25,400}?)["\u201D]\s*(\([^)]*\))?\s*\[S(\d+)\]/g;
+// Mirror of quotes.js QUOTED: one alternation per quote style, never crossing a mark of its own style.
+const QUOTED = /(?:"([^"]{25,400})"|\u201C([^\u201C\u201D]{25,400})\u201D)\s*(\([^)]*\))?\s*\[S(\d+)\]/g;
 function renderAssistant(text, quotes = null) {
   if (!quotes) return citeHtml(text);
   const failing = new Set((quotes.details || []).map((d) => d.quote));
   let out = "", last = 0;
   for (const m of text.matchAll(QUOTED)) {
-    const [, quote, paren, id] = m;
+    const [, straight, curly, paren, id] = m;
+    const quote = straight ?? curly;
     const failed = failing.has(quote.slice(0, 120));
     out += citeHtml(text.slice(last, m.index));
     out += `<q class="vq${failed ? " fail" : ""}" title="${failed ? "Not verified against the retained source text" : "Verified word-for-word against the retained source text"}">${esc(quote)}</q>${paren ? " " + esc(paren) : ""} <span class="cite-pill" data-sig="${id}" data-quote="${encodeURIComponent(quote)}">S${id}</span>`;

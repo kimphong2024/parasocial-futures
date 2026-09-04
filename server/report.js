@@ -17,7 +17,7 @@ import { createHash } from "node:crypto";
 import * as d from "./db.js";
 import { askTool, llmEnabled } from "./ai.js";
 import { getWriteup } from "./triangle.js";
-import { enforceVerbatim, enforceVerbatimDeep, verbatimCoverage } from "./quotes.js";
+import { enforceVerbatim, enforceVerbatimDeep, verbatimCoverage, quotablePassages } from "./quotes.js";
 
 const REPORT_KEY = "live_report";
 const MIN_INTERVAL_MS = 10 * 60 * 1000;
@@ -237,9 +237,11 @@ function buildPrompt() {
   // Signals whose source text is retained are the only ones that can be
   // quoted: the gate has nothing to check a quotation against otherwise.
   const withText = new Set(d.db.prepare("SELECT signal_id FROM article_text").all().map((r) => r.signal_id));
-  lines.push(`\nEVIDENCE — cite these as [S<id>]. Only these ids exist. Signals marked [source text retained] may be quoted verbatim; no others may be quoted:`);
+  lines.push(`\nEVIDENCE — cite these as [S<id>]. Only these ids exist. Where a signal carries a QUOTABLE line, that is an exact sentence from its retained source text and the only words that may be placed inside quotation marks:`);
   for (const s of pack) {
-    lines.push(`[S${s.id}] (${s.cluster} · ${s.signal_type} · ${s.urgency} · ${s.horizon}) ${s.title} — ${s.summary} (${s.source}${s.date ? ", " + s.date : ""})${withText.has(s.id) ? " [source text retained]" : ""}`);
+    const line = `[S${s.id}] (${s.cluster} · ${s.signal_type} · ${s.urgency} · ${s.horizon}) ${s.title} — ${s.summary} (${s.source}${s.date ? ", " + s.date : ""})`;
+    const qp = withText.has(s.id) ? quotablePassages(s.id, `${s.title} ${s.summary}`, { n: 1, maxLen: 200 }) : [];
+    lines.push(qp.length ? `${line}\n    QUOTABLE: "${qp[0]}"` : line);
   }
 
   return { prompt: lines.join("\n"), allowedSignalIds: new Set(pack.map((s) => s.id)), allowedSlugs: new Set(scenarios.map((s) => s.slug)) };
@@ -299,7 +301,7 @@ House voice: measured, literate, observational. Comfortable with uncertainty —
 
 Rules that are not negotiable:
 - Every substantive claim carries a citation: [S<id>] for a signal, [SC:<slug>] for a scenario. Cite only ids present in the evidence provided. Inventing an id is worse than making no claim.
-- Quotation marks are a claim to have reproduced a source's exact words. Quote only from signals marked [source text retained], in double quotes immediately followed by the citation, and only words you are certain appear in the source; every such quotation is checked word-for-word against the retained text and removed if it does not match. Paraphrase everything else without quotation marks. One or two exact quotations per section, where a source's own phrasing carries the point, are worth more than none.
+- Quotation marks are a claim to have reproduced a source's exact words. Quote ONLY a signal's QUOTABLE line, copied exactly (a contiguous part of it is fine), in double quotes immediately followed by the citation. Never put summary text or your own words inside quotation marks — every quotation is checked word-for-word against the retained source and removed if it does not match. One or two exact quotations per section, where a source's own phrasing carries the point, are worth more than none.
 - Probabilities are conditional artifacts of human-set driver ranges and hand-shaped scenario conditions. Never call them forecasts or predictions.
 - Where the evidence is thin, say so. Where the library leans (English-language, Western media), say so.
 - The report is an argument, not a tour. It should be readable top to bottom by someone who never clicks through to the underlying pages.`;

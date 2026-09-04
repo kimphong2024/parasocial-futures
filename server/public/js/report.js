@@ -118,13 +118,15 @@ const citeHtml = (s) => esc(s)
 // authored part reports which of its quotations would fail. Either way the
 // reader can see which words are a source's own, and the citation carries the
 // quotation into the drawer so it can be found in the retained text.
-const QUOTED = /["\u201C]([\s\S]{25,400}?)["\u201D]\s*(\([^)]*\))?\s*\[S(\d+)\]/g;
+// Mirror of quotes.js QUOTED: one alternation per quote style, never crossing a mark of its own style.
+const QUOTED = /(?:"([^"]{25,400})"|\u201C([^\u201C\u201D]{25,400})\u201D)\s*(\([^)]*\))?\s*\[S(\d+)\]/g;
 let failingQuotes = new Set();
 const pills = (s) => {
   if (typeof s !== "string") return "";
   let out = "", last = 0;
   for (const m of s.matchAll(QUOTED)) {
-    const [, quote, paren, id] = m;
+    const [, straight, curly, paren, id] = m;
+    const quote = straight ?? curly;
     const failed = failingQuotes.has(quote.slice(0, 160));
     out += citeHtml(s.slice(last, m.index));
     out += `<q class="vq${failed ? " fail" : ""}" title="${failed ? "Not verified — these words were not found in the retained source text" : "Verified word-for-word against the retained source text"}">${esc(quote)}</q>${paren ? " " + esc(paren) : ""} <button type="button" class="cite-pill" data-sig="${id}" data-quote="${encodeURIComponent(quote)}" aria-label="Open signal ${id} at this quotation">S${id}</button>`;
