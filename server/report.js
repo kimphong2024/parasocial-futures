@@ -17,7 +17,7 @@ import { createHash } from "node:crypto";
 import * as d from "./db.js";
 import { askTool, llmEnabled } from "./ai.js";
 import { getWriteup } from "./triangle.js";
-import { enforceVerbatim, verbatimCoverage } from "./quotes.js";
+import { enforceVerbatim, enforceVerbatimDeep, verbatimCoverage } from "./quotes.js";
 
 const REPORT_KEY = "live_report";
 const MIN_INTERVAL_MS = 10 * 60 * 1000;
@@ -66,6 +66,13 @@ export function authoredSections() {
       updated_at: row.updated_at,
       base_hash: row.base_hash,
       base_text_sha: row.base_text_sha,
+      // Sections saved before the gate covered authored text may carry a
+      // quotation that would not pass. The page marks those honestly rather
+      // than presenting every quotation as verified.
+      quotes: (() => {
+        const g = enforceVerbatimDeep(value, { record: false });
+        return { checked: g.checked, stripped: g.stripped, failing: g.verdicts.filter((v) => !v.ok).map((v) => v.quote) };
+      })(),
       // The question is whether the machine draft has changed since this was
       // written, not whether the evidence has. Regeneration rewrites the prose
       // without necessarily moving the evidence hash, so comparing the draft

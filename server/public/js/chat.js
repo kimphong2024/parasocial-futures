@@ -7,12 +7,28 @@ const $ = (id) => document.getElementById(id);
 const messages = []; // client-side history, sent with each request
 
 // Render assistant text: escape, then swap [S123] / [SC:slug] into pills.
-function renderAssistant(text) {
-  return esc(text)
-    .replace(/\[S(\d+)\]/g, `<span class="cite-pill" data-sig="$1">S$1</span>`)
-    .replace(/\[SC:([a-z0-9-]+)\]/g, `<span class="cite-pill" data-scenario="$1">$1</span>`)
-    .replace(/^#{1,4} (.+)$/gm, "<strong>$1</strong>")
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+const citeHtml = (text) => esc(text)
+  .replace(/\[S(\d+)\]/g, `<span class="cite-pill" data-sig="$1">S$1</span>`)
+  .replace(/\[SC:([a-z0-9-]+)\]/g, `<span class="cite-pill" data-scenario="$1">$1</span>`)
+  .replace(/^#{1,4} (.+)$/gm, "<strong>$1</strong>")
+  .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+
+// Attributed quotations are marked only once the answer has finished and the
+// verbatim gate has run over it (`quotes` from the done event); while the
+// text is still streaming nothing has been checked, so nothing is marked.
+const QUOTED = /["\u201C]([\s\S]{25,400}?)["\u201D]\s*(\([^)]*\))?\s*\[S(\d+)\]/g;
+function renderAssistant(text, quotes = null) {
+  if (!quotes) return citeHtml(text);
+  const failing = new Set((quotes.details || []).map((d) => d.quote));
+  let out = "", last = 0;
+  for (const m of text.matchAll(QUOTED)) {
+    const [, quote, paren, id] = m;
+    const failed = failing.has(quote.slice(0, 120));
+    out += citeHtml(text.slice(last, m.index));
+    out += `<q class="vq${failed ? " fail" : ""}" title="${failed ? "Not verified against the retained source text" : "Verified word-for-word against the retained source text"}">${esc(quote)}</q>${paren ? " " + esc(paren) : ""} <span class="cite-pill" data-sig="${id}" data-quote="${encodeURIComponent(quote)}">S${id}</span>`;
+    last = m.index + m[0].length;
+  }
+  return out + citeHtml(text.slice(last));
 }
 
 function addMsg(role, html) {
@@ -64,7 +80,8 @@ async function send(text) {
         if (type === "sources") showSources(j);
         else if (type === "delta") { full += j.text; el.innerHTML = renderAssistant(full); }
         else if (type === "done") {
-          if (typeof j.text === "string" && j.text !== full) { full = j.text; el.innerHTML = renderAssistant(full); }
+          if (typeof j.text === "string") full = j.text;
+          el.innerHTML = renderAssistant(full, j.quotes || { details: [] });
           if (j.quotes?.stripped) {
             const n = j.quotes.stripped;
             el.insertAdjacentHTML("beforeend", `<p class="caption quote-note">${n} quotation${n === 1 ? "" : "s"} removed — not found word-for-word in the retained source text. The citation stays; the words do not.</p>`);
@@ -93,6 +110,7 @@ function showSources({ signals, scenarios }) {
 document.addEventListener("click", async (e) => {
   const sig = e.target.closest("[data-sig]");
   if (sig) {
+    $("drawer").dataset.quote = sig.dataset.quote ? decodeURIComponent(sig.dataset.quote) : "";
     const s = await api("/api/signals/" + sig.dataset.sig);
     $("drawer").innerHTML = `
       <button class="drawer-close" id="dclose" aria-label="Close">&times;</button>

@@ -536,6 +536,7 @@
 }
 .sec-badge.moved { background: var(--gold); color: var(--ink); }
 .sec-badge.open { background: var(--chip-brown-bg); color: var(--chip-brown-ink); }
+.sec-badge.fail { background: var(--chip-red-bg); color: var(--chip-red-ink); }
 
 .sec-menu { position: relative; }
 /* Same trap as .report-status: an explicit display beats the UA's

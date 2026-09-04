@@ -108,10 +108,30 @@ const valueOf = (key) => {
 // Same citation affordance as the chat page, but rendered as real buttons:
 // these are the primary control on the page, and a span with a click handler
 // is unreachable by keyboard and announced as nothing.
-const pills = (s) => esc(s)
+const citeHtml = (s) => esc(s)
   .replace(/\[S(\d+)\]/g, `<button type="button" class="cite-pill" data-sig="$1" aria-label="Open signal $1">S$1</button>`)
   .replace(/\[SC:([a-z0-9-]+)\]/gi, (_m, slug) =>
     `<button type="button" class="cite-pill" data-scenario="${slug}" aria-label="Open scenario ${esc(scenarioTitle(slug))}">${esc(scenarioTitle(slug))}</button>`);
+
+// An attributed quotation — the server's own pattern (quotes.js QUOTED). What
+// survives the gate on the machine draft is verified by construction; an
+// authored part reports which of its quotations would fail. Either way the
+// reader can see which words are a source's own, and the citation carries the
+// quotation into the drawer so it can be found in the retained text.
+const QUOTED = /["\u201C]([\s\S]{25,400}?)["\u201D]\s*(\([^)]*\))?\s*\[S(\d+)\]/g;
+let failingQuotes = new Set();
+const pills = (s) => {
+  if (typeof s !== "string") return "";
+  let out = "", last = 0;
+  for (const m of s.matchAll(QUOTED)) {
+    const [, quote, paren, id] = m;
+    const failed = failingQuotes.has(quote.slice(0, 160));
+    out += citeHtml(s.slice(last, m.index));
+    out += `<q class="vq${failed ? " fail" : ""}" title="${failed ? "Not verified — these words were not found in the retained source text" : "Verified word-for-word against the retained source text"}">${esc(quote)}</q>${paren ? " " + esc(paren) : ""} <button type="button" class="cite-pill" data-sig="${id}" data-quote="${encodeURIComponent(quote)}" aria-label="Open signal ${id} at this quotation">S${id}</button>`;
+    last = m.index + m[0].length;
+  }
+  return out + citeHtml(s.slice(last));
+};
 
 // The model returns each section as a single block, which lands as a 150-word
 // wall. Split on sentence boundaries into roughly even paragraphs — words are
@@ -203,6 +223,7 @@ function partControls(part) {
   const open = (data.critiques?.[part] || []).filter((c) => !c.addressed_at).length;
   return `${a ? `<span class="sec-badge${a.draft_moved ? " moved" : ""}" title="${a.draft_moved ? "The draft has been rewritten since you authored this" : "Your text, not the machine draft"}">authored${a.draft_moved ? " · draft moved" : ""}</span>` : ""}
     ${open ? `<span class="sec-badge open" title="${open} critique${open === 1 ? "" : "s"} not yet marked addressed">${open} open</span>` : ""}
+    ${a?.quotes?.stripped ? `<span class="sec-badge fail" title="Open the editor and check quotations">${a.quotes.stripped} unverified quotation${a.quotes.stripped === 1 ? "" : "s"}</span>` : ""}
     ${a ? `<button type="button" class="sec-btn" data-compare="${part}">${comparing === part ? "Hide" : "Compare"}</button>` : ""}
     <button type="button" class="sec-btn" data-edit="${part}">Edit</button>
     <span class="sec-menu">
@@ -588,8 +609,9 @@ function closeDrawer() {
   drawerOpener = null;
 }
 
-async function openSignal(id) {
+async function openSignal(id, quote = "") {
   const dr = $("drawer");
+  dr.dataset.quote = quote;
   drawerOpener = document.activeElement;
   dr.inert = false;
   dr.setAttribute("role", "dialog");
@@ -629,7 +651,7 @@ async function openSignal(id) {
 document.addEventListener("click", (e) => {
   const pill = e.target.closest(".cite-pill");
   if (!pill) return;
-  if (pill.dataset.sig) openSignal(pill.dataset.sig);
+  if (pill.dataset.sig) openSignal(pill.dataset.sig, pill.dataset.quote ? decodeURIComponent(pill.dataset.quote) : "");
   else if (pill.dataset.scenario) location.href = `/scenarios#${pill.dataset.scenario}`;
 });
 
@@ -640,6 +662,7 @@ async function load() {
   try {
     const [rep] = await Promise.all([api("/api/report"), loadContext()]);
     data = rep;
+    failingQuotes = new Set(Object.values(rep.authored || {}).flatMap((a) => a.quotes?.failing || []));
     drawStatus();
     drawReport();
   } catch (e) {

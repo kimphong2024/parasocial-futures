@@ -469,3 +469,14 @@ svg text { font-family: var(--font-sans); }
 .src-scroll p { font-size: 12.5px; line-height: 1.65; color: var(--charcoal); }
 .src-scroll p + p { margin-top: 0.8em; }
 .src-none .note-label { display: block; margin-bottom: 4px; }
+
+
+/* A quotation that has been checked word-for-word against the retained source
+   text (quotes.js). The tint says "these are the source's words"; a failed one
+   is underlined instead, never tinted. The retained text in the drawer marks
+   the same words when opened from the citation. */
+q.vq { quotes: none; background: var(--mustardLight, #FEF9E7); color: inherit; padding: 0.05em 0.28em; border-radius: 4px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+q.vq::before { content: "\201C"; }
+q.vq::after { content: "\201D"; }
+q.vq.fail { background: none; text-decoration: underline wavy var(--urgentRed, #C44536); text-underline-offset: 3px; }
+mark.vq-hit { background: var(--mustardLight, #FEF9E7); color: inherit; padding: 0 0.15em; border-radius: 3px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
