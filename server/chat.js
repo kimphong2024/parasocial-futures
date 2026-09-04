@@ -2,6 +2,7 @@
 // Retrieval: Voyage query embedding → cosine → optional rerank. Generation:
 // Claude, streamed over SSE. Sources event first, then deltas; citations as
 // [S<id>] and [SC:<slug>] pills the frontend resolves.
+import { enforceVerbatim } from "./quotes.js";
 import { db, now, logChat, getScenario } from "./db.js";
 import { client, MODEL, llmEnabled } from "./ai.js";
 import { embedQuery, rerank, voyageEnabled } from "./voyage.js";
@@ -90,9 +91,14 @@ export async function chatHandler(req, res) {
     let full = "";
     stream.on("text", (delta) => { full += delta; send("delta", { text: delta }); });
     await stream.finalMessage();
+    // The words have already streamed, so the gate cannot prevent them being
+    // seen — but it can refuse to let them stand. The cleaned text replaces
+    // the answer on the client, and the reader is told what was removed.
+    const q = enforceVerbatim(full);
+    full = q.text;
     const cited = [...new Set([...full.matchAll(/\[S(\d+)\]/g)].map((m) => Number(m[1])))];
     logChat.run(now(), question, JSON.stringify(cited));
-    send("done", { cited });
+    send("done", { cited, text: full, quotes: { checked: q.checked, stripped: q.stripped, details: q.details } });
   } catch (e) {
     console.error("[chat] stream failed:", e);
     send("error", { message: "generation failed" });

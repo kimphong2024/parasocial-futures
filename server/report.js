@@ -227,9 +227,12 @@ function buildPrompt() {
     for (const dr of drivers) lines.push(`  ${dr.name} (${dr.unit}) — ${dr.dist_type} ${dr.params_json}. Rationale: ${dr.rationale || "—"}`);
   }
 
-  lines.push(`\nEVIDENCE — cite these as [S<id>]. Only these ids exist:`);
+  // Signals whose source text is retained are the only ones that can be
+  // quoted: the gate has nothing to check a quotation against otherwise.
+  const withText = new Set(d.db.prepare("SELECT signal_id FROM article_text").all().map((r) => r.signal_id));
+  lines.push(`\nEVIDENCE — cite these as [S<id>]. Only these ids exist. Signals marked [source text retained] may be quoted verbatim; no others may be quoted:`);
   for (const s of pack) {
-    lines.push(`[S${s.id}] (${s.cluster} · ${s.signal_type} · ${s.urgency} · ${s.horizon}) ${s.title} — ${s.summary} (${s.source}${s.date ? ", " + s.date : ""})`);
+    lines.push(`[S${s.id}] (${s.cluster} · ${s.signal_type} · ${s.urgency} · ${s.horizon}) ${s.title} — ${s.summary} (${s.source}${s.date ? ", " + s.date : ""})${withText.has(s.id) ? " [source text retained]" : ""}`);
   }
 
   return { prompt: lines.join("\n"), allowedSignalIds: new Set(pack.map((s) => s.id)), allowedSlugs: new Set(scenarios.map((s) => s.slug)) };
@@ -289,6 +292,7 @@ House voice: measured, literate, observational. Comfortable with uncertainty —
 
 Rules that are not negotiable:
 - Every substantive claim carries a citation: [S<id>] for a signal, [SC:<slug>] for a scenario. Cite only ids present in the evidence provided. Inventing an id is worse than making no claim.
+- Quotation marks are a claim to have reproduced a source's exact words. Quote only from signals marked [source text retained], in double quotes immediately followed by the citation, and only words you are certain appear in the source; every such quotation is checked word-for-word against the retained text and removed if it does not match. Paraphrase everything else without quotation marks. One or two exact quotations per section, where a source's own phrasing carries the point, are worth more than none.
 - Probabilities are conditional artifacts of human-set driver ranges and hand-shaped scenario conditions. Never call them forecasts or predictions.
 - Where the evidence is thin, say so. Where the library leans (English-language, Western media), say so.
 - The report is an argument, not a tour. It should be readable top to bottom by someone who never clicks through to the underlying pages.`;

@@ -61,8 +61,9 @@ export function storeArticleText(signalId, text) {
   return hash;
 }
 
-// Returns { ok, start, end, sha256 } or { ok: false, reason }.
-export function verifyQuote(signalId, quote) {
+// Returns { ok, start, end, sha256 } or { ok: false, reason }. `record`
+// writes a verified quotation to the quotes table; a dry run does not.
+export function verifyQuote(signalId, quote, { record = true } = {}) {
   const q = normalise(quote);
   if (q.length < MIN_QUOTE_CHARS) return { ok: false, reason: "too short to verify" };
   const row = d.getArticleText.get(signalId);
@@ -70,7 +71,7 @@ export function verifyQuote(signalId, quote) {
   const start = row.text.indexOf(q);
   if (start < 0) return { ok: false, reason: "not found in the retained source text" };
   const rec = { ok: true, start, end: start + q.length, sha256: sha256(q) };
-  d.putQuote.run(signalId, q, rec.sha256, rec.start, rec.end, d.now());
+  if (record) d.putQuote.run(signalId, q, rec.sha256, rec.start, rec.end, d.now());
   return rec;
 }
 
@@ -87,23 +88,46 @@ const QUOTED = /["“]([\s\S]{25,400}?)["”]\s*(?:\([^)]*\))?\s*\[S(\d+)\]/g;
 
 // Strip any attributed quotation that does not resolve to retained source
 // text. Returns the cleaned text plus what was removed, for the audit line.
-export function enforceVerbatim(text) {
+export function enforceVerbatim(text, { record = true } = {}) {
   if (typeof text !== "string" || (!text.includes('"') && !text.includes("“"))) {
-    return { text, checked: 0, stripped: 0, details: [] };
+    return { text, checked: 0, stripped: 0, details: [], verdicts: [] };
   }
   let checked = 0, stripped = 0;
-  const details = [];
+  const details = [], verdicts = [];
   const out = text.replace(QUOTED, (match, quote, id) => {
     checked++;
-    const v = verifyQuote(+id, quote);
-    if (v.ok) return match;
+    const v = verifyQuote(+id, quote, { record });
+    const verdict = { signal_id: +id, quote: quote.slice(0, 160), ok: !!v.ok };
+    if (v.ok) { verdicts.push({ ...verdict, sha256: v.sha256, start: v.start, end: v.end }); return match; }
     stripped++;
+    verdicts.push({ ...verdict, reason: v.reason });
     details.push({ signal_id: +id, quote: quote.slice(0, 120), reason: v.reason });
     // Keep the citation, drop the words. The claim can still be followed to
     // its source; it just no longer pretends to be verbatim.
     return `[S${id}]`;
   });
-  return { text: out, checked, stripped, details };
+  return { text: out, checked, stripped, details, verdicts };
+}
+
+// The same gate over a value that may be structured — an authored watch-list
+// is an array of objects, and a quotation inside one of its fields must be
+// checked too. Strings are gated in place; the shape is returned unchanged.
+export function enforceVerbatimDeep(value, opts = {}) {
+  let checked = 0, stripped = 0;
+  const details = [], verdicts = [];
+  const walk = (v) => {
+    if (typeof v === "string") {
+      const r = enforceVerbatim(v, opts);
+      checked += r.checked; stripped += r.stripped;
+      details.push(...r.details); verdicts.push(...r.verdicts);
+      return r.text;
+    }
+    if (Array.isArray(v)) return v.map(walk);
+    if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)]));
+    return v;
+  };
+  const text = walk(value);
+  return { text, checked, stripped, details, verdicts };
 }
 
 export const verbatimCoverage = () => d.countArticleText.get().n;

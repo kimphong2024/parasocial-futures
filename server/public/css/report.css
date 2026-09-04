@@ -796,6 +796,17 @@
    heading above the editor. */
 .report-page .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
+/* ---------- quotation verdicts, under an editor ---------- */
+.quote-verdicts:empty { display: none; }
+.quote-verdicts { margin-top: 4px; }
+.qv { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.qv li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 8px; font-size: var(--rt-secondary); line-height: 1.5; }
+.qv-mark { font-family: var(--font-mono); font-size: var(--rt-label); padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.qv li.ok .qv-mark { background: var(--chip-green-bg); color: var(--chip-green-ink); }
+.qv li.fail .qv-mark { background: var(--chip-red-bg); color: var(--chip-red-ink); }
+.qv-quote { color: var(--rt-ink); max-width: 70ch; }
+.qv-why { flex: 1 1 100%; font-family: var(--font-mono); font-size: var(--rt-label); color: var(--chart-mid); }
+
 /* ---------- the citation drawer, as it appears on this page ---------- */
 .drawer .drawer-close { min-width: 44px; min-height: 44px; display: grid; place-items: center; top: 8px; right: 8px; padding: 0; }
 .drawer .citation .source { color: var(--chip-brown-ink); }

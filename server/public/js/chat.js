@@ -63,6 +63,13 @@ async function send(text) {
         const j = JSON.parse(data);
         if (type === "sources") showSources(j);
         else if (type === "delta") { full += j.text; el.innerHTML = renderAssistant(full); }
+        else if (type === "done") {
+          if (typeof j.text === "string" && j.text !== full) { full = j.text; el.innerHTML = renderAssistant(full); }
+          if (j.quotes?.stripped) {
+            const n = j.quotes.stripped;
+            el.insertAdjacentHTML("beforeend", `<p class="caption quote-note">${n} quotation${n === 1 ? "" : "s"} removed — not found word-for-word in the retained source text. The citation stays; the words do not.</p>`);
+          }
+        }
         else if (type === "error") throw new Error(j.message);
       }
     }

@@ -18,6 +18,7 @@ import { ARCHETYPES, draftScenario, embedScenario } from "./scenarios.js";
 import { simulate, previewDistribution, makeSampler } from "./montecarlo.js";
 import { chatHandler } from "./chat.js";
 import { groupPendingQueue } from "./cluster.js";
+import { enforceVerbatimDeep, verbatimCoverage } from "./quotes.js";
 import { runBackfill, backfillStatus, abortBackfill, startBackfillDrainer } from "./backfill.js";
 import { getReport, generateReport, reportStatus, reportComposition, canGenerate, authoredSections, sectionFingerprint } from "./report.js";
 import { critiqueSection, MODES as CRITIQUE_MODES } from "./critique.js";
@@ -222,6 +223,21 @@ app.post("/api/quotes/backfill", (req, res) => {
 
 app.post("/api/quotes/backfill/abort", (_req, res) => res.json({ ok: abortBackfill() }));
 
+// Dry run of the verbatim gate over any text: every attributed quotation
+// ("…" [S<id>]) is looked up in that signal's retained source text and the
+// verdict returned, nothing stored, nothing stripped. This is how the gate is
+// tested — by an author checking their own quotation before saving, or by
+// anyone who wants to see it refuse a changed word.
+app.post("/api/quotes/check", (req, res) => {
+  const raw = req.body?.text;
+  if (typeof raw !== "string" || !raw.trim()) return res.status(400).json({ error: "text required" });
+  if (raw.length > 20000) return res.status(400).json({ error: "text too long" });
+  let value = raw;
+  try { const j = JSON.parse(raw); if (j && typeof j === "object") value = j; } catch { /* plain prose */ }
+  const g = enforceVerbatimDeep(value, { record: false });
+  res.json({ checked: g.checked, stripped: g.stripped, verdicts: g.verdicts, corpus: verbatimCoverage() });
+});
+
 // ---------- the live synthesis report ----------
 // Reading never generates. Generation is a high-effort model call on a site
 // with no auth, so it is a deliberate human action and rate-limited; a report
@@ -284,11 +300,24 @@ app.put("/api/report/sections/:key", (req, res) => {
   const text = typeof raw === "string" ? raw : JSON.stringify(raw ?? "");
   if (!text.trim()) return res.status(400).json({ error: "text required" });
   if (text.length > 20000) return res.status(400).json({ error: "section too long" });
+  // The verbatim gate applies to the author's words as much as the machine's:
+  // the page promises that anything shown as a quotation matches retained
+  // source text. A human's prose is not silently edited, though — the save is
+  // refused with the verdicts, and the author decides.
+  let value = text;
+  try { const j = JSON.parse(text); if (j && typeof j === "object") value = j; } catch { /* prose */ }
+  const g = enforceVerbatimDeep(value, { record: true });
+  if (g.stripped) {
+    return res.status(422).json({
+      error: `${g.stripped} quotation${g.stripped === 1 ? "" : "s"} could not be verified against retained source text`,
+      quotes: g.verdicts,
+    });
+  }
   // Record the machine draft this was written against, so a later
   // regeneration can be recognised as a new draft rather than guessed at.
   const draft = (getReport() || {})[key];
   d.putSectionEdit.run(key, text, reportComposition().hash, sectionFingerprint(draft), d.now());
-  res.json({ ok: true, authored: authoredSections()[key] });
+  res.json({ ok: true, authored: authoredSections()[key], quotes: { checked: g.checked, verdicts: g.verdicts } });
 });
 
 // "I have read the new draft and I am keeping mine." Clears the flag without

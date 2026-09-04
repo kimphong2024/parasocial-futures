@@ -319,8 +319,10 @@ function scenarioEditor(part) {
     <div class="sec-editor-actions">
       <button type="button" class="btn btn-sm" data-save="${part}">Save the scenario</button>
       <button type="button" class="sec-btn" data-cancel="${part}">Cancel</button>
+      <button type="button" class="sec-btn" data-check-quotes="${part}">Check quotations</button>
       <span class="sec-msg" role="status" aria-live="polite"></span>
     </div>
+    <div class="quote-verdicts" data-verdicts-for="${part}" role="status"></div>
   </div>`;
 }
 
@@ -361,8 +363,10 @@ const editorActions = (part) => `
     <button type="button" class="btn btn-sm" data-save="${part}">Save</button>
     <button type="button" class="sec-btn" data-cancel="${part}">Cancel</button>
     ${authoredOf(part) ? `<button type="button" class="sec-btn danger" data-revert="${part}">Revert to draft</button>` : ""}
+    <button type="button" class="sec-btn" data-check-quotes="${part}">Check quotations</button>
     <span class="sec-msg" role="status" aria-live="polite"></span>
-  </div>`;
+  </div>
+  <div class="quote-verdicts" data-verdicts-for="${part}" role="status"></div>`;
 
 function startClock(fromMs) {
   stopClock();
@@ -870,7 +874,11 @@ document.addEventListener("click", async (e) => {
       leaveEditor();
       await load();
       focusPart(key);
-    } catch (err) { msg.textContent = humanErr(err.message); t.disabled = false; }
+    } catch (err) {
+      msg.textContent = humanErr(err.message);
+      t.disabled = false;
+      if (/could not be verified/.test(err.message)) checkQuotes(key);
+    }
     return;
   }
 
@@ -914,6 +922,7 @@ document.addEventListener("click", async (e) => {
     focusSel(`[data-menu="${CSS.escape(key)}"]`);
     return;
   }
+  if (t.dataset.checkQuotes) { await checkQuotes(t.dataset.checkQuotes); return; }
   if (t.dataset.clearError) { delete critError[t.dataset.clearError]; drawReport(); focusSel(`[data-menu="${CSS.escape(t.dataset.clearError)}"]`); return; }
 
   if (t.dataset.addressed) {
@@ -933,6 +942,34 @@ document.addEventListener("click", async (e) => {
     return;
   }
 });
+
+// The verbatim gate, run by hand. Every "…" [S<id>] in the editor is looked up
+// in that signal's retained source text; the verdicts are shown, nothing is
+// saved or altered. The same list is shown when a save is refused for a
+// quotation that does not match — the author sees which words, and why.
+async function checkQuotes(part) {
+  const box = document.querySelector(`[data-verdicts-for="${CSS.escape(part)}"]`);
+  if (!box) return;
+  box.innerHTML = `<p class="caption">Checking…</p>`;
+  try {
+    const text = Object.values(collectEdit(part)).join("\n\n");
+    const r = await api("/api/quotes/check", { method: "POST", body: { text } });
+    if (!r.checked) {
+      box.innerHTML = `<p class="caption">No attributed quotations here — a quotation is words in double quotes followed directly by a citation, like "…" [S12]. ${r.corpus.toLocaleString()} signals have retained source text to check against.</p>`;
+      return;
+    }
+    box.innerHTML = `<p class="caption">${r.checked} quotation${r.checked === 1 ? "" : "s"} checked, ${r.stripped} would be refused.</p>
+      <ul class="qv">${r.verdicts.map((v) => `
+        <li class="${v.ok ? "ok" : "fail"}">
+          <span class="qv-mark">${v.ok ? "verified" : "not verified"}</span>
+          <span class="qv-quote">"${esc(v.quote)}${v.quote.length >= 160 ? "…" : ""}"</span>
+          <button type="button" class="cite-pill" data-sig="${v.signal_id}" aria-label="Open signal ${v.signal_id}">S${v.signal_id}</button>
+          <span class="qv-why">${v.ok ? `matches the retained text at character ${v.start.toLocaleString()} · sha256 ${esc(v.sha256.slice(0, 12))}…` : esc(v.reason)}</span>
+        </li>`).join("")}</ul>`;
+  } catch (e) {
+    box.innerHTML = `<div class="error-note">${esc(humanErr(e.message))}</div>`;
+  }
+}
 
 // Actions without a message slot of their own say what went wrong beside the
 // control that was pressed.
