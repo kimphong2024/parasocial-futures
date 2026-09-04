@@ -695,6 +695,9 @@ function railGlide(rail, target) {
   const max = rail.scrollWidth - rail.clientWidth;
   const to = Math.max(0, Math.min(max, target));
   const land = () => { rail.scrollLeft = to; markRailPosition(); };
+  // Tall enough for whichever panel is about to arrive; the exact height is
+  // set on landing.
+  rail.style.height = Math.max(...[...rail.querySelectorAll(".sc-block")].map((p) => p.offsetHeight)) + 6 + "px";
 
   // No frames are coming in a hidden or throttled tab, so animating would
   // leave the rail exactly where it was. Movement must never depend on the
@@ -747,6 +750,8 @@ function markRailPosition() {
   // At the end of the rail the last panel cannot reach the left edge, so
   // left-edge matching under-reports. If we are at the end, we are on the last.
   if (rail.scrollLeft >= rail.scrollWidth - rail.clientWidth - 2) best = panels.length - 1;
+  // The rail is as tall as the panel in view (plus its own bottom padding).
+  if (panels[best]) rail.style.height = panels[best].offsetHeight + 6 + "px";
   document.querySelectorAll(".sc-dot").forEach((d, i) => {
     d.classList.toggle("here", i === best);
     if (i === best) d.setAttribute("aria-current", "true"); else d.removeAttribute("aria-current");
@@ -762,6 +767,10 @@ function wireRail() {
   if (!rail || rail._wired) return;
   rail._wired = true;
   rail.addEventListener("scroll", markRailPosition, { passive: true });
+  // Folding a layer or reflowing text changes the panel's height; follow it.
+  rail.addEventListener("toggle", markRailPosition, true);
+  const ro = new ResizeObserver(markRailPosition);
+  rail.querySelectorAll(".sc-block").forEach((p) => ro.observe(p));
   markRailPosition();
 }
 
