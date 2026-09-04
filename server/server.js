@@ -18,7 +18,7 @@ import { ARCHETYPES, draftScenario, embedScenario } from "./scenarios.js";
 import { simulate, previewDistribution, makeSampler } from "./montecarlo.js";
 import { chatHandler } from "./chat.js";
 import { groupPendingQueue } from "./cluster.js";
-import { enforceVerbatimDeep, verbatimCoverage } from "./quotes.js";
+import { enforceVerbatimDeep, verbatimCoverage, repairRetainedText } from "./quotes.js";
 import { runBackfill, backfillStatus, abortBackfill, startBackfillDrainer } from "./backfill.js";
 import { getReport, generateReport, reportStatus, reportComposition, canGenerate, authoredSections, sectionFingerprint } from "./report.js";
 import { critiqueSection, MODES as CRITIQUE_MODES } from "./critique.js";
@@ -771,6 +771,7 @@ app.get("/signals", (_req, res) => res.sendFile(join(HERE, "public", "index.html
 
 // ---------- boot ----------
 seedIfEmpty();
+try { repairRetainedText(); } catch (e) { console.warn("[quotes] repair skipped:", e.message); }
 // Reconcile runs orphaned by a mid-scan deploy: a process that just booted
 // cannot have a scan in flight, so any row still 'running' is aborted.
 try {

@@ -21,7 +21,17 @@ export const sha256 = (s) => createHash("sha256").update(s, "utf8").digest("hex"
 // differs between a scrape and a model's reproduction of it. Deliberately
 // conservative — case and words are never touched, so a changed word or number
 // still fails.
-export const normalise = (s) => String(s || "")
+// HTML entities the scrapers leave behind — numeric (&#8221;) and the named
+// handful that survive a crude tag strip. A quotation is typed with the real
+// character, so the retained text must hold the real character too, or every
+// sentence containing a curly quote or an ampersand is refused for nothing.
+const NAMED = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", rsquo: "\u2019", lsquo: "\u2018", rdquo: "\u201D", ldquo: "\u201C", hellip: "\u2026", mdash: "\u2014", ndash: "\u2013" };
+export const decodeEntities = (s) => String(s || "")
+  .replace(/&#x([0-9a-f]{1,6});/gi, (_m, h) => String.fromCodePoint(parseInt(h, 16)))
+  .replace(/&#(\d{1,7});/g, (_m, n) => String.fromCodePoint(+n))
+  .replace(/&([a-z]+);/gi, (m, name) => NAMED[name.toLowerCase()] ?? m);
+
+export const normalise = (s) => decodeEntities(s)
   .normalize("NFKC")
   .replace(/[‘’‛′]/g, "'")
   .replace(/[“”‟″]/g, '"')
@@ -131,3 +141,21 @@ export function enforceVerbatimDeep(value, opts = {}) {
 }
 
 export const verbatimCoverage = () => d.countArticleText.get().n;
+
+// Retained rows stored before entities were decoded still carry &#8221; and
+// friends. Re-normalise them once at boot; the hash follows the text.
+export function repairRetainedText() {
+  const rows = d.db.prepare("SELECT signal_id, text FROM article_text WHERE text LIKE '%&#%' OR text LIKE '%&amp;%' OR text LIKE '%&quot;%' OR text LIKE '%&rsquo;%' OR text LIKE '%&nbsp;%' OR text LIKE '%&ldquo;%' OR text LIKE '%&rdquo;%'").all();
+  const upd = d.db.prepare("UPDATE article_text SET text = ?, sha256 = ?, chars = ? WHERE signal_id = ?");
+  let n = 0;
+  for (const r of rows) {
+    const clean = normalise(r.text);
+    if (clean === r.text) continue;
+    const hash = sha256(clean);
+    upd.run(clean, hash, clean.length, r.signal_id);
+    d.setSignalContentHash.run(hash, r.signal_id);
+    n++;
+  }
+  if (n) console.log(`[quotes] decoded HTML entities in ${n} retained source text(s)`);
+  return n;
+}
