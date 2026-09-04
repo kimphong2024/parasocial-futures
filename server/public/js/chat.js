@@ -88,7 +88,7 @@ async function send(text) {
           el.innerHTML = renderAssistant(full, j.quotes || { details: [] });
           if (j.quotes?.stripped) {
             const n = j.quotes.stripped;
-            el.insertAdjacentHTML("beforeend", `<p class="caption quote-note">${n} quotation${n === 1 ? "" : "s"} removed — not found word-for-word in the retained source text. The citation stays; the words do not.</p>`);
+            el.insertAdjacentHTML("beforeend", `<p class="caption quote-note">${n} quotation${n === 1 ? "" : "s"} could not be verified word-for-word against the retained source text and ${n === 1 ? "is" : "are"} shown without quotation marks — as paraphrase, like the rest.</p>`);
           }
         }
         else if (type === "error") throw new Error(j.message);

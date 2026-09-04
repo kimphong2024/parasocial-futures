@@ -123,9 +123,12 @@ export function enforceVerbatim(text, { record = true } = {}) {
     stripped++;
     verdicts.push({ ...verdict, reason: v.reason });
     details.push({ signal_id: +id, quote: quote.slice(0, 120), reason: v.reason });
-    // Keep the citation, drop the words. The claim can still be followed to
-    // its source; it just no longer pretends to be verbatim.
-    return `[S${id}]`;
+    // Drop the quotation marks, keep the words and the citation. The claim to
+    // be verbatim is what failed; the words remain as what every other cited
+    // sentence is, a paraphrase, and the sentence stays readable. Deleting the
+    // words left citations hanging mid-sentence.
+    const paren = (match.match(/\(([^)]*)\)\s*\[S\d+\]$/) || [])[0];
+    return `${quote}${paren ? " " + paren : ` [S${id}]`}`;
   });
   return { text: out, checked, stripped, details, verdicts };
 }
