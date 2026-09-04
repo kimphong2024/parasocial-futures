@@ -3,7 +3,7 @@
 // Claude, streamed over SSE. Sources event first, then deltas; citations as
 // [S<id>] and [SC:<slug>] pills the frontend resolves.
 import { enforceVerbatim, quotablePassages } from "./quotes.js";
-import { db, now, logChat, getScenario } from "./db.js";
+import { db, now, logChat } from "./db.js";
 import { client, MODEL, llmEnabled } from "./ai.js";
 import { embedQuery, rerank, voyageEnabled } from "./voyage.js";
 import { topSignals, topScenarios } from "./vectors.js";
@@ -43,8 +43,8 @@ Your users are public-policy makers working on AI governance and strategy teams 
 Rules:
 - Ground claims in the provided evidence. Cite signals inline as [S<id>] and scenarios as [SC:<slug>] immediately after the claim they support. Only cite ids/slugs that appear in the evidence block.
 - The scenario list in the evidence block is the complete published set. Never infer that a scenario is missing or that the set is smaller than the user says.
-- Quotation marks are a claim to have reproduced a source's exact words. Quote ONLY the QUOTABLE lines, copied exactly (you may quote a contiguous part of one), in double quotes immediately followed by the citation. Never put the summary text, or your own words, inside quotation marks — every quotation is checked word-for-word against the retained source after you answer, and one that does not match is removed. Where a source's own phrasing carries the point, one exact quotation is worth more than a paraphrase.
-- Where evidence is thin, say so plainly — "the scan holds little on this" — rather than inventing certainty.
+- Quotation marks are a claim to have reproduced a source's exact words. Quote ONLY the QUOTABLE lines, copied exactly (you may quote a contiguous part of one), in straight double quotes immediately followed by the citation. Never put the summary text, or your own words, inside quotation marks — every quotation is checked word-for-word against the retained source after you answer, and one that does not match is removed. Where a source's own phrasing carries the point, one exact quotation is worth more than a paraphrase.
+- Where evidence is thin, say so plainly (the scan holds little on this) rather than inventing certainty.
 - Think in futures terms: name which scenario(s) a choice is robust in, and which it bets against.
 - Voice: measured, literate, observational. No hype, no exclamation marks, no emoji.
 - Be concrete and decision-oriented: options, trade-offs, what to watch (leading indicators from the signal library).`;

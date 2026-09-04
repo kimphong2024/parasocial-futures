@@ -19,17 +19,17 @@ const citeHtml = (text) => esc(text)
 // verbatim gate has run over it (`quotes` from the done event); while the
 // text is still streaming nothing has been checked, so nothing is marked.
 // Mirror of quotes.js QUOTED: one alternation per quote style, never crossing a mark of its own style.
-const QUOTED = /(?:"([^"]{25,400})"|\u201C([^\u201C\u201D]{25,400})\u201D)\s*(\([^)]*\))?\s*\[S(\d+)\]/g;
+const QUOTED = /(?:"([^"]{25,400})"|\u201C((?:[^\u201C\u201D]|\u201C[^\u201C\u201D]*\u201D){25,400})\u201D)\s*(\([^)]*\))?\s*\[S(\d+)\]/g;
 function renderAssistant(text, quotes = null) {
   if (!quotes) return citeHtml(text);
-  const failing = new Set((quotes.details || []).map((d) => d.quote));
+  // The server has already removed every quotation that failed, so whatever
+  // still matches here is one it verified.
   let out = "", last = 0;
   for (const m of text.matchAll(QUOTED)) {
     const [, straight, curly, paren, id] = m;
     const quote = straight ?? curly;
-    const failed = failing.has(quote.slice(0, 120));
     out += citeHtml(text.slice(last, m.index));
-    out += `<q class="vq${failed ? " fail" : ""}" title="${failed ? "Not verified against the retained source text" : "Verified word-for-word against the retained source text"}">${esc(quote)}</q>${paren ? " " + esc(paren) : ""} <span class="cite-pill" data-sig="${id}" data-quote="${encodeURIComponent(quote)}">S${id}</span>`;
+    out += `<q class="vq" title="Verified word-for-word against the retained source text">${esc(quote)}</q>${paren ? " " + esc(paren) : ""} <span class="cite-pill" data-sig="${id}" data-quote="${encodeURIComponent(quote)}">S${id}</span>`;
     last = m.index + m[0].length;
   }
   return out + citeHtml(text.slice(last));

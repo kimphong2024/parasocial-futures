@@ -26,9 +26,13 @@ export const sha256 = (s) => createHash("sha256").update(s, "utf8").digest("hex"
 // character, so the retained text must hold the real character too, or every
 // sentence containing a curly quote or an ampersand is refused for nothing.
 const NAMED = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", rsquo: "\u2019", lsquo: "\u2018", rdquo: "\u201D", ldquo: "\u201C", hellip: "\u2026", mdash: "\u2014", ndash: "\u2013" };
+// A numeric entity outside Unicode (or naming a surrogate) is left as typed:
+// fromCodePoint would throw, and a throw inside the boot repair abandons
+// every row after the bad one.
+const cp = (n, m) => (n > 0x10FFFF || (n >= 0xD800 && n <= 0xDFFF) || n === 0) ? m : String.fromCodePoint(n);
 export const decodeEntities = (s) => String(s || "")
-  .replace(/&#x([0-9a-f]{1,6});/gi, (_m, h) => String.fromCodePoint(parseInt(h, 16)))
-  .replace(/&#(\d{1,7});/g, (_m, n) => String.fromCodePoint(+n))
+  .replace(/&#x([0-9a-f]{1,6});/gi, (m, h) => cp(parseInt(h, 16), m))
+  .replace(/&#(\d{1,7});/g, (m, n) => cp(+n, m))
   .replace(/&([a-z]+);/gi, (m, name) => NAMED[name.toLowerCase()] ?? m);
 
 export const normalise = (s) => decodeEntities(s)
@@ -98,7 +102,9 @@ export function verifyQuote(signalId, quote, { record = true } = {}) {
 //
 // Scare quotes and terms of art carry no citation and are deliberately left
 // alone; they are not claims to have reproduced anyone's words.
-const QUOTED = /(?:"([^"]{25,400})"|“([^“”]{25,400})”)\s*(?:\([^)]*\))?\s*\[S(\d+)\]/g;
+// The curly alternation admits balanced inner curly pairs, since the quotable
+// lines are handed to the model with their inner quotes curly.
+const QUOTED = /(?:"([^"]{25,400})"|“((?:[^“”]|“[^“”]*”){25,400})”)\s*(?:\([^)]*\))?\s*\[S(\d+)\]/g;
 
 // Strip any attributed quotation that does not resolve to retained source
 // text. Returns the cleaned text plus what was removed, for the audit line.
@@ -163,13 +169,25 @@ export function quotablePassages(signalId, cue, { n = 3, minLen = 40, maxLen = 2
   const text = row.text;
   const cueSet = new Set(words(cue));
   const out = [];
-  // Sentence boundaries: terminal punctuation, optional closing mark, space,
-  // then a capital, digit or opening mark. Each candidate is an exact slice.
-  const re = /[^.!?]+[.!?]+["\u201D\u2019)]?(?=\s+(?:["\u201C(]?[A-Z0-9])|\s*$)/g;
-  let m;
-  while ((m = re.exec(text))) {
-    const s = m[0].trim();
+  // Sentence boundaries: terminal punctuation, optional closing mark, then
+  // space and a capital, digit or opening mark — except after an abbreviation
+  // ("U.S.", "Dr."), where the sentence continues. Each candidate is an exact
+  // slice of the stored text and must itself begin like a sentence.
+  const ABBR = /(?:^|[\s(])(?:Dr|Mr|Mrs|Ms|Prof|Sr|Jr|St|No|Nos|Inc|Ltd|Co|Corp|vs|etc|Fig|Gov|Sen|Rep|Gen|Lt|Col|Mt|Ph\.D|U\.S|U\.K|E\.U|U\.N|e\.g|i\.e|a\.m|p\.m|[A-Z])\.$/;
+  const sentences = [];
+  const bre = /[.!?]+["\u201D\u2019)]?(?=\s+["\u201C(]?[A-Z0-9])/g;
+  let start = 0, m;
+  while ((m = bre.exec(text))) {
+    const end = m.index + m[0].length;
+    if (ABBR.test(text.slice(start, end))) continue;
+    sentences.push(text.slice(start, end));
+    start = end;
+  }
+  sentences.push(text.slice(start));
+  for (const raw of sentences) {
+    const s = raw.trim();
     if (s.length < minLen || s.length > maxLen) continue;
+    if (!/^["\u201C(]?[A-Z0-9]/.test(s)) continue;
     if (/^(subscribe|sign in|log in|read more|advertisement|share this|related:)/i.test(s)) continue;
     const ws = words(s);
     if (ws.length < 5) continue;

@@ -96,8 +96,12 @@ const mmss = (ms) => {
 // Scenario slugs are storage identifiers. Everywhere one is shown to a reader
 // it resolves to the published title — falling back to the slug only if the
 // scenario is not in the published set, which is honest rather than blank.
+// Archived scenarios still resolve to their titles, so a citation into an
+// older set never shows a reader a storage slug.
 const scenarioTitle = (slug) =>
-  (ctx?.scenarios || []).find((s) => s.slug === slug)?.title || slug;
+  (ctx?.scenarios || []).find((s) => s.slug === slug)?.title
+  || (ctx?.allScenarios || []).find((s) => s.slug === slug)?.title
+  || slug;
 
 const authoredOf = (key) => data?.authored?.[key];
 const valueOf = (key) => {
@@ -119,7 +123,7 @@ const citeHtml = (s) => esc(s)
 // reader can see which words are a source's own, and the citation carries the
 // quotation into the drawer so it can be found in the retained text.
 // Mirror of quotes.js QUOTED: one alternation per quote style, never crossing a mark of its own style.
-const QUOTED = /(?:"([^"]{25,400})"|\u201C([^\u201C\u201D]{25,400})\u201D)\s*(\([^)]*\))?\s*\[S(\d+)\]/g;
+const QUOTED = /(?:"([^"]{25,400})"|\u201C((?:[^\u201C\u201D]|\u201C[^\u201C\u201D]*\u201D){25,400})\u201D)\s*(\([^)]*\))?\s*\[S(\d+)\]/g;
 let failingQuotes = new Set();
 const pills = (s) => {
   if (typeof s !== "string") return "";
@@ -127,7 +131,7 @@ const pills = (s) => {
   for (const m of s.matchAll(QUOTED)) {
     const [, straight, curly, paren, id] = m;
     const quote = straight ?? curly;
-    const failed = failingQuotes.has(quote.slice(0, 160));
+    const failed = failingQuotes.has(`${id}\n${quote.slice(0, 160)}`);
     out += citeHtml(s.slice(last, m.index));
     out += `<q class="vq${failed ? " fail" : ""}" title="${failed ? "Not verified — these words were not found in the retained source text" : "Verified word-for-word against the retained source text"}">${esc(quote)}</q>${paren ? " " + esc(paren) : ""} <button type="button" class="cite-pill" data-sig="${id}" data-quote="${encodeURIComponent(quote)}" aria-label="Open signal ${id} at this quotation">S${id}</button>`;
     last = m.index + m[0].length;
@@ -561,18 +565,20 @@ let ctx = { facets: null, overview: null, triangle: null, scenarios: null, sim: 
 
 async function loadContext() {
   const get = (p) => api(p).catch(() => null);
-  const [facets, overview, triangle, scenarios, simRes, mix] = await Promise.all([
+  const [facets, overview, triangle, scenarios, simRes, mix, all] = await Promise.all([
     get("/api/signals/facets?status=approved"),
     get("/api/signals/overview"),
     get("/api/triangle/counts"),
     get("/api/scenarios?status=published"),
     get("/api/simulation/latest"),
     get("/api/scenarios/triangle-mix"),
+    get("/api/scenarios"),
   ]);
   ctx = {
     facets, overview,
     triangle: triangle?.counts || null,
     scenarios: scenarios?.scenarios || null,
+    allScenarios: all?.scenarios || null,
     sim: simRes?.latest || null,
     mix: mix?.scenarios || null,
   };
@@ -654,7 +660,11 @@ document.addEventListener("click", (e) => {
   const pill = e.target.closest(".cite-pill");
   if (!pill) return;
   if (pill.dataset.sig) openSignal(pill.dataset.sig, pill.dataset.quote ? decodeURIComponent(pill.dataset.quote) : "");
-  else if (pill.dataset.scenario) location.href = `/scenarios#${pill.dataset.scenario}`;
+  else if (pill.dataset.scenario) {
+    // The scenario's own page; /scenarios#slug was an anchor nothing handled.
+    const sc = (ctx?.allScenarios || ctx?.scenarios || []).find((s) => s.slug === pill.dataset.scenario);
+    location.href = sc ? `/scenario?id=${sc.id}` : "/scenarios";
+  }
 });
 
 // ---------------- load / regenerate ----------------

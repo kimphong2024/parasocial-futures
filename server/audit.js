@@ -5,6 +5,21 @@
 // caller's address and the response status.
 import * as d from "./db.js";
 
+// A critique's subject is a storage key; the activity line names the thing.
+const PART_TITLES = {
+  headline: "the headline", state_of_evidence: "the state of the evidence", triangle_reading: "the triangle reading",
+  scenario_space: "the scenario space", odds: "the odds", sensitivity: "the levers section",
+  what_would_change_our_mind: "the watch-list", so_what_policy: "so what — policy", so_what_industry: "so what — industry",
+};
+function partName(key) {
+  const k = String(key || "?");
+  if (k.startsWith("scenario:")) {
+    const sc = d.listScenarios.all().find((s) => s.slug === k.slice(9));
+    return sc ? `the “${sc.title}” scenario` : "a scenario";
+  }
+  return PART_TITLES[k] ? `the report section “${PART_TITLES[k]}”` : `the report section “${k.slice(0, 40)}”`;
+}
+
 // noise fields never worth diffing
 const SKIP_FIELDS = new Set(["raw_json", "detail_json", "params_json_full", "updated_at", "reviewed_at", "note_updated_at", "horizon_judged_at", "published_at"]);
 const CAP = 200;
@@ -101,7 +116,7 @@ function describe(action, { entityId, name, before, after, diff, body, path }) {
     case "report.author": return `Authored the report section “${brief(String(path || "").split("/").pop(), 40)}” by hand`;
     case "report.keep-mine": return `Read the newer draft of “${brief(String(path || "").split("/").slice(-2)[0], 40)}” and kept the authored version`;
     case "report.revert": return `Reverted the report section “${brief(String(path || "").split("/").pop(), 40)}” to the machine draft`;
-    case "report.critique": return `Ran a “${brief(body?.mode || "?", 24)}” critique on the report section “${brief(body?.section || "?", 40)}”`;
+    case "report.critique": return `Ran a “${brief(body?.mode || "?", 24)}” critique on ${partName(body?.section)}`;
     case "report.regenerate": return "Requested a fresh report draft";
     case "quotes.backfill": return `Started a verbatim-corpus backfill (${body?.limit ?? "?"} signals${body?.useFirecrawl === false ? ", free pass only" : ""})`;
     case "quotes.backfill-abort": return "Aborted the verbatim-corpus backfill";

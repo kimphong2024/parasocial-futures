@@ -71,7 +71,7 @@ export function authoredSections() {
       // than presenting every quotation as verified.
       quotes: (() => {
         const g = enforceVerbatimDeep(value, { record: false });
-        return { checked: g.checked, stripped: g.stripped, failing: g.verdicts.filter((v) => !v.ok).map((v) => v.quote) };
+        return { checked: g.checked, stripped: g.stripped, failing: g.verdicts.filter((v) => !v.ok).map((v) => `${v.signal_id}\n${v.quote}`) };
       })(),
       // The question is whether the machine draft has changed since this was
       // written, not whether the evidence has. Regeneration rewrites the prose
@@ -219,11 +219,14 @@ function buildPrompt() {
 
   if (results) {
     lines.push(`\nSIMULATION (run ${sim.id}, ${results.n} samples, seed ${results.seed}):`);
-    for (const s of results.scenarios || []) lines.push(`  ${s.title} (${s.archetype}): ${pct(s.probability)}`);
+    // Titles from the published set, not the snapshot: a run predating a
+    // rename would otherwise teach the model the old names.
+    const liveTitle = (slug, fallback) => scenarios.find((x) => x.slug === slug)?.title || fallback || slug;
+    for (const s of results.scenarios || []) lines.push(`  ${liveTitle(s.slug, s.title)} [SC:${s.slug}] (${s.archetype}): ${pct(s.probability)}`);
     lines.push(`  RESIDUAL — sampled futures matching no scenario: ${pct(results.residual)}. This must be stated in the odds section; it is the honest measure of what the archetypes do not cover.`);
     const tor = results.tornado || {};
     for (const [slug, rows] of Object.entries(tor).slice(0, 4)) {
-      lines.push(`  sensitivity for ${slug}: ${rows.slice(0, 4).map((r) => `${r.name} ${r.delta >= 0 ? "+" : ""}${pct(r.delta)}`).join(", ")}`);
+      lines.push(`  sensitivity for ${liveTitle(slug)} [SC:${slug}]: ${rows.slice(0, 4).map((r) => `${r.name} ${r.delta >= 0 ? "+" : ""}${pct(r.delta)}`).join(", ")}`);
     }
   } else {
     lines.push(`\nSIMULATION: no run recorded yet — say so rather than inventing odds.`);
@@ -301,7 +304,7 @@ House voice: measured, literate, observational. Comfortable with uncertainty —
 
 Rules that are not negotiable:
 - Every substantive claim carries a citation: [S<id>] for a signal, [SC:<slug>] for a scenario. Cite only ids present in the evidence provided. Inventing an id is worse than making no claim.
-- Quotation marks are a claim to have reproduced a source's exact words. Quote ONLY a signal's QUOTABLE line, copied exactly (a contiguous part of it is fine), in double quotes immediately followed by the citation. Never put summary text or your own words inside quotation marks — every quotation is checked word-for-word against the retained source and removed if it does not match. One or two exact quotations per section, where a source's own phrasing carries the point, are worth more than none.
+- Quotation marks are a claim to have reproduced a source's exact words. Quote ONLY a signal's QUOTABLE line, copied exactly (a contiguous part of it is fine), in straight double quotes immediately followed by the citation. Never put summary text or your own words inside quotation marks — every quotation is checked word-for-word against the retained source and removed if it does not match. One or two exact quotations per section, where a source's own phrasing carries the point, are worth more than none.
 - Probabilities are conditional artifacts of human-set driver ranges and hand-shaped scenario conditions. Never call them forecasts or predictions.
 - Where the evidence is thin, say so. Where the library leans (English-language, Western media), say so.
 - The report is an argument, not a tour. It should be readable top to bottom by someone who never clicks through to the underlying pages.`;
