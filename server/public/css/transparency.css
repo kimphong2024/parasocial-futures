@@ -139,7 +139,7 @@
   white-space: pre-wrap;
   max-width: none;
 }
-.tprompt .inj { color: var(--gold-text, #896128); font-style: italic; }
+.tprompt .inj { color: var(--gold, #E1B83B); font-style: italic; }
 
 /* imagery provenance grid */
 .tgallery {

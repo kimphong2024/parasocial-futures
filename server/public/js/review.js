@@ -124,7 +124,7 @@ function drawPager() {
 
 function drawBatchBar() {
   const n = state.picked.size;
-  $("batchCount").innerHTML = n ? `<strong>${n}</strong> selected` : "Nothing selected";
+  $("batchCount").innerHTML = n ? `<strong>${n}</strong> selected` : "Select signals to approve or reject";
   $("batchApprove").disabled = !n;
   $("batchReject").disabled = !n;
   $("batchApprove").textContent = n ? `Approve ${n}` : "Approve";

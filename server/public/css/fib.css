@@ -112,6 +112,18 @@ body { background: var(--paperWhite); color: var(--ink); }
 .btn-secondary:hover { background: var(--ink); color: var(--paperWhite); }
 .btn-danger { background: transparent; color: #A03325; border-color: #A03325; }
 .btn-danger:hover { background: #A03325; color: var(--paperWhite); }
+/* Disabled: same pill, the ink drained — never a grey fill under coloured
+   text (style.css's default painted --textDim behind a red Reject at 1.3:1). */
+.btn:disabled, .btn.btn-secondary:disabled, .btn.btn-danger:disabled, .btn[aria-disabled="true"] {
+  background: transparent; color: var(--chart-mid); border-color: var(--creamLine);
+  cursor: not-allowed; transform: none; box-shadow: none; opacity: 1;
+}
+.btn:disabled:hover, .btn.btn-secondary:disabled:hover, .btn.btn-danger:disabled:hover { background: transparent; color: var(--chart-mid); border-color: var(--creamLine); transform: none; }
+/* Two 10px labels inherited from style.css sit below 4.5:1 on cream: the
+   citation's source name (brown, 3.8:1) and the field-note label (goldenBrown
+   on mustard, 2.4:1). Text-safe derivatives; the marks keep the full hue. */
+.citation .source { color: #6B4A12; }
+.note-label { color: var(--gold-text, #7E6721); }
 .tag { border-radius: 999px; padding: 5px 14px; border: none; }
 .tag-mustard { background: var(--gold); color: var(--ink); font-weight: 600; }
 .tag-olive { background: var(--deepGreen); color: var(--paperWhite); }

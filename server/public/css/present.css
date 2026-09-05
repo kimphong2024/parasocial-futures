@@ -380,7 +380,6 @@
   width: 330px;
   background: var(--paperWhite, #FFFEF9);
   border: 1px solid #D8D2BC;
-  border-left: 4px solid var(--gold, #E1B83B);
   box-shadow: 0 14px 40px rgba(19, 19, 9, 0.2);
   border-radius: 12px;
   padding: 16px 18px;

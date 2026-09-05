@@ -36,6 +36,8 @@
 .tri-corner:hover .tri-name, .tri-corner:focus-visible .tri-name { fill: var(--ink, #131309); }
 .tri-corner:focus-visible { outline: 2px solid var(--gold, #E1B83B); outline-offset: 4px; }
 
+/* The explicit display beats the UA's [hidden]; the tooltip rendered permanently. */
+.tri-tip[hidden] { display: none; }
 .tri-tip {
   position: absolute;
   max-width: 310px;

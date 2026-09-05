@@ -64,6 +64,8 @@
 }
 
 /* gliding tooltip (shared look with the triangle page) */
+/* The explicit display beats the UA's [hidden]; the tooltip rendered permanently. */
+.tri-tip[hidden] { display: none; }
 .tri-tip {
   position: absolute;
   max-width: 310px;

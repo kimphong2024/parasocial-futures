@@ -81,7 +81,10 @@
   border-radius: var(--r-box);
 }
 .batch-bar .spacer { flex: 1 1 auto; }
-.batch-bar .batch-count { font-size: 12.5px; color: var(--textMid); }
+.batch-bar .batch-count { font-size: 13px; color: var(--textMid); }
+/* The page-level pick sits outside a card, so the card-scoped rule below
+   never reached it and it rendered at body size beside a 13px pill. */
+.batch-bar .pick { display: flex; align-items: center; gap: 8px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--textDim); cursor: pointer; }
 .batch-bar .batch-count strong { color: var(--charcoal); }
 
 .review-card .pick {
@@ -95,7 +98,10 @@
   cursor: pointer;
 }
 .review-card .pick input { width: 15px; height: 15px; accent-color: var(--olive); cursor: pointer; }
-.review-card.picked { box-shadow: inset 3px 0 0 var(--olive); }
+.review-card.picked { box-shadow: inset 3px 0 0 var(--olive);
+  /* a full ring, not a side stripe: the whole card is what is selected */
+  box-shadow: 0 0 0 2px var(--olive, #4E5A2B);
+}
 
 /* Group cards (Phase 2 — embedding clustering) */
 .group-card .group-members { display: flex; flex-direction: column; gap: 4px; margin-top: var(--s-2); }
