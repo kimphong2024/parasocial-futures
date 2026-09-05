@@ -98,10 +98,8 @@
   cursor: pointer;
 }
 .review-card .pick input { width: 15px; height: 15px; accent-color: var(--olive); cursor: pointer; }
-.review-card.picked { box-shadow: inset 3px 0 0 var(--olive);
-  /* a full ring, not a side stripe: the whole card is what is selected */
-  box-shadow: 0 0 0 2px var(--olive, #4E5A2B);
-}
+/* A full ring, not a side stripe: the whole card is what is selected. */
+.review-card.picked { box-shadow: 0 0 0 2px var(--olive, #4E5A2B); }
 
 /* Group cards (Phase 2 — embedding clustering) */
 .group-card .group-members { display: flex; flex-direction: column; gap: 4px; margin-top: var(--s-2); }
